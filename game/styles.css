@@ -1,0 +1,1307 @@
+/* USS Cobia Submarine Battle Game - Styles */
+
+:root {
+    /* Submarine control room colors */
+    --hull-black: #0a0c0f;
+    --deep-ocean: #0d1821;
+    --control-green: #1a3d2e;
+    --scope-green: #00ff41;
+    --radar-green: #39ff14;
+    --warning-amber: #ffbf00;
+    --danger-red: #ff3131;
+    --brass: #b5a642;
+    --steel: #71797E;
+    --gauge-face: #1a1a1a;
+    --text-dim: #5a6a5a;
+    --text-light: #a8c0a8;
+    --water-blue: #1a4a6e;
+    --water-deep: #0a2a3e;
+    --thermocline: #2a5a8e;
+    --explosion-orange: #ff6b00;
+    --paper-aged: #d4c5a9;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Ensure all numeric displays use tabular figures for stable width */
+[class*="value"], [class*="display"], [class*="readout"], [class*="count"],
+[id*="display"], [id*="range"], [id*="bearing"], [id*="depth"], [id*="speed"] {
+    font-variant-numeric: tabular-nums;
+}
+
+body {
+    font-family: 'VT323', monospace;
+    background: var(--hull-black);
+    color: var(--text-light);
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* ==================== TITLE SCREEN ==================== */
+
+#title-screen {
+    background: 
+        radial-gradient(ellipse at 50% 0%, rgba(26, 61, 46, 0.3) 0%, transparent 50%),
+        linear-gradient(180deg, var(--deep-ocean) 0%, var(--hull-black) 100%);
+    justify-content: center;
+    align-items: center;
+}
+
+.title-content {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.classification {
+    font-family: 'Special Elite', cursive;
+    color: var(--danger-red);
+    letter-spacing: 4px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.title-content h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 72px;
+    font-weight: 700;
+    color: var(--scope-green);
+    text-shadow: 
+        0 0 20px rgba(0, 255, 65, 0.5),
+        0 0 40px rgba(0, 255, 65, 0.3);
+    letter-spacing: 15px;
+    margin-bottom: 5px;
+}
+
+.title-content h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    color: var(--steel);
+    letter-spacing: 8px;
+    margin-bottom: 40px;
+}
+
+.mission-brief {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--control-green);
+    padding: 30px;
+    max-width: 600px;
+    margin: 0 auto 30px;
+    text-align: left;
+}
+
+.date-location {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.date {
+    color: var(--brass);
+}
+
+.location {
+    color: var(--text-light);
+}
+
+.coordinates {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--scope-green);
+    font-size: 16px;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.brief-text {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    margin-bottom: 15px;
+}
+
+.brief-text.warning {
+    color: var(--warning-amber);
+    border-top: 1px solid var(--warning-amber);
+    padding-top: 15px;
+    font-weight: bold;
+}
+
+.nav-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    padding: 15px 40px;
+    background: transparent;
+    border: 2px solid var(--scope-green);
+    color: var(--scope-green);
+    cursor: pointer;
+    letter-spacing: 3px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: var(--scope-green);
+    color: var(--hull-black);
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+}
+
+.nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.sound-btn {
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    background: transparent;
+    border: 1px solid var(--steel);
+    color: var(--text-dim);
+    cursor: pointer;
+    margin-top: 15px;
+    transition: all 0.2s;
+}
+
+.sound-btn:hover {
+    border-color: var(--scope-green);
+    color: var(--scope-green);
+}
+
+.sound-btn.muted {
+    color: var(--danger-red);
+    border-color: var(--danger-red);
+}
+
+.submarine-silhouette {
+    position: absolute;
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 80px;
+    background: linear-gradient(90deg, 
+        transparent 0%,
+        var(--steel) 10%,
+        var(--steel) 90%,
+        transparent 100%
+    );
+    clip-path: polygon(
+        5% 50%, 15% 30%, 25% 25%, 40% 20%, 45% 10%, 50% 10%, 55% 20%,
+        85% 25%, 95% 40%, 100% 50%, 95% 60%, 85% 75%, 15% 75%, 5% 50%
+    );
+    opacity: 0.2;
+}
+
+/* ==================== PHASE SCREENS ==================== */
+
+.phase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, var(--control-green) 0%, var(--deep-ocean) 100%);
+    border-bottom: 2px solid var(--scope-green);
+}
+
+.phase-label {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--brass);
+    font-size: 14px;
+    letter-spacing: 3px;
+}
+
+.phase-title {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--scope-green);
+    font-size: 24px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+.game-time {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--warning-amber);
+    font-size: 28px;
+    min-width: 100px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+}
+
+.game-area {
+    flex: 1;
+    display: flex;
+    padding: 15px;
+    gap: 15px;
+    background: var(--deep-ocean);
+    min-height: 0; /* Allow flex shrinking */
+    overflow: hidden;
+}
+
+.left-panel, .right-panel {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0; /* Allow flex shrinking */
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.main-display {
+    flex: 1;
+    position: relative;
+    background: var(--hull-black);
+    border: 2px solid var(--control-green);
+    border-radius: 5px;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ==================== RADAR SCOPE ==================== */
+
+.radar-scope {
+    background: var(--gauge-face);
+    border: 3px solid var(--steel);
+    border-radius: 50%;
+    padding: 10px;
+    position: relative;
+}
+
+#radar-canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: radial-gradient(circle, #0a1a0a 0%, #000 100%);
+}
+
+.radar-info {
+    position: absolute;
+    bottom: -30px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: var(--radar-green);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==================== CONTROLS ==================== */
+
+.approach-controls {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 15px;
+}
+
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-group label {
+    display: block;
+    color: var(--brass);
+    font-size: 12px;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+}
+
+.dial-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.dial-btn {
+    width: 30px;
+    height: 30px;
+    background: var(--steel);
+    border: 1px solid var(--brass);
+    color: var(--hull-black);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.dial-btn:hover {
+    background: var(--brass);
+}
+
+#course-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    color: var(--scope-green);
+    min-width: 60px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.speed-control, .depth-control {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.speed-btn, .depth-btn {
+    flex: 1;
+    min-width: 45px;
+    padding: 8px 5px;
+    background: var(--gauge-face);
+    border: 1px solid var(--steel);
+    color: var(--text-dim);
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.speed-btn:hover, .depth-btn:hover {
+    border-color: var(--scope-green);
+    color: var(--scope-green);
+}
+
+.speed-btn.active, .depth-btn.active {
+    background: var(--control-green);
+    border-color: var(--scope-green);
+    color: var(--scope-green);
+}
+
+/* ==================== TACTICAL DISPLAY ==================== */
+
+#tactical-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.plot-legend {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-dot.cobia { background: var(--scope-green); }
+.legend-dot.hammerhead { background: #4a90d9; }
+.legend-dot.freighter { background: var(--danger-red); }
+.legend-dot.escort { background: var(--warning-amber); }
+
+/* ==================== DEPTH GAUGE ==================== */
+
+.depth-gauge {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 10px;
+}
+
+.gauge-title, .data-title, .status-title, .damage-title, 
+.system-title, .control-title, .time-title, .orders-title,
+.tdc-title, .tube-title, .comm-title {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--brass);
+    font-size: 12px;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.gauge-display {
+    position: relative;
+}
+
+.water-column {
+    height: 120px;
+    background: linear-gradient(180deg, 
+        var(--water-blue) 0%, 
+        var(--water-deep) 100%
+    );
+    border: 1px solid var(--steel);
+    position: relative;
+    margin: 0 30px;
+}
+
+.depth-gauge.large .water-column {
+    height: 200px;
+}
+
+.thermocline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--thermocline);
+    box-shadow: 0 0 10px var(--thermocline);
+}
+
+.thermo-label, .bottom-label {
+    position: absolute;
+    right: -80px;
+    font-size: 10px;
+    color: var(--thermocline);
+    white-space: nowrap;
+}
+
+.bottom-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: linear-gradient(180deg, #3a2a1a 0%, #1a0a00 100%);
+}
+
+.bottom-label {
+    color: var(--brass);
+    bottom: 0;
+}
+
+.sub-marker {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 10px;
+    background: var(--scope-green);
+    border-radius: 5px;
+    box-shadow: 0 0 10px var(--scope-green);
+    transition: top 0.5s ease;
+    top: 41%;
+}
+
+.depth-labels {
+    position: absolute;
+    left: -25px;
+    top: 0;
+    bottom: 0;
+}
+
+.depth-labels span {
+    position: absolute;
+    font-size: 11px;
+    color: var(--text-dim);
+    transform: translateY(-50%);
+}
+
+.depth-readout {
+    text-align: center;
+    margin-top: 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    color: var(--scope-green);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==================== TARGET DATA ==================== */
+
+.target-data, .status-panel {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 10px;
+}
+
+.data-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.data-label {
+    color: var(--text-dim);
+}
+
+.data-value {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--scope-green);
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    display: inline-block;
+    text-align: right;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-indicator.safe { background: var(--scope-green); }
+.status-indicator.warning { background: var(--warning-amber); }
+.status-indicator.danger { background: var(--danger-red); animation: pulse 1s infinite; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 5px currentColor; }
+    50% { opacity: 0.5; box-shadow: 0 0 15px currentColor; }
+}
+
+/* ==================== MESSAGE LOG ==================== */
+
+.message-log {
+    height: 60px;
+    min-height: 60px;
+    flex-shrink: 0;
+    background: #000;
+    border-top: 2px solid var(--control-green);
+    padding: 8px 20px;
+    overflow-y: auto;
+    font-size: 14px;
+}
+
+.log-entry {
+    color: var(--scope-green);
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.1);
+}
+
+.log-entry.warning {
+    color: var(--warning-amber);
+}
+
+.log-entry.danger {
+    color: var(--danger-red);
+}
+
+/* ==================== PHASE 2: TDC & PERISCOPE ==================== */
+
+.tdc-panel {
+    background: var(--gauge-face);
+    border: 2px solid var(--brass);
+    padding: 15px;
+}
+
+.tdc-display {
+    font-family: 'Orbitron', sans-serif;
+}
+
+.tdc-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 14px;
+}
+
+.tdc-label {
+    color: var(--text-dim);
+}
+
+.tdc-value {
+    color: var(--scope-green);
+    font-variant-numeric: tabular-nums;
+    min-width: 45px;
+    display: inline-block;
+    text-align: right;
+}
+
+.tdc-row.highlight {
+    background: rgba(0, 255, 65, 0.1);
+}
+
+.tdc-solution {
+    margin-top: 15px;
+    padding: 10px;
+    text-align: center;
+    background: var(--control-green);
+    color: var(--scope-green);
+    font-size: 14px;
+}
+
+.tdc-solution.ready {
+    background: var(--scope-green);
+    color: var(--hull-black);
+}
+
+.tdc-solution.bad {
+    background: var(--danger-red);
+    color: white;
+}
+
+.tube-status {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 15px;
+}
+
+.tubes {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.tube {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    border: 2px solid var(--steel);
+    background: var(--hull-black);
+    color: var(--text-dim);
+}
+
+.tube.ready {
+    border-color: var(--scope-green);
+    color: var(--scope-green);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.tube.fired {
+    border-color: var(--warning-amber);
+    color: var(--warning-amber);
+    background: rgba(255, 191, 0, 0.2);
+}
+
+.tube.disabled {
+    border-color: var(--danger-red);
+    color: var(--danger-red);
+    opacity: 0.5;
+}
+
+/* Periscope View */
+#periscope-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.periscope-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 60px;
+    pointer-events: none;
+}
+
+.periscope-reticle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    border: 2px solid rgba(0, 255, 65, 0.3);
+    border-radius: 50%;
+}
+
+.periscope-reticle::before,
+.periscope-reticle::after {
+    content: '';
+    position: absolute;
+    background: rgba(0, 255, 65, 0.5);
+}
+
+.periscope-reticle::before {
+    top: 50%;
+    left: -50px;
+    right: -50px;
+    height: 1px;
+}
+
+.periscope-reticle::after {
+    left: 50%;
+    top: -50px;
+    bottom: -50px;
+    width: 1px;
+}
+
+.periscope-data {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--scope-green);
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+}
+
+.scope-controls {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.scope-btn {
+    padding: 10px 20px;
+    background: var(--control-green);
+    border: 1px solid var(--scope-green);
+    color: var(--scope-green);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.scope-btn:hover {
+    background: var(--scope-green);
+    color: var(--hull-black);
+}
+
+#scope-current-bearing {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--scope-green);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    min-width: 60px;
+    display: inline-block;
+    text-align: center;
+}
+
+/* Attack Orders */
+.attack-orders {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 15px;
+}
+
+.order-group {
+    margin-bottom: 15px;
+}
+
+.order-group label {
+    display: block;
+    color: var(--brass);
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.order-group select {
+    width: 100%;
+    padding: 8px;
+    background: var(--hull-black);
+    border: 1px solid var(--steel);
+    color: var(--scope-green);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+}
+
+.fire-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--danger-red);
+    border: 2px solid #ff6666;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    letter-spacing: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fire-btn:hover {
+    background: #ff5555;
+    box-shadow: 0 0 30px rgba(255, 49, 49, 0.5);
+}
+
+.fire-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Communications Panel */
+.comm-panel {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 10px;
+    flex: 1;
+}
+
+.comm-chatter {
+    height: 100px;
+    overflow-y: auto;
+    font-size: 14px;
+}
+
+.comm-msg {
+    padding: 5px 0;
+    color: var(--text-light);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.comm-msg.error {
+    color: var(--danger-red);
+}
+
+.comm-msg.captain {
+    color: var(--warning-amber);
+}
+
+/* ==================== PHASE 3: DEPTH CHARGING ==================== */
+
+.depth-charge-area {
+    background: 
+        radial-gradient(circle at 50% 100%, rgba(255, 107, 0, 0.1) 0%, transparent 50%),
+        var(--deep-ocean);
+}
+
+.damage-panel {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 15px;
+}
+
+.damage-section {
+    margin-bottom: 12px;
+}
+
+.section-name {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+}
+
+.damage-bar {
+    height: 12px;
+    background: var(--hull-black);
+    border: 1px solid var(--steel);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.damage-fill {
+    height: 100%;
+    background: var(--danger-red);
+    transition: width 0.5s ease;
+}
+
+.damage-section.critical .damage-fill {
+    background: linear-gradient(90deg, var(--scope-green), var(--scope-green));
+}
+
+.damage-bar.hull .damage-fill {
+    background: linear-gradient(90deg, var(--danger-red), var(--warning-amber), var(--scope-green));
+}
+
+.system-status {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 15px;
+}
+
+.system-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.system-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.system-indicator.operational { background: var(--scope-green); }
+.system-indicator.damaged { background: var(--warning-amber); animation: pulse 1s infinite; }
+.system-indicator.destroyed { background: var(--danger-red); }
+
+/* Depth Charge Canvas Overlay */
+.dc-overlay {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.dc-counter, .attack-counter {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--danger-red);
+    padding: 10px 15px;
+}
+
+.dc-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.dc-count {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    color: var(--danger-red);
+    font-variant-numeric: tabular-nums;
+}
+
+.dc-explosion {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--explosion-orange) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.dc-explosion.active {
+    opacity: 1;
+    animation: explode 0.5s ease-out;
+}
+
+@keyframes explode {
+    0% { transform: scale(0.5); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
+}
+
+/* Evasion Controls */
+.evasion-controls {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 15px;
+}
+
+.evasion-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.evasion-btn {
+    padding: 12px;
+    background: var(--hull-black);
+    border: 1px solid var(--steel);
+    color: var(--text-light);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+}
+
+.evasion-btn:hover {
+    border-color: var(--scope-green);
+    background: var(--control-green);
+}
+
+.evasion-btn.active {
+    border-color: var(--scope-green);
+    background: var(--control-green);
+}
+
+.evasion-desc {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+/* Time and Resources */
+.time-panel {
+    background: var(--gauge-face);
+    border: 2px solid var(--steel);
+    padding: 15px;
+}
+
+.time-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 36px;
+    color: var(--warning-amber);
+    text-align: center;
+    margin-bottom: 15px;
+    font-variant-numeric: tabular-nums;
+}
+
+.battery-bar, .o2-bar {
+    margin-bottom: 10px;
+}
+
+.battery-label, .o2-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+}
+
+.battery-fill, .o2-fill {
+    height: 12px;
+    background: var(--scope-green);
+    border: 1px solid var(--steel);
+    transition: width 1s linear;
+}
+
+.battery-fill.low { background: var(--warning-amber); }
+.battery-fill.critical { background: var(--danger-red); }
+.o2-fill.low { background: var(--warning-amber); }
+.o2-fill.critical { background: var(--danger-red); }
+
+/* ==================== END SCREEN ==================== */
+
+#end-screen {
+    background: 
+        radial-gradient(ellipse at 50% 50%, rgba(26, 61, 46, 0.2) 0%, transparent 60%),
+        linear-gradient(180deg, var(--deep-ocean) 0%, var(--hull-black) 100%);
+    justify-content: center;
+    align-items: center;
+}
+
+.end-content {
+    text-align: center;
+    max-width: 700px;
+    padding: 40px;
+}
+
+.end-status {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 48px;
+    letter-spacing: 10px;
+    margin-bottom: 20px;
+}
+
+.end-status.survived {
+    color: var(--scope-green);
+    text-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+}
+
+.end-status.sunk {
+    color: var(--danger-red);
+    text-shadow: 0 0 30px rgba(255, 49, 49, 0.5);
+}
+
+.end-content h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.end-report {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--control-green);
+    padding: 20px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.report-line {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+}
+
+.report-label {
+    color: var(--text-dim);
+}
+
+.report-value {
+    color: var(--scope-green);
+}
+
+.historical-note {
+    background: rgba(212, 197, 169, 0.1);
+    border: 1px solid var(--brass);
+    padding: 20px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.historical-note h3 {
+    font-family: 'Special Elite', cursive;
+    color: var(--brass);
+    margin-bottom: 15px;
+    letter-spacing: 2px;
+}
+
+.historical-note p {
+    color: var(--paper-aged);
+    line-height: 1.6;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+/* Screen shake effect for depth charges */
+@keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-10px, -5px); }
+    20% { transform: translate(10px, 5px); }
+    30% { transform: translate(-8px, 3px); }
+    40% { transform: translate(8px, -3px); }
+    50% { transform: translate(-5px, 5px); }
+    60% { transform: translate(5px, -5px); }
+    70% { transform: translate(-3px, 2px); }
+    80% { transform: translate(3px, -2px); }
+    90% { transform: translate(-1px, 1px); }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Flash effect */
+@keyframes flash {
+    0% { background-color: rgba(255, 107, 0, 0.3); }
+    100% { background-color: transparent; }
+}
+
+.flash {
+    animation: flash 0.3s ease-out;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--hull-black);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--steel);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--brass);
+}
+
+/* ==================== RESPONSIVE / OVERFLOW FIXES ==================== */
+
+/* Ensure canvases scale properly */
+canvas {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Reduce panel sizes on smaller screens */
+@media (max-height: 800px) {
+    .water-column {
+        height: 100px;
+    }
+    
+    .depth-gauge.large .water-column {
+        height: 160px;
+    }
+    
+    .control-group {
+        margin-bottom: 8px;
+    }
+    
+    .tdc-row {
+        padding: 5px 0;
+        font-size: 12px;
+    }
+    
+    .damage-section {
+        margin-bottom: 8px;
+    }
+    
+    .gauge-title, .data-title, .status-title, .damage-title, 
+    .system-title, .control-title, .time-title, .orders-title,
+    .tdc-title, .tube-title, .comm-title {
+        font-size: 10px;
+        margin-bottom: 6px;
+    }
+    
+    .depth-readout {
+        font-size: 18px;
+    }
+    
+    .data-row {
+        padding: 3px 0;
+        font-size: 13px;
+    }
+}
+
+@media (max-height: 700px) {
+    .phase-header {
+        padding: 6px 20px;
+    }
+    
+    .phase-title {
+        font-size: 18px;
+    }
+    
+    .game-time {
+        font-size: 22px;
+    }
+    
+    .message-log {
+        height: 45px;
+        min-height: 45px;
+        font-size: 12px;
+        padding: 5px 15px;
+    }
+    
+    .left-panel, .right-panel {
+        width: 240px;
+        gap: 8px;
+    }
+    
+    .water-column {
+        height: 80px;
+    }
+    
+    .depth-gauge.large .water-column {
+        height: 140px;
+    }
+}
+

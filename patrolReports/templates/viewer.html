@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer - USS Cobia Patrol Reports</title>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --text-muted: #8a9bb4;
+            --text-light: #e8e4d9;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .toolbar {
+            background: var(--navy-mid);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid #2d4a6f;
+            flex-wrap: wrap;
+        }
+        
+        .toolbar a {
+            color: var(--brass);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .toolbar a:hover {
+            text-decoration: underline;
+        }
+        
+        .toolbar-title {
+            flex: 1;
+            font-weight: 600;
+            color: var(--text-light);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .toolbar-info {
+            font-size: 0.85rem;
+            color: #8a9bb4;
+        }
+        
+        .current-page-indicator {
+            background: var(--navy-dark);
+            border: 1px solid var(--brass);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--brass);
+        }
+        
+        .search-highlight-info {
+            background: var(--brass);
+            color: var(--navy-dark);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .nav-btn {
+            background: var(--navy-dark);
+            border: 1px solid #2d4a6f;
+            color: var(--text-light);
+            padding: 0.4rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .nav-btn:hover {
+            border-color: var(--brass);
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+        }
+        
+        .zoom-btn {
+            background: var(--navy-dark);
+            border: 1px solid #2d4a6f;
+            color: var(--text-light);
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .zoom-btn:hover {
+            border-color: var(--brass);
+        }
+        
+        .zoom-level {
+            font-size: 0.8rem;
+            color: #8a9bb4;
+            min-width: 45px;
+            text-align: center;
+        }
+        
+        #pdf-container {
+            flex: 1;
+            overflow: auto;
+            background: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+        
+        .page-container {
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+            background: #fff;
+        }
+        
+        .page-container.placeholder {
+            min-height: 800px;
+            min-width: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.2rem;
+        }
+        
+        .page-container canvas {
+            display: block;
+        }
+        
+        .loading {
+            color: var(--text-light);
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        /* PDF.js text layer - enables text selection and Ctrl+F search */
+        .textLayer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            line-height: 1.0;
+            z-index: 2;
+            opacity: 1;
+        }
+        
+        .textLayer span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            transform-origin: 0% 0%;
+            pointer-events: all;
+        }
+        
+        .textLayer span::selection {
+            background: rgba(0, 100, 255, 0.4);
+            color: transparent;
+        }
+        
+        /* Make text visible when browser find highlights it */
+        .textLayer span::-moz-selection {
+            background: rgba(0, 100, 255, 0.4);
+        }
+        
+        .textLayer .highlight::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            background-color: rgba(255, 105, 180, 0.7);
+            border-radius: 2px;
+            pointer-events: none;
+        }
+        
+        .textLayer.hidden {
+            display: none;
+        }
+        
+        /* Glossary tooltip styles - only show if not also a search highlight */
+        .glossary-term:not(.highlight) {
+            background-color: rgba(255, 200, 0, 0.7) !important;
+            box-shadow: 0 0 8px 4px rgba(255, 200, 0, 0.8), 0 0 2px 1px rgba(255, 200, 0, 1);
+            border-radius: 2px;
+            outline: 2px solid rgba(255, 165, 0, 0.9);
+            outline-offset: 1px;
+        }
+        
+        .glossary-term {
+            cursor: help;
+            color: transparent !important;
+        }
+        
+        .glossary-tooltip {
+            position: fixed;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--brass);
+            font-size: 0.9rem;
+            max-width: 350px;
+            z-index: 10000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .glossary-tooltip.visible {
+            opacity: 1;
+        }
+        
+        .glossary-tooltip .term-title {
+            font-weight: 600;
+            color: var(--brass-light);
+            margin-bottom: 0.25rem;
+        }
+        
+        .glossary-tooltip .term-category {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .glossary-tooltip .term-image {
+            max-width: 280px;
+            margin-top: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--brass);
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="/">← Back to Search</a>
+        <span class="toolbar-title" id="pdfTitle">Loading...</span>
+        <span class="current-page-indicator" id="currentPageIndicator">Page -</span>
+        <span class="toolbar-info" id="pageInfo"></span>
+        <div class="zoom-controls">
+            <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
+            <span class="zoom-level" id="zoomLevel">100%</span>
+            <button class="zoom-btn" id="zoomIn" title="Zoom in">+</button>
+        </div>
+        <span class="search-highlight-info" id="searchTerm"></span>
+        <div class="nav-buttons">
+            <button class="nav-btn" id="prevMatch" title="Previous page">◀ Prev Page</button>
+            <button class="nav-btn" id="nextMatch" title="Next page">Next Page ▶</button>
+        </div>
+    </div>
+    
+    <div id="pdf-container">
+        <div class="loading" id="loading">Loading PDF...</div>
+    </div>
+    
+    <!-- Glossary tooltip -->
+    <div class="glossary-tooltip" id="glossaryTooltip">
+        <div class="term-category" id="tooltipCategory"></div>
+        <div class="term-title" id="tooltipTitle"></div>
+        <div class="term-definition" id="tooltipDefinition"></div>
+        <img class="term-image" id="tooltipImage" style="display:none;">
+    </div>
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+    <script>
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Get URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const pdfFile = params.get('file');
+        const targetPage = parseInt(params.get('page')) || 1;
+        const searchQuery = params.get('q') || '';
+        
+        // State
+        let pdfDoc = null;
+        let currentScale = 0.8;  // Will be recalculated to fit width
+        let matches = [];
+        let currentMatchIndex = 0;
+        let glossary = null;
+        let glossaryTerms = {};  // Flattened lookup: term -> {category, definition}
+        
+        // Load glossary
+        async function loadGlossary() {
+            try {
+                const response = await fetch('/static/glossary.json');
+                glossary = await response.json();
+                
+                // Flatten glossary for easy lookup
+                for (const [category, terms] of Object.entries(glossary)) {
+                    for (const [term, definition] of Object.entries(terms)) {
+                        glossaryTerms[term.toLowerCase()] = { 
+                            term, 
+                            category, 
+                            definition 
+                        };
+                    }
+                }
+                console.log(`Loaded glossary with ${Object.keys(glossaryTerms).length} terms`);
+            } catch (e) {
+                console.log('Could not load glossary:', e);
+            }
+        }
+        
+        // Terms that require capitalization (common words that are also aircraft/military terms)
+        const caseSensitiveTerms = ['zero', 'val', 'pete', 'nick', 'sally', 'lily', 'pat'];
+        
+        // Apply glossary tooltips to text layer
+        function applyGlossaryTooltips(textLayerDiv) {
+            if (!glossary) return;
+            
+            const spans = textLayerDiv.querySelectorAll('span');
+            spans.forEach(span => {
+                const text = span.textContent.trim();
+                const lowerText = text.toLowerCase();
+                
+                // Check if this span matches a glossary term (whole word only)
+                for (const [termLower, info] of Object.entries(glossaryTerms)) {
+                    // For short terms (<=3 chars like "VW", "DE", "DD"), require exact match
+                    // For longer terms, allow word boundary matching
+                    const isShortTerm = termLower.length <= 3;
+                    
+                    // Check if this term requires capitalization
+                    const requiresCaps = caseSensitiveTerms.includes(termLower);
+                    
+                    let matches = false;
+                    if (isShortTerm) {
+                        // Exact match only for short acronyms
+                        matches = lowerText === termLower;
+                    } else if (requiresCaps) {
+                        // For common words like "zero", require capitalized form (Zero or ZERO)
+                        const capsRegex = new RegExp(`\\b(${info.term}|${info.term.toUpperCase()})\\b`);
+                        matches = capsRegex.test(text);
+                    } else {
+                        // Word boundary match for longer terms
+                        const regex = new RegExp(`\\b${termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                        matches = regex.test(text);
+                    }
+                    
+                    if (matches) {
+                        span.classList.add('glossary-term');
+                        span.dataset.term = info.term;
+                        span.dataset.category = info.category;
+                        span.dataset.definition = info.definition;
+                        break;  // Only match first term
+                    }
+                }
+            });
+        }
+        
+        // Aircraft images mapping
+        const aircraftImages = {
+            'Betty': '/static/aircraft_images/betty.jpg',
+            'Zero': '/static/aircraft_images/zero.jpg',
+            'Zeke': '/static/aircraft_images/zeke.jpg',
+            'Val': '/static/aircraft_images/val.jpg',
+            'Kate': '/static/aircraft_images/kate.jpg',
+            'Lily': '/static/aircraft_images/lily.jpg',
+            'Nell': '/static/aircraft_images/nell.jpg',
+            'Dinah': '/static/aircraft_images/dinah.jpg',
+            'Sally': '/static/aircraft_images/sally.jpg',
+            'Mavis': '/static/aircraft_images/mavis.jpg',
+            'Pete': '/static/aircraft_images/pete.jpg',
+            'Dave': '/static/aircraft_images/dave.jpg',
+            'Tojo': '/static/aircraft_images/tojo.jpg',
+            'PBY': '/static/aircraft_images/pby.jpg',
+            'PBM': '/static/aircraft_images/pbm.jpeg',
+            'Liberator': '/static/aircraft_images/liberator.jpg',
+            'B-24': '/static/aircraft_images/liberator.jpg',
+            'B-26': '/static/aircraft_images/b26.jpg',
+            'Hellcat': '/static/aircraft_images/hellcat.jpg',
+            'SBD': '/static/aircraft_images/sbd.jpg'
+        };
+        
+        // Tooltip handling
+        const tooltip = document.getElementById('glossaryTooltip');
+        const tooltipImage = document.getElementById('tooltipImage');
+        
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.classList.contains('glossary-term')) {
+                const term = e.target.dataset.term;
+                const category = e.target.dataset.category;
+                const definition = e.target.dataset.definition;
+                
+                document.getElementById('tooltipTitle').textContent = term;
+                document.getElementById('tooltipCategory').textContent = category;
+                document.getElementById('tooltipDefinition').textContent = definition;
+                
+                // Show aircraft image if available
+                if (category === 'aircraft' && aircraftImages[term]) {
+                    tooltipImage.src = aircraftImages[term];
+                    tooltipImage.style.display = 'block';
+                } else {
+                    tooltipImage.style.display = 'none';
+                }
+                
+                // Position tooltip
+                const rect = e.target.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 8) + 'px';
+                tooltip.classList.add('visible');
+            }
+        });
+        
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.classList.contains('glossary-term')) {
+                tooltip.classList.remove('visible');
+                tooltipImage.style.display = 'none';
+            }
+        });
+        
+        // Load glossary first (will be awaited before PDF loads)
+        
+        // Update UI
+        document.getElementById('pdfTitle').textContent = pdfFile || 'Unknown';
+        document.getElementById('searchTerm').textContent = searchQuery ? `Searching: "${searchQuery}"` : '';
+        if (!searchQuery) {
+            document.getElementById('searchTerm').style.display = 'none';
+            document.querySelector('.nav-buttons').style.display = 'none';
+        }
+        
+        async function loadPDF() {
+            if (!pdfFile) {
+                document.getElementById('loading').textContent = 'No PDF specified';
+                return;
+            }
+            
+            try {
+                pdfDoc = await pdfjsLib.getDocument(`/pdfs/${encodeURIComponent(pdfFile)}`).promise;
+                document.getElementById('pageInfo').textContent = `${pdfDoc.numPages} pages`;
+                document.getElementById('loading').style.display = 'none';
+                
+                const container = document.getElementById('pdf-container');
+                
+                // Get first page to determine dimensions and calculate fit-to-width scale
+                const firstPage = await pdfDoc.getPage(1);
+                const containerWidth = container.clientWidth - 40; // Account for padding
+                const defaultViewport = firstPage.getViewport({ scale: 1.0 });
+                
+                // Calculate scale to fit width (with some margin)
+                const fitScale = containerWidth / defaultViewport.width;
+                currentScale = Math.min(fitScale, 1.2); // Cap at 1.2x
+                updateZoomLevel();
+                
+                const viewport = firstPage.getViewport({ scale: currentScale });
+                const pageHeight = viewport.height;
+                const pageWidth = viewport.width;
+                
+                // Step 1: Create ALL placeholders with proper dimensions
+                for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'page-container placeholder';
+                    pageContainer.id = `page-${pageNum}`;
+                    pageContainer.dataset.loaded = 'false';
+                    pageContainer.style.height = pageHeight + 'px';
+                    pageContainer.style.width = pageWidth + 'px';
+                    pageContainer.innerHTML = `<span>Page ${pageNum}</span>`;
+                    container.appendChild(pageContainer);
+                }
+                
+                // Step 2: Scroll to target page NOW (before rendering)
+                await new Promise(resolve => setTimeout(resolve, 50)); // Let DOM update
+                const targetElement = document.getElementById(`page-${targetPage}`);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'instant', block: 'start' });
+                    document.getElementById('currentPageIndicator').textContent = `Page ${targetPage}`;
+                }
+                
+                // Step 3: Render target page first
+                const targetContainer = document.getElementById(`page-${targetPage}`);
+                await renderPage(targetPage, targetContainer);
+                targetContainer.dataset.loaded = 'true';
+                
+                // Step 4: Render nearby pages
+                const nearbyPages = [targetPage - 1, targetPage + 1, targetPage - 2, targetPage + 2];
+                for (const pageNum of nearbyPages) {
+                    if (pageNum >= 1 && pageNum <= pdfDoc.numPages) {
+                        const pageContainer = document.getElementById(`page-${pageNum}`);
+                        if (pageContainer.dataset.loaded === 'false') {
+                            await renderPage(pageNum, pageContainer);
+                            pageContainer.dataset.loaded = 'true';
+                        }
+                    }
+                }
+                
+                // Step 5: Load remaining pages in background
+                for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                    const pageContainer = document.getElementById(`page-${pageNum}`);
+                    if (pageContainer.dataset.loaded === 'false') {
+                        await renderPage(pageNum, pageContainer);
+                        pageContainer.dataset.loaded = 'true';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                document.getElementById('loading').textContent = 'Error loading PDF: ' + error.message;
+            }
+        }
+        
+        async function renderPage(pageNum, container) {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: currentScale });
+            
+            // Clear placeholder content
+            container.innerHTML = '';
+            container.classList.remove('placeholder');
+            
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            container.appendChild(canvas);
+            
+            // Render PDF page
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+            
+            // Create text layer using PDF.js (enables native text selection and Ctrl+F)
+            const textContent = await page.getTextContent();
+            const textLayerDiv = document.createElement('div');
+            textLayerDiv.className = 'textLayer';
+            textLayerDiv.style.width = viewport.width + 'px';
+            textLayerDiv.style.height = viewport.height + 'px';
+            // Set scale factor for proper text layer positioning (required by PDF.js)
+            textLayerDiv.style.setProperty('--scale-factor', viewport.scale);
+            container.appendChild(textLayerDiv);
+            
+            // Render text layer and wait for it to complete
+            await pdfjsLib.renderTextLayer({
+                textContent: textContent,
+                container: textLayerDiv,
+                viewport: viewport,
+                textDivs: []
+            }).promise;
+            
+            // Highlight search terms if provided
+            if (searchQuery) {
+                highlightSearchTerms(textLayerDiv, searchQuery);
+            }
+            
+            // Apply glossary tooltips
+            applyGlossaryTooltips(textLayerDiv);
+            
+            // Store page number
+            container.dataset.pageNum = pageNum;
+        }
+        
+        function highlightSearchTerms(textLayer, query) {
+            const spans = textLayer.querySelectorAll('span');
+            const lowerQuery = query.toLowerCase();
+            spans.forEach(span => {
+                if (span.textContent.toLowerCase().includes(lowerQuery)) {
+                    span.classList.add('highlight');
+                }
+            });
+        }
+        
+        // Navigation between pages
+        document.getElementById('prevMatch').addEventListener('click', () => {
+            const currentPageNum = parseInt(document.getElementById('currentPageIndicator').textContent.replace('Page ', ''));
+            if (currentPageNum > 1) {
+                const prevPage = document.getElementById(`page-${currentPageNum - 1}`);
+                if (prevPage) {
+                    prevPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+        
+        document.getElementById('nextMatch').addEventListener('click', () => {
+            const currentPageNum = parseInt(document.getElementById('currentPageIndicator').textContent.replace('Page ', ''));
+            if (currentPageNum < pdfDoc.numPages) {
+                const nextPage = document.getElementById(`page-${currentPageNum + 1}`);
+                if (nextPage) {
+                    nextPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'p') {
+                document.getElementById('prevMatch').click();
+            } else if (e.key === 'ArrowRight' || e.key === 'n') {
+                document.getElementById('nextMatch').click();
+            } else if (e.key === '+' || e.key === '=') {
+                document.getElementById('zoomIn').click();
+            } else if (e.key === '-') {
+                document.getElementById('zoomOut').click();
+            }
+        });
+        
+        // Zoom controls
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            zoomMultiplier = Math.min(3.0, zoomMultiplier + 0.25);
+            updateZoomLevel();
+            reloadPDF();
+        });
+        
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            zoomMultiplier = Math.max(0.5, zoomMultiplier - 0.25);
+            updateZoomLevel();
+            reloadPDF();
+        });
+        
+        let baseScale = 1.0; // Store the fit-to-width scale
+        let zoomMultiplier = 1.0;
+        
+        function updateZoomLevel() {
+            const percent = Math.round(zoomMultiplier * 100);
+            document.getElementById('zoomLevel').textContent = percent + '%';
+        }
+        
+        async function reloadPDF() {
+            const container = document.getElementById('pdf-container');
+            const currentPage = parseInt(document.getElementById('currentPageIndicator').textContent.replace('Page ', '')) || targetPage;
+            container.innerHTML = '<div class="loading">Reloading...</div>';
+            
+            // Recalculate scale with zoom multiplier
+            const firstPage = await pdfDoc.getPage(1);
+            const containerWidth = container.clientWidth - 40;
+            const defaultViewport = firstPage.getViewport({ scale: 1.0 });
+            baseScale = containerWidth / defaultViewport.width;
+            currentScale = baseScale * zoomMultiplier;
+            
+            // Clear and rebuild
+            container.innerHTML = '';
+            
+            const viewport = firstPage.getViewport({ scale: currentScale });
+            const pageHeight = viewport.height;
+            const pageWidth = viewport.width;
+            
+            // Recreate placeholders
+            for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'page-container placeholder';
+                pageContainer.id = `page-${pageNum}`;
+                pageContainer.dataset.loaded = 'false';
+                pageContainer.style.height = pageHeight + 'px';
+                pageContainer.style.width = pageWidth + 'px';
+                pageContainer.innerHTML = `<span>Page ${pageNum}</span>`;
+                container.appendChild(pageContainer);
+            }
+            
+            // Scroll to current page
+            await new Promise(resolve => setTimeout(resolve, 50));
+            const targetElement = document.getElementById(`page-${currentPage}`);
+            if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'instant', block: 'start' });
+                document.getElementById('currentPageIndicator').textContent = `Page ${currentPage}`;
+            }
+            
+            // Render current page and neighbors
+            const nearbyPages = [currentPage, currentPage - 1, currentPage + 1, currentPage - 2, currentPage + 2];
+            for (const pageNum of nearbyPages) {
+                if (pageNum >= 1 && pageNum <= pdfDoc.numPages) {
+                    const pageContainer = document.getElementById(`page-${pageNum}`);
+                    if (pageContainer && pageContainer.dataset.loaded === 'false') {
+                        await renderPage(pageNum, pageContainer);
+                        pageContainer.dataset.loaded = 'true';
+                    }
+                }
+            }
+            
+            // Load remaining pages
+            for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                const pageContainer = document.getElementById(`page-${pageNum}`);
+                if (pageContainer.dataset.loaded === 'false') {
+                    await renderPage(pageNum, pageContainer);
+                    pageContainer.dataset.loaded = 'true';
+                }
+            }
+        }
+        
+        // Update current page indicator based on scroll position
+        function updateCurrentPage() {
+            const container = document.getElementById('pdf-container');
+            const scrollTop = container.scrollTop;
+            const pages = container.querySelectorAll('.page-container');
+            
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const pageTop = page.offsetTop - container.offsetTop;
+                const pageBottom = pageTop + page.offsetHeight;
+                
+                if (scrollTop >= pageTop - 100 && scrollTop < pageBottom) {
+                    document.getElementById('currentPageIndicator').textContent = `Page ${i + 1}`;
+                    break;
+                }
+            }
+        }
+        
+        // Set up scroll listener
+        document.getElementById('pdf-container').addEventListener('scroll', updateCurrentPage);
+        
+        // Load glossary first, then PDF
+        (async () => {
+            await loadGlossary();
+            loadPDF();
+        })();
+    </script>
+</body>
+</html>
+

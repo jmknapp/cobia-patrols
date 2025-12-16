@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Correction - USS Cobia Patrol Reports</title>
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --sea-foam: #7fcdcd;
+            --cream: #f5f0e1;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+            --success: #4ade80;
+            --warning: #fbbf24;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .toolbar {
+            background: var(--navy-mid);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--navy-light);
+            flex-wrap: wrap;
+        }
+        
+        .toolbar a {
+            color: var(--brass);
+            text-decoration: none;
+        }
+        
+        .toolbar a:hover {
+            text-decoration: underline;
+        }
+        
+        .toolbar-title {
+            font-weight: 600;
+            color: var(--text-light);
+        }
+        
+        .pdf-select, .page-input {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: var(--navy-dark);
+            border: 1px solid var(--navy-light);
+            border-radius: 4px;
+            color: var(--text-light);
+        }
+        
+        .pdf-select:focus, .page-input:focus {
+            outline: none;
+            border-color: var(--brass);
+        }
+        
+        .page-input {
+            width: 60px;
+            text-align: center;
+        }
+        
+        .nav-btn {
+            background: var(--navy-dark);
+            border: 1px solid var(--navy-light);
+            color: var(--text-light);
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .nav-btn:hover:not(:disabled) {
+            border-color: var(--brass);
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .save-btn {
+            background: linear-gradient(135deg, var(--brass), var(--brass-light));
+            border: none;
+            color: var(--navy-dark);
+            padding: 0.5rem 1.25rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .save-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .save-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .rebuild-btn {
+            background: var(--sea-foam);
+            color: var(--navy-dark);
+            font-weight: 600;
+        }
+        
+        .rebuild-btn:hover:not(:disabled) {
+            background: #9fdddd;
+        }
+        
+        .rebuild-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-badge.corrected {
+            background: var(--success);
+            color: var(--navy-dark);
+        }
+        
+        .status-badge.ocr {
+            background: var(--warning);
+            color: var(--navy-dark);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            background: var(--navy-mid);
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--navy-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .image-panel {
+            border-right: 2px solid var(--navy-light);
+        }
+        
+        .image-container {
+            flex: 1;
+            overflow: auto;
+            background: #222;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .image-container img {
+            height: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transform-origin: top left;
+        }
+        
+        .text-container {
+            flex: 1;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .text-area {
+            flex: 1;
+            width: 100%;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            border: none;
+            resize: none;
+        }
+        
+        .text-area:focus {
+            outline: 2px solid var(--brass);
+            outline-offset: -2px;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+        }
+        
+        .zoom-btn {
+            background: var(--navy-dark);
+            border: 1px solid var(--navy-light);
+            color: var(--text-light);
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .zoom-btn:hover {
+            border-color: var(--brass);
+        }
+        
+        .zoom-level {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+        }
+        
+        .stats-bar {
+            background: var(--navy-mid);
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--navy-light);
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background: var(--navy-dark);
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--sea-foam);
+            transition: width 0.3s;
+        }
+        
+        .keyboard-hint {
+            margin-left: auto;
+            font-size: 0.75rem;
+        }
+        
+        kbd {
+            background: var(--navy-dark);
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            border: 1px solid var(--navy-light);
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="/">← Back to Search</a>
+        <span class="toolbar-title">OCR Correction</span>
+        
+        <select class="pdf-select" id="pdfSelect">
+            <option value="">Select a report...</option>
+        </select>
+        
+        <button class="nav-btn" id="prevPage" disabled>◀ Prev</button>
+        <span>Page</span>
+        <input type="number" class="page-input" id="pageInput" min="1" value="1">
+        <span id="totalPages">/ ?</span>
+        <button class="nav-btn" id="nextPage" disabled>Next ▶</button>
+        
+        <span class="status-badge ocr" id="statusBadge">OCR</span>
+        
+        <button class="save-btn" id="saveBtn" disabled>💾 Save Correction</button>
+        <button class="nav-btn rebuild-btn" id="rebuildBtn" disabled title="Rebuild PDF with all corrections">🔨 Rebuild PDF</button>
+    </div>
+    
+    <div class="main-content">
+        <div class="panel image-panel">
+            <div class="panel-header">
+                <span>Original Scan</span>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoomOut">−</button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="zoom-btn" id="zoomIn">+</button>
+                </div>
+            </div>
+            <div class="image-container" id="imageContainer">
+                <div class="loading">Select a report to begin</div>
+            </div>
+        </div>
+        
+        <div class="panel text-panel">
+            <div class="panel-header">
+                <span>OCR Text (editable)</span>
+            </div>
+            <div class="text-container">
+                <textarea class="text-area" id="textArea" placeholder="Select a report and page to load text..."></textarea>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-bar">
+        <span id="statsDisplay">Select a report to see progress</span>
+        <span class="keyboard-hint">
+            <kbd>Ctrl+S</kbd> Save &nbsp;
+            <kbd>←</kbd><kbd>→</kbd> Navigate pages
+        </span>
+    </div>
+    
+    <script>
+        // State
+        let currentPdf = '';
+        let currentPage = 1;
+        let totalPages = 0;
+        let imageZoom = 100;
+        let hasChanges = false;
+        let originalText = '';
+        
+        // Elements
+        const pdfSelect = document.getElementById('pdfSelect');
+        const pageInput = document.getElementById('pageInput');
+        const totalPagesSpan = document.getElementById('totalPages');
+        const prevBtn = document.getElementById('prevPage');
+        const nextBtn = document.getElementById('nextPage');
+        const saveBtn = document.getElementById('saveBtn');
+        const rebuildBtn = document.getElementById('rebuildBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        const imageContainer = document.getElementById('imageContainer');
+        const textArea = document.getElementById('textArea');
+        const statsDisplay = document.getElementById('statsDisplay');
+        
+        // Load PDF list
+        async function loadPdfList() {
+            const response = await fetch('/pdf-list');
+            const pdfs = await response.json();
+            pdfSelect.innerHTML = '<option value="">Select a report...</option>' +
+                pdfs.map(pdf => `<option value="${pdf}">${pdf.replace('USS_Cobia_', '').replace('.pdf', '').replace(/_/g, ' ')}</option>`).join('');
+        }
+        
+        // Load page data
+        async function loadPage() {
+            if (!currentPdf || currentPage < 1) return;
+            
+            // Load text
+            const textResponse = await fetch(`/api/corrections/${encodeURIComponent(currentPdf)}/${currentPage}`);
+            const textData = await textResponse.json();
+            
+            textArea.value = textData.text;
+            originalText = textData.text;
+            totalPages = textData.total_pages;
+            totalPagesSpan.textContent = `/ ${totalPages}`;
+            pageInput.max = totalPages;
+            
+            // Update status badge
+            if (textData.is_corrected) {
+                statusBadge.textContent = '✓ Corrected';
+                statusBadge.className = 'status-badge corrected';
+            } else {
+                statusBadge.textContent = 'OCR';
+                statusBadge.className = 'status-badge ocr';
+            }
+            
+            // Load image
+            imageContainer.innerHTML = `<img src="/api/scan-image/${encodeURIComponent(currentPdf)}/${currentPage}" 
+                alt="Page ${currentPage}" style="transform: scale(${imageZoom / 100}); transform-origin: top left;"
+                onerror="this.parentElement.innerHTML='<div class=\\'loading\\'>Image not available</div>'">`;
+            
+            // Update navigation
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            
+            hasChanges = false;
+            updateSaveButton();
+            loadStats();
+        }
+        
+        // Load stats
+        async function loadStats() {
+            const response = await fetch('/api/correction-stats');
+            const stats = await response.json();
+            
+            const current = stats.find(s => s.pdf_name === currentPdf);
+            if (current) {
+                statsDisplay.innerHTML = `
+                    <strong>${current.pdf_name.replace('USS_Cobia_', '').replace('.pdf', '')}</strong>: 
+                    ${current.corrected_pages} / ${current.total_pages} pages corrected (${current.percent_complete}%)
+                    <span class="progress-bar"><span class="progress-fill" style="width: ${current.percent_complete}%"></span></span>
+                `;
+                // Enable rebuild button if there are any corrections
+                rebuildBtn.disabled = current.corrected_pages === 0;
+            }
+        }
+        
+        // Rebuild PDF with corrections
+        async function rebuildPdf() {
+            if (!currentPdf) return;
+            
+            rebuildBtn.disabled = true;
+            rebuildBtn.textContent = '🔨 Rebuilding...';
+            
+            try {
+                const response = await fetch(`/api/rebuild-pdf/${encodeURIComponent(currentPdf)}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ PDF rebuilt successfully!\n\nOutput: ${result.output_file}\nPages: ${result.total_pages}\nCorrected: ${result.corrected_pages}\n\nThe corrected PDF is now available.`);
+                } else {
+                    alert(`❌ Rebuild failed: ${result.error}`);
+                }
+            } catch (e) {
+                console.error('Rebuild failed:', e);
+                alert('❌ Rebuild failed: ' + e.message);
+            }
+            
+            rebuildBtn.textContent = '🔨 Rebuild PDF';
+            loadStats();
+        }
+        
+        // Save correction
+        async function saveCorrection() {
+            if (!currentPdf || !hasChanges) return;
+            
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
+            try {
+                const response = await fetch(`/api/corrections/${encodeURIComponent(currentPdf)}/${currentPage}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: textArea.value })
+                });
+                
+                if (response.ok) {
+                    originalText = textArea.value;
+                    hasChanges = false;
+                    statusBadge.textContent = '✓ Corrected';
+                    statusBadge.className = 'status-badge corrected';
+                    loadStats();
+                }
+            } catch (e) {
+                console.error('Save failed:', e);
+            }
+            
+            updateSaveButton();
+        }
+        
+        function updateSaveButton() {
+            saveBtn.disabled = !hasChanges;
+            saveBtn.textContent = hasChanges ? '💾 Save Correction*' : '💾 Save Correction';
+        }
+        
+        // Event listeners
+        pdfSelect.addEventListener('change', () => {
+            currentPdf = pdfSelect.value;
+            currentPage = 1;
+            pageInput.value = 1;
+            if (currentPdf) {
+                loadPage();
+            }
+        });
+        
+        pageInput.addEventListener('change', () => {
+            const newPage = parseInt(pageInput.value);
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                loadPage();
+            } else {
+                pageInput.value = currentPage;
+            }
+        });
+        
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                pageInput.value = currentPage;
+                loadPage();
+            }
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                pageInput.value = currentPage;
+                loadPage();
+            }
+        });
+        
+        saveBtn.addEventListener('click', saveCorrection);
+        rebuildBtn.addEventListener('click', rebuildPdf);
+        
+        textArea.addEventListener('input', () => {
+            hasChanges = textArea.value !== originalText;
+            updateSaveButton();
+        });
+        
+        // Zoom controls
+        function applyZoom() {
+            document.getElementById('zoomLevel').textContent = imageZoom + '%';
+            const img = imageContainer.querySelector('img');
+            if (img) {
+                img.style.transform = `scale(${imageZoom / 100})`;
+            }
+        }
+        
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            imageZoom = Math.min(300, imageZoom + 25);
+            applyZoom();
+        });
+        
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            imageZoom = Math.max(25, imageZoom - 25);
+            applyZoom();
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCorrection();
+            } else if (e.key === 'ArrowLeft' && document.activeElement !== textArea) {
+                prevBtn.click();
+            } else if (e.key === 'ArrowRight' && document.activeElement !== textArea) {
+                nextBtn.click();
+            }
+        });
+        
+        // Warn before leaving with unsaved changes
+        window.addEventListener('beforeunload', (e) => {
+            if (hasChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        
+        // Initialize
+        loadPdfList();
+    </script>
+</body>
+</html>
+

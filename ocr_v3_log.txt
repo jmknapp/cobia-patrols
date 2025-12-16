@@ -1,0 +1,289 @@
+==========================================
+Processing: cobia_1st_patrol_report -> USS_Cobia_1st_Patrol_Report
+==========================================
+
+Start processing 32 pages concurrently
+    2 [tesseract] lots of diacritics - possibly poor OCR
+   15 [tesseract] lots of diacritics - possibly poor OCR
+    8 [tesseract] lots of diacritics - possibly poor OCR
+    1 [tesseract] lots of diacritics - possibly poor OCR
+    7 [tesseract] lots of diacritics - possibly poor OCR
+   10 [tesseract] lots of diacritics - possibly poor OCR
+   28 [tesseract] lots of diacritics - possibly poor OCR
+   14 [tesseract] lots of diacritics - possibly poor OCR
+   18 [tesseract] lots of diacritics - possibly poor OCR
+   20 [tesseract] lots of diacritics - possibly poor OCR
+    5 [tesseract] lots of diacritics - possibly poor OCR
+   26 [tesseract] lots of diacritics - possibly poor OCR
+   23 [tesseract] lots of diacritics - possibly poor OCR
+   25 [tesseract] lots of diacritics - possibly poor OCR
+   24 [tesseract] lots of diacritics - possibly poor OCR
+   11 [tesseract] lots of diacritics - possibly poor OCR
+    4 [tesseract] lots of diacritics - possibly poor OCR
+   29 [tesseract] lots of diacritics - possibly poor OCR
+   37 [tesseract] lots of diacritics - possibly poor OCR
+   32 [tesseract] lots of diacritics - possibly poor OCR
+   21 [tesseract] lots of diacritics - possibly poor OCR
+    9 [tesseract] lots of diacritics - possibly poor OCR
+   22 [tesseract] lots of diacritics - possibly poor OCR
+   38 [tesseract] lots of diacritics - possibly poor OCR
+   46 [tesseract] lots of diacritics - possibly poor OCR
+   34 [tesseract] lots of diacritics - possibly poor OCR
+   55 [tesseract] lots of diacritics - possibly poor OCR
+   58 [tesseract] lots of diacritics - possibly poor OCR
+   47 [tesseract] lots of diacritics - possibly poor OCR
+   47 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   47 [tesseract] Line cannot be recognized!!
+   51 [tesseract] lots of diacritics - possibly poor OCR
+   53 [tesseract] lots of diacritics - possibly poor OCR
+   40 [tesseract] lots of diacritics - possibly poor OCR
+   56 [tesseract] lots of diacritics - possibly poor OCR
+   57 [tesseract] lots of diacritics - possibly poor OCR
+   48 [tesseract] lots of diacritics - possibly poor OCR
+
+Postprocessing...
+
+
+
+Image optimization did not improve the file - optimizations will not be used
+Image optimization ratio: 1.00 savings: -0.1%
+Total file size ratio: 1.36 savings: 26.3%
+Output file is a PDF/A-2B (as expected)
+Found 58 images
+  Preprocessed 10/58
+  Preprocessed 20/58
+  Preprocessed 30/58
+  Preprocessed 40/58
+  Preprocessed 50/58
+Creating PDF...
+Running OCR...
+Done: patrolReports/USS_Cobia_1st_Patrol_Report_v3.pdf
+==========================================
+Processing: cobia_2nd_patrol_report -> USS_Cobia_2nd_Patrol_Report
+==========================================
+
+Start processing 32 pages concurrently
+    1 [tesseract] lots of diacritics - possibly poor OCR
+   18 [tesseract] lots of diacritics - possibly poor OCR
+   18 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   18 [tesseract] Line cannot be recognized!!
+   18 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   18 [tesseract] Line cannot be recognized!!
+   26 [tesseract] lots of diacritics - possibly poor OCR
+    3 [tesseract] lots of diacritics - possibly poor OCR
+   24 [tesseract] lots of diacritics - possibly poor OCR
+    8 [tesseract] lots of diacritics - possibly poor OCR
+   16 [tesseract] lots of diacritics - possibly poor OCR
+   10 [tesseract] lots of diacritics - possibly poor OCR
+    9 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+    9 [tesseract] Line cannot be recognized!!
+   13 [tesseract] lots of diacritics - possibly poor OCR
+   11 [tesseract] lots of diacritics - possibly poor OCR
+   12 [tesseract] lots of diacritics - possibly poor OCR
+   15 [tesseract] lots of diacritics - possibly poor OCR
+   14 [tesseract] lots of diacritics - possibly poor OCR
+   17 [tesseract] lots of diacritics - possibly poor OCR
+   30 [tesseract] lots of diacritics - possibly poor OCR
+   25 [tesseract] lots of diacritics - possibly poor OCR
+   29 [tesseract] lots of diacritics - possibly poor OCR
+   33 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   33 [tesseract] Line cannot be recognized!!
+   27 [tesseract] lots of diacritics - possibly poor OCR
+   32 [tesseract] lots of diacritics - possibly poor OCR
+   22 [tesseract] lots of diacritics - possibly poor OCR
+   23 [tesseract] lots of diacritics - possibly poor OCR
+   31 [tesseract] lots of diacritics - possibly poor OCR
+   28 [tesseract] lots of diacritics - possibly poor OCR
+   34 [tesseract] lots of diacritics - possibly poor OCR
+   38 [tesseract] lots of diacritics - possibly poor OCR
+   40 [tesseract] lots of diacritics - possibly poor OCR
+   36 [tesseract] lots of diacritics - possibly poor OCR
+   39 [tesseract] lots of diacritics - possibly poor OCR
+   20 [tesseract] lots of diacritics - possibly poor OCR
+
+Postprocessing...
+
+
+
+Image optimization did not improve the file - optimizations will not be used
+Image optimization ratio: 1.00 savings: -0.1%
+Total file size ratio: 1.34 savings: 25.1%
+Output file is a PDF/A-2B (as expected)
+Found 40 images
+  Preprocessed 10/40
+  Preprocessed 20/40
+  Preprocessed 30/40
+  Preprocessed 40/40
+Creating PDF...
+Running OCR...
+Done: patrolReports/USS_Cobia_2nd_Patrol_Report_v3.pdf
+==========================================
+Processing: cobia_3rd_patrol_report -> USS_Cobia_3rd_Patrol_Report
+==========================================
+
+Start processing 32 pages concurrently
+    1 [tesseract] lots of diacritics - possibly poor OCR
+   16 [tesseract] lots of diacritics - possibly poor OCR
+   10 [tesseract] lots of diacritics - possibly poor OCR
+   24 [tesseract] lots of diacritics - possibly poor OCR
+    9 [tesseract] lots of diacritics - possibly poor OCR
+   12 [tesseract] lots of diacritics - possibly poor OCR
+   18 [tesseract] lots of diacritics - possibly poor OCR
+   23 [tesseract] lots of diacritics - possibly poor OCR
+   13 [tesseract] lots of diacritics - possibly poor OCR
+   30 [tesseract] lots of diacritics - possibly poor OCR
+    5 [tesseract] lots of diacritics - possibly poor OCR
+    2 [tesseract] lots of diacritics - possibly poor OCR
+   19 [tesseract] lots of diacritics - possibly poor OCR
+    6 [tesseract] lots of diacritics - possibly poor OCR
+   28 [tesseract] lots of diacritics - possibly poor OCR
+   14 [tesseract] lots of diacritics - possibly poor OCR
+   20 [tesseract] lots of diacritics - possibly poor OCR
+   22 [tesseract] lots of diacritics - possibly poor OCR
+   31 [tesseract] lots of diacritics - possibly poor OCR
+   29 [tesseract] lots of diacritics - possibly poor OCR
+   27 [tesseract] lots of diacritics - possibly poor OCR
+   27 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   27 [tesseract] Line cannot be recognized!!
+   26 [tesseract] lots of diacritics - possibly poor OCR
+   35 [tesseract] lots of diacritics - possibly poor OCR
+   39 [tesseract] lots of diacritics - possibly poor OCR
+   42 [tesseract] lots of diacritics - possibly poor OCR
+   41 [tesseract] lots of diacritics - possibly poor OCR
+   40 [tesseract] lots of diacritics - possibly poor OCR
+   38 [tesseract] lots of diacritics - possibly poor OCR
+   37 [tesseract] lots of diacritics - possibly poor OCR
+
+Postprocessing...
+
+
+
+Image optimization did not improve the file - optimizations will not be used
+Image optimization ratio: 1.00 savings: -0.1%
+Total file size ratio: 1.35 savings: 26.2%
+Output file is a PDF/A-2B (as expected)
+Found 42 images
+  Preprocessed 10/42
+  Preprocessed 20/42
+  Preprocessed 30/42
+  Preprocessed 40/42
+Creating PDF...
+Running OCR...
+Done: patrolReports/USS_Cobia_3rd_Patrol_Report_v3.pdf
+==========================================
+Processing: cobia_4th_patrol_report -> USS_Cobia_4th_Patrol_Report
+==========================================
+
+Start processing 32 pages concurrently
+    1 [tesseract] lots of diacritics - possibly poor OCR
+   23 [tesseract] lots of diacritics - possibly poor OCR
+    8 [tesseract] lots of diacritics - possibly poor OCR
+   12 [tesseract] lots of diacritics - possibly poor OCR
+    5 [tesseract] lots of diacritics - possibly poor OCR
+   13 [tesseract] lots of diacritics - possibly poor OCR
+   16 [tesseract] lots of diacritics - possibly poor OCR
+    9 [tesseract] lots of diacritics - possibly poor OCR
+   21 [tesseract] lots of diacritics - possibly poor OCR
+   29 [tesseract] lots of diacritics - possibly poor OCR
+   28 [tesseract] lots of diacritics - possibly poor OCR
+   32 [tesseract] lots of diacritics - possibly poor OCR
+    2 [tesseract] lots of diacritics - possibly poor OCR
+   27 [tesseract] lots of diacritics - possibly poor OCR
+   18 [tesseract] lots of diacritics - possibly poor OCR
+   10 [tesseract] lots of diacritics - possibly poor OCR
+   20 [tesseract] lots of diacritics - possibly poor OCR
+    4 [tesseract] lots of diacritics - possibly poor OCR
+   25 [tesseract] lots of diacritics - possibly poor OCR
+   33 [tesseract] lots of diacritics - possibly poor OCR
+   37 [tesseract] lots of diacritics - possibly poor OCR
+   36 [tesseract] lots of diacritics - possibly poor OCR
+   41 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   41 [tesseract] Line cannot be recognized!!
+   35 [tesseract] lots of diacritics - possibly poor OCR
+   39 [tesseract] lots of diacritics - possibly poor OCR
+   39 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   39 [tesseract] Line cannot be recognized!!
+   34 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   34 [tesseract] Line cannot be recognized!!
+   24 [tesseract] lots of diacritics - possibly poor OCR
+   43 [tesseract] lots of diacritics - possibly poor OCR
+   42 [tesseract] lots of diacritics - possibly poor OCR
+
+Postprocessing...
+
+
+
+Image optimization did not improve the file - optimizations will not be used
+Image optimization ratio: 1.00 savings: -0.1%
+Total file size ratio: 1.37 savings: 27.2%
+Output file is a PDF/A-2B (as expected)
+Found 45 images
+  Preprocessed 10/45
+  Preprocessed 20/45
+  Preprocessed 30/45
+  Preprocessed 40/45
+Creating PDF...
+Running OCR...
+Done: patrolReports/USS_Cobia_4th_Patrol_Report_v3.pdf
+==========================================
+Processing: cobia_5th_patrol_report -> USS_Cobia_5th_Patrol_Report
+==========================================
+
+Start processing 32 pages concurrently
+   13 [tesseract] lots of diacritics - possibly poor OCR
+   16 [tesseract] Image too small to scale!! (2x36 vs min width of 3)
+   16 [tesseract] Line cannot be recognized!!
+   17 [tesseract] lots of diacritics - possibly poor OCR
+   45 [tesseract] lots of diacritics - possibly poor OCR
+
+Postprocessing...
+
+
+
+Image optimization did not improve the file - optimizations will not be used
+Image optimization ratio: 1.00 savings: -0.1%
+Total file size ratio: 1.35 savings: 25.8%
+Output file is a PDF/A-2B (as expected)
+Found 45 images
+  Preprocessed 10/45
+  Preprocessed 20/45
+  Preprocessed 30/45
+  Preprocessed 40/45
+Creating PDF...
+Running OCR...
+Done: patrolReports/USS_Cobia_5th_Patrol_Report_v3.pdf
+==========================================
+Processing: cobia_6th_patrol_report -> USS_Cobia_6th_Patrol_Report
+==========================================
+
+Start processing 26 pages concurrently
+   13 [tesseract] lots of diacritics - possibly poor OCR
+   22 [tesseract] lots of diacritics - possibly poor OCR
+    2 [tesseract] lots of diacritics - possibly poor OCR
+    6 [tesseract] lots of diacritics - possibly poor OCR
+    1 [tesseract] lots of diacritics - possibly poor OCR
+   23 [tesseract] lots of diacritics - possibly poor OCR
+   14 [tesseract] lots of diacritics - possibly poor OCR
+   25 [tesseract] lots of diacritics - possibly poor OCR
+   16 [tesseract] lots of diacritics - possibly poor OCR
+   20 [tesseract] lots of diacritics - possibly poor OCR
+    5 [tesseract] lots of diacritics - possibly poor OCR
+   21 [tesseract] lots of diacritics - possibly poor OCR
+   24 [tesseract] lots of diacritics - possibly poor OCR
+    3 [tesseract] lots of diacritics - possibly poor OCR
+
+Postprocessing...
+
+
+
+Image optimization did not improve the file - optimizations will not be used
+Image optimization ratio: 1.00 savings: -0.1%
+Total file size ratio: 1.41 savings: 29.2%
+Output file is a PDF/A-2B (as expected)
+Found 26 images
+  Preprocessed 10/26
+  Preprocessed 20/26
+Creating PDF...
+Running OCR...
+Done: patrolReports/USS_Cobia_6th_Patrol_Report_v3.pdf
+All done!

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USS Cobia Patrol Reports Search</title>
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --sea-foam: #7fcdcd;
+            --cream: #f5f0e1;
+            --highlight: #ffe066;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-y: auto;
+            background-image: 
+                radial-gradient(ellipse at 20% 80%, rgba(45, 74, 111, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(127, 205, 205, 0.1) 0%, transparent 40%),
+                linear-gradient(180deg, var(--navy-dark) 0%, #0d1f35 100%);
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            padding: 1.5rem 0 1rem;
+            border-bottom: 1px solid var(--navy-light);
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        
+        .header-image {
+            max-width: 180px;
+            height: auto;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--cream);
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        
+        .hull-number {
+            display: inline-block;
+            background: var(--brass);
+            color: var(--navy-dark);
+            padding: 0.2rem 0.8rem;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        
+        .search-section {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--navy-light);
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            font-size: 1.1rem;
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            border: 2px solid var(--navy-light);
+            border-radius: 6px;
+            color: var(--text-light);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--brass);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+        }
+        
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .search-btn {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Source Sans Pro', sans-serif;
+            background: linear-gradient(135deg, var(--brass) 0%, var(--brass-light) 100%);
+            border: none;
+            border-radius: 6px;
+            color: var(--navy-dark);
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(201, 162, 39, 0.4);
+        }
+        
+        .search-btn:active {
+            transform: translateY(0);
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        .results-count {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+        
+        .results-count strong {
+            color: var(--sea-foam);
+        }
+        
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .result-card {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--navy-light);
+            transition: border-color 0.2s, transform 0.2s;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .result-card:hover {
+            border-color: var(--brass);
+            transform: translateX(4px);
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .result-file {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--brass-light);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .result-file:hover {
+            text-decoration: underline;
+        }
+        
+        .result-file::before {
+            content: '📄';
+            font-size: 1rem;
+        }
+        
+        .result-page {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--navy-dark);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+        }
+        
+        .result-context {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-light);
+            background: var(--navy-dark);
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+            border-left: 3px solid var(--navy-light);
+        }
+        
+        .highlight {
+            background: var(--highlight);
+            color: var(--navy-dark);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
+        .ellipsis {
+            color: var(--text-muted);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--navy-light);
+            border-top-color: var(--brass);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 0.75rem;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+        
+        .no-results::before {
+            content: '🔍';
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .initial-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+        
+        .initial-state p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .patrol-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+        
+        .patrol-badge {
+            background: var(--navy-dark);
+            border: 1px solid var(--navy-light);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .patrol-badge:hover {
+            border-color: var(--brass);
+            color: var(--brass-light);
+        }
+        
+        .browse-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1.25rem;
+            background: var(--navy-mid);
+            border-radius: 8px;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .browse-label {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .pdf-select {
+            padding: 0.75rem 1rem;
+            padding-right: 2.5rem;
+            font-size: 1rem;
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            border: 2px solid var(--navy-light);
+            border-radius: 6px;
+            color: var(--text-light);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a9bb4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            min-width: 280px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .pdf-select:hover {
+            border-color: var(--brass);
+        }
+        
+        .pdf-select:focus {
+            outline: none;
+            border-color: var(--brass);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+        }
+        
+        .pdf-select option {
+            background: var(--navy-dark);
+            color: var(--text-light);
+            padding: 0.5rem;
+        }
+        
+        .view-btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Source Sans Pro', sans-serif;
+            background: transparent;
+            border: 2px solid var(--sea-foam);
+            border-radius: 6px;
+            color: var(--sea-foam);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .view-btn:hover:not(:disabled) {
+            background: var(--sea-foam);
+            color: var(--navy-dark);
+        }
+        
+        .view-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--navy-light);
+            margin-top: 3rem;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .search-form {
+                flex-direction: column;
+            }
+            
+            .search-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="/static/cobia.png" alt="USS Cobia (SS-245)" class="header-image">
+            <h1>USS Cobia</h1>
+            <p class="subtitle">War Patrol Reports Archive</p>
+        </header>
+        
+        <section class="search-section">
+            <form class="search-form" id="searchForm">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput" 
+                    placeholder="Search patrol reports... (e.g., torpedo, convoy, periscope)"
+                    autocomplete="off"
+                    autofocus
+                >
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+        </section>
+        
+        <section class="browse-section">
+            <span class="browse-label">Browse Documents:</span>
+            <select class="pdf-select" id="pdfSelect">
+                <option value="">Select a patrol report...</option>
+            </select>
+            <button class="view-btn" id="viewBtn" disabled>View PDF</button>
+            <a href="/static/patrol_tracks.html" target="_blank" class="view-btn" style="text-decoration: none;">🗺️ Patrol Maps</a>
+        </section>
+        
+        <section id="resultsSection">
+        </section>
+    </div>
+    
+    <footer>
+        USS Cobia (SS-245) • Gato-class submarine • Commissioned March 1944
+    </footer>
+    
+    <script>
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const resultsSection = document.getElementById('resultsSection');
+        const pdfSelect = document.getElementById('pdfSelect');
+        const viewBtn = document.getElementById('viewBtn');
+        
+        // Load PDF list on page load
+        async function loadPdfList() {
+            try {
+                const response = await fetch('/pdf-list');
+                const pdfs = await response.json();
+                
+                // Populate the dropdown
+                pdfSelect.innerHTML = '<option value="">Select a document...</option>' + 
+                    pdfs.map(pdf => {
+                        // Check if it's a patrol report
+                        const match = pdf.match(/(\d+)(?:st|nd|rd|th)_Patrol/);
+                        if (match) {
+                            const num = match[1];
+                            const ordinal = getOrdinal(parseInt(num));
+                            return `<option value="${pdf}">${ordinal} Patrol Report</option>`;
+                        }
+                        // For other documents, create a readable name
+                        let label = pdf.replace('.pdf', '').replace(/_/g, ' ');
+                        if (label.includes('Muster Rolls')) {
+                            label = 'Muster Rolls 1944-1946';
+                        }
+                        return `<option value="${pdf}">${label}</option>`;
+                    }).join('');
+            } catch (e) {
+                console.error('Failed to load PDF list:', e);
+            }
+        }
+        
+        // Handle dropdown selection
+        pdfSelect.addEventListener('change', () => {
+            viewBtn.disabled = !pdfSelect.value;
+        });
+        
+        // Handle View PDF button
+        viewBtn.addEventListener('click', () => {
+            if (pdfSelect.value) {
+                window.open(`/view?file=${encodeURIComponent(pdfSelect.value)}&page=1`, '_blank');
+            }
+        });
+        
+        function getOrdinal(n) {
+            const s = ['th', 'st', 'nd', 'rd'];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+        
+        function highlightText(context, matchedText) {
+            // Escape HTML in context first
+            const escapeHtml = (text) => {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            };
+            
+            const escapedContext = escapeHtml(context);
+            const escapedMatch = escapeHtml(matchedText);
+            
+            // Case-insensitive replacement
+            const regex = new RegExp(`(${escapedMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return escapedContext.replace(regex, '<span class="highlight">$1</span>');
+        }
+        
+        async function performSearch(query) {
+            if (!query.trim()) {
+                resultsSection.innerHTML = '';
+                return;
+            }
+            
+            resultsSection.innerHTML = '<div class="loading">Searching patrol reports</div>';
+            
+            try {
+                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.results.length === 0) {
+                    resultsSection.innerHTML = `
+                        <div class="no-results">
+                            <p>No matches found for "<strong>${escapeHtml(query)}</strong>"</p>
+                            <p>Try different keywords or check your spelling</p>
+                        </div>
+                    `;
+                    // Scroll to show no-results message
+                    setTimeout(() => {
+                        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                    return;
+                }
+                
+                const resultsHtml = `
+                    <div class="results-header">
+                        <span class="results-count">Found <strong>${data.count}</strong> match${data.count !== 1 ? 'es' : ''} for "<strong>${escapeHtml(query)}</strong>"</span>
+                    </div>
+                    <div class="results-list">
+                        ${data.results.map((result, index) => `
+                            <div class="result-card" style="animation-delay: ${index * 0.05}s">
+                                <div class="result-meta">
+                                    <a href="/view?file=${encodeURIComponent(result.pdf_file)}&page=${result.page_num}&q=${encodeURIComponent(query)}" 
+                                       class="result-file" target="_blank">
+                                        ${escapeHtml(result.pdf_file)}
+                                    </a>
+                                    <span class="result-page">Page ${result.page_num}</span>
+                                </div>
+                                <div class="result-context">
+                                    <span class="ellipsis">...</span> ${highlightText(result.context, result.matched_text)} <span class="ellipsis">...</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                resultsSection.innerHTML = resultsHtml;
+                
+                // Smooth scroll to results
+                setTimeout(() => {
+                    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+                
+            } catch (e) {
+                console.error('Search failed:', e);
+                resultsSection.innerHTML = `
+                    <div class="no-results">
+                        <p>Search failed. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            performSearch(searchInput.value);
+        });
+        
+        // Debounced live search (optional - uncomment if desired)
+        // let debounceTimer;
+        // searchInput.addEventListener('input', () => {
+        //     clearTimeout(debounceTimer);
+        //     debounceTimer = setTimeout(() => {
+        //         performSearch(searchInput.value);
+        //     }, 300);
+        // });
+        
+        // Initialize
+        loadPdfList();
+    </script>
+</body>
+</html>
+

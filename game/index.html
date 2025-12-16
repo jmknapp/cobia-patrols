@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USS Cobia (SS-245) - Gulf of Thailand, May 14, 1945</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Orbitron:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Title Screen -->
+        <div id="title-screen" class="screen active">
+            <div class="title-content">
+                <div class="classification">CLASSIFIED - PATROL REPORT</div>
+                <h1>USS COBIA</h1>
+                <h2>SS-245</h2>
+                <div class="mission-brief">
+                    <div class="date-location">
+                        <span class="date">14 MAY 1945</span>
+                        <span class="location">GULF OF THAILAND</span>
+                    </div>
+                    <div class="coordinates">09°35'N, 101°44'E</div>
+                    <p class="brief-text">
+                        At 0638, radar contact established with Japanese convoy south of Pulo Wai. 
+                        Two ships identified: cargo vessel TOTTORI MARU (~5,000 tons) escorted by 
+                        HIJMS YAEYAMA. Convoy on base course 250°T, speed 9.5 knots, executing 
+                        30° zigzag pattern.
+                    </p>
+                    <p class="brief-text" style="color: #4a90d9;">
+                        USS HAMMERHEAD (SS-364) is in position on the convoy's far side. 
+                        Coordinate attack or draw the escort away to give Hammerhead a clear shot.
+                    </p>
+                    <p class="brief-text warning">
+                        WATER DEPTH: 145 FEET — EXTREMELY SHALLOW FOR EVASION
+                    </p>
+                </div>
+                <button id="start-btn" class="nav-btn">BEGIN APPROACH</button>
+                <button id="sound-toggle" class="sound-btn">🔊 SOUND ON</button>
+                <div class="submarine-silhouette"></div>
+            </div>
+        </div>
+
+        <!-- Phase 1: Approach -->
+        <div id="phase1-screen" class="screen">
+            <div class="phase-header">
+                <span class="phase-label">PHASE I</span>
+                <span class="phase-title">APPROACH & TRACKING</span>
+                <span class="game-time" id="phase1-time">0638</span>
+            </div>
+            <div class="game-area">
+                <div class="left-panel">
+                    <div class="radar-scope">
+                        <canvas id="radar-canvas" width="300" height="300"></canvas>
+                        <div class="radar-info">
+                            <div class="radar-range">RANGE: <span id="radar-range">22,000</span> YDS</div>
+                            <div class="radar-bearing">BEARING: <span id="radar-bearing">120</span>°T</div>
+                        </div>
+                    </div>
+                    <div class="approach-controls">
+                        <div class="control-group">
+                            <label>COURSE</label>
+                            <div class="dial-control">
+                                <button class="dial-btn" data-control="course" data-dir="-10">◄◄</button>
+                                <button class="dial-btn" data-control="course" data-dir="-1">◄</button>
+                                <span id="course-display">000</span>°
+                                <button class="dial-btn" data-control="course" data-dir="1">►</button>
+                                <button class="dial-btn" data-control="course" data-dir="10">►►</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>SPEED</label>
+                            <div class="speed-control">
+                                <button class="speed-btn" data-speed="0">STOP</button>
+                                <button class="speed-btn" data-speed="2">SLOW</button>
+                                <button class="speed-btn" data-speed="5">STD</button>
+                                <button class="speed-btn active" data-speed="8">FULL</button>
+                                <button class="speed-btn" data-speed="10">FLANK</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>DEPTH</label>
+                            <div class="depth-control">
+                                <button class="depth-btn" data-depth="45">PERISCOPE</button>
+                                <button class="depth-btn active" data-depth="60">60 FT</button>
+                                <button class="depth-btn" data-depth="90">90 FT</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-display">
+                    <canvas id="tactical-canvas" width="600" height="500"></canvas>
+                    <div class="plot-legend">
+                        <div class="legend-item"><span class="legend-dot cobia"></span> USS COBIA</div>
+                        <div class="legend-item"><span class="legend-dot hammerhead"></span> USS HAMMERHEAD</div>
+                        <div class="legend-item"><span class="legend-dot freighter"></span> TOTTORI MARU</div>
+                        <div class="legend-item"><span class="legend-dot escort"></span> YAEYAMA</div>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <div class="depth-gauge">
+                        <div class="gauge-title">DEPTH</div>
+                        <div class="gauge-display">
+                            <div class="water-column">
+                                <div class="thermocline" style="top: 41%"></div>
+                                <div class="bottom-line"></div>
+                                <div class="sub-marker" id="depth-marker"></div>
+                                <div class="depth-labels">
+                                    <span style="top: 0">0'</span>
+                                    <span style="top: 41%">60'</span>
+                                    <span style="top: 100%">145'</span>
+                                </div>
+                            </div>
+                            <div class="depth-readout"><span id="current-depth">60</span> FT</div>
+                        </div>
+                    </div>
+                    <div class="target-data">
+                        <div class="data-title">TARGET DATA</div>
+                        <div class="data-row">
+                            <span class="data-label">RANGE:</span>
+                            <span class="data-value" id="target-range">22,000</span> YDS
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">BEARING:</span>
+                            <span class="data-value" id="target-bearing">120</span>°T
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">COURSE:</span>
+                            <span class="data-value" id="target-course">250</span>°T
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">SPEED:</span>
+                            <span class="data-value" id="target-speed">9.5</span> KTS
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">AOB:</span>
+                            <span class="data-value" id="target-aob">--</span>°
+                        </div>
+                    </div>
+                    <div class="status-panel">
+                        <div class="status-title">STATUS</div>
+                        <div class="status-item" id="status-escort">
+                            <span class="status-indicator warning"></span>
+                            ESCORT ON STARBOARD BOW
+                        </div>
+                        <div class="status-item" id="status-detection">
+                            <span class="status-indicator safe"></span>
+                            UNDETECTED
+                        </div>
+                        <div class="status-item" id="status-hammerhead">
+                            <span class="status-indicator" style="background: #4a90d9;"></span>
+                            HAMMERHEAD: <span id="hammerhead-state">WAITING</span>
+                        </div>
+                    </div>
+                    <button id="attack-btn" class="nav-btn" disabled>COMMENCE ATTACK</button>
+                </div>
+            </div>
+            <div class="message-log" id="phase1-log">
+                <div class="log-entry">0638 - RADAR CONTACT! Two ships bearing 120°T, range 22,000 yards.</div>
+            </div>
+        </div>
+
+        <!-- Phase 2: Attack -->
+        <div id="phase2-screen" class="screen">
+            <div class="phase-header">
+                <span class="phase-label">PHASE II</span>
+                <span class="phase-title">TORPEDO ATTACK</span>
+                <span class="game-time" id="phase2-time">0735</span>
+            </div>
+            <div class="game-area">
+                <div class="left-panel">
+                    <div class="tdc-panel">
+                        <div class="tdc-title">TORPEDO DATA COMPUTER</div>
+                        <div class="tdc-display">
+                            <div class="tdc-row">
+                                <span class="tdc-label">TARGET BEARING</span>
+                                <span class="tdc-value" id="tdc-bearing">---</span>°
+                            </div>
+                            <div class="tdc-row">
+                                <span class="tdc-label">TARGET RANGE</span>
+                                <span class="tdc-value" id="tdc-range">----</span> YDS
+                            </div>
+                            <div class="tdc-row">
+                                <span class="tdc-label">TARGET COURSE</span>
+                                <span class="tdc-value" id="tdc-course">---</span>°
+                            </div>
+                            <div class="tdc-row">
+                                <span class="tdc-label">TARGET SPEED</span>
+                                <span class="tdc-value" id="tdc-speed">---</span> KTS
+                            </div>
+                            <div class="tdc-row highlight">
+                                <span class="tdc-label">GYRO ANGLE</span>
+                                <span class="tdc-value" id="tdc-gyro">---</span>°
+                            </div>
+                            <div class="tdc-row">
+                                <span class="tdc-label">TRACK ANGLE</span>
+                                <span class="tdc-value" id="tdc-track">---</span>°
+                            </div>
+                            <div class="tdc-solution" id="tdc-solution">
+                                CALCULATING SOLUTION...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tube-status">
+                        <div class="tube-title">FORWARD TUBES</div>
+                        <div class="tubes">
+                            <div class="tube ready" data-tube="1">1</div>
+                            <div class="tube ready" data-tube="2">2</div>
+                            <div class="tube ready" data-tube="3">3</div>
+                            <div class="tube ready" data-tube="4">4</div>
+                            <div class="tube ready" data-tube="5">5</div>
+                            <div class="tube ready" data-tube="6">6</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-display">
+                    <canvas id="periscope-canvas" width="600" height="500"></canvas>
+                    <div class="periscope-overlay">
+                        <div class="periscope-reticle"></div>
+                        <div class="periscope-data">
+                            <span id="scope-bearing">BRG: ---°</span>
+                            <span id="scope-range">RNG: ---- YDS</span>
+                        </div>
+                    </div>
+                    <div class="scope-controls">
+                        <button class="scope-btn" id="scope-left">◄ TRAIN LEFT</button>
+                        <span id="scope-current-bearing">000°</span>
+                        <button class="scope-btn" id="scope-right">TRAIN RIGHT ►</button>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <div class="depth-gauge">
+                        <div class="gauge-title">DEPTH</div>
+                        <div class="gauge-display">
+                            <div class="water-column">
+                                <div class="thermocline" style="top: 41%"></div>
+                                <div class="bottom-line"></div>
+                                <div class="sub-marker" id="depth-marker-2"></div>
+                                <div class="depth-labels">
+                                    <span style="top: 0">0'</span>
+                                    <span style="top: 41%">60'</span>
+                                    <span style="top: 100%">145'</span>
+                                </div>
+                            </div>
+                            <div class="depth-readout"><span id="current-depth-2">45</span> FT</div>
+                        </div>
+                    </div>
+                    <div class="attack-orders">
+                        <div class="orders-title">ATTACK ORDERS</div>
+                        <div class="order-group">
+                            <label>TARGET</label>
+                            <select id="attack-target">
+                                <option value="escort">YAEYAMA (ESCORT)</option>
+                                <option value="freighter">TOTTORI MARU</option>
+                            </select>
+                        </div>
+                        <div class="order-group">
+                            <label>SPREAD</label>
+                            <select id="torpedo-spread">
+                                <option value="1">SINGLE</option>
+                                <option value="3">3 TORPEDOES</option>
+                                <option value="5" selected>5 TORPEDOES</option>
+                            </select>
+                        </div>
+                        <div class="order-group">
+                            <label>DEPTH SETTING</label>
+                            <select id="torpedo-depth">
+                                <option value="6">6 FT</option>
+                                <option value="10" selected>10 FT</option>
+                                <option value="15">15 FT</option>
+                            </select>
+                        </div>
+                        <button id="fire-btn" class="fire-btn">FIRE!</button>
+                    </div>
+                    <div class="comm-panel">
+                        <div class="comm-title">COMMUNICATIONS</div>
+                        <div class="comm-chatter" id="comm-chatter">
+                            <div class="comm-msg">Standing by for attack...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="message-log" id="phase2-log">
+                <div class="log-entry">0735 - Battle stations torpedo. Position: 30° on starboard bow of convoy.</div>
+            </div>
+        </div>
+
+        <!-- Phase 3: Depth Charging -->
+        <div id="phase3-screen" class="screen">
+            <div class="phase-header">
+                <span class="phase-label">PHASE III</span>
+                <span class="phase-title">DEPTH CHARGE EVASION</span>
+                <span class="game-time" id="phase3-time">0745</span>
+            </div>
+            <div class="game-area depth-charge-area">
+                <div class="left-panel">
+                    <div class="damage-panel">
+                        <div class="damage-title">DAMAGE CONTROL</div>
+                        <div class="damage-section">
+                            <div class="section-name">FORWARD TORPEDO ROOM</div>
+                            <div class="damage-bar"><div class="damage-fill" id="dmg-fwd" style="width: 0%"></div></div>
+                        </div>
+                        <div class="damage-section">
+                            <div class="section-name">CONTROL ROOM</div>
+                            <div class="damage-bar"><div class="damage-fill" id="dmg-ctrl" style="width: 0%"></div></div>
+                        </div>
+                        <div class="damage-section">
+                            <div class="section-name">ENGINE ROOM</div>
+                            <div class="damage-bar"><div class="damage-fill" id="dmg-eng" style="width: 0%"></div></div>
+                        </div>
+                        <div class="damage-section">
+                            <div class="section-name">AFT TORPEDO ROOM</div>
+                            <div class="damage-bar"><div class="damage-fill" id="dmg-aft" style="width: 0%"></div></div>
+                        </div>
+                        <div class="damage-section critical">
+                            <div class="section-name">HULL INTEGRITY</div>
+                            <div class="damage-bar hull"><div class="damage-fill" id="dmg-hull" style="width: 100%"></div></div>
+                        </div>
+                    </div>
+                    <div class="system-status">
+                        <div class="system-title">SYSTEMS</div>
+                        <div class="system-item" id="sys-tdc">
+                            <span class="system-indicator operational"></span>
+                            TDC
+                        </div>
+                        <div class="system-item" id="sys-tubes">
+                            <span class="system-indicator operational"></span>
+                            FWD TUBES
+                        </div>
+                        <div class="system-item" id="sys-motors">
+                            <span class="system-indicator operational"></span>
+                            MOTORS
+                        </div>
+                        <div class="system-item" id="sys-stern">
+                            <span class="system-indicator operational"></span>
+                            STERN GLANDS
+                        </div>
+                    </div>
+                </div>
+                <div class="main-display">
+                    <canvas id="depth-charge-canvas" width="600" height="500"></canvas>
+                    <div class="dc-overlay">
+                        <div class="dc-counter">
+                            <span class="dc-label">DEPTH CHARGES</span>
+                            <span class="dc-count" id="dc-count">0</span>
+                        </div>
+                        <div class="attack-counter">
+                            <span class="dc-label">ATTACK RUNS</span>
+                            <span class="dc-count" id="attack-count">0</span> / 8
+                        </div>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <div class="depth-gauge large">
+                        <div class="gauge-title">DEPTH</div>
+                        <div class="gauge-display">
+                            <div class="water-column">
+                                <div class="thermocline" style="top: 41%">
+                                    <span class="thermo-label">THERMOCLINE 60'</span>
+                                </div>
+                                <div class="bottom-line">
+                                    <span class="bottom-label">BOTTOM 145'</span>
+                                </div>
+                                <div class="sub-marker" id="depth-marker-3"></div>
+                                <div class="dc-explosion" id="dc-explosion"></div>
+                                <div class="depth-labels">
+                                    <span style="top: 0">0'</span>
+                                    <span style="top: 20%">30'</span>
+                                    <span style="top: 41%">60'</span>
+                                    <span style="top: 60%">90'</span>
+                                    <span style="top: 80%">120'</span>
+                                    <span style="top: 100%">145'</span>
+                                </div>
+                            </div>
+                            <div class="depth-readout"><span id="current-depth-3">148</span> FT</div>
+                        </div>
+                    </div>
+                    <div class="evasion-controls">
+                        <div class="control-title">EVASION</div>
+                        <div class="evasion-options">
+                            <button class="evasion-btn" data-action="silent">
+                                RIG FOR SILENT
+                                <span class="evasion-desc">Reduce noise, harder to detect</span>
+                            </button>
+                            <button class="evasion-btn" data-action="creep">
+                                CREEP AHEAD
+                                <span class="evasion-desc">Slow movement, risk detection</span>
+                            </button>
+                            <button class="evasion-btn" data-action="blow">
+                                EMERGENCY BLOW
+                                <span class="evasion-desc">Surface immediately (desperate)</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="time-panel">
+                        <div class="time-title">TIME SUBMERGED</div>
+                        <div class="time-display" id="time-submerged">0:00</div>
+                        <div class="battery-bar">
+                            <div class="battery-label">BATTERY</div>
+                            <div class="battery-fill" id="battery-fill" style="width: 100%"></div>
+                        </div>
+                        <div class="o2-bar">
+                            <div class="o2-label">OXYGEN</div>
+                            <div class="o2-fill" id="o2-fill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="message-log" id="phase3-log">
+                <div class="log-entry">0745 - TORPEDOES SPOTTED! Escort turning toward us. Dive! Dive!</div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="screen">
+            <div class="end-content">
+                <div class="end-status" id="end-status">SURVIVED</div>
+                <h2 id="end-title">Mission Complete</h2>
+                <div class="end-report" id="end-report">
+                    <!-- Filled dynamically -->
+                </div>
+                <div class="historical-note" id="historical-note">
+                    <h3>HISTORICAL OUTCOME</h3>
+                    <p>USS Cobia survived the attack despite severe damage. All forward torpedo tubes were disabled, 
+                    the TDC was knocked out, and water flooded through the stern packing glands. The crew endured 
+                    16+ depth charges over nearly 6 hours before Yaeyama departed at 1320.</p>
+                    <p>Cobia completed her patrol and returned safely to Fremantle, Australia.</p>
+                    <p style="margin-top: 15px; font-style: italic; color: #8a9a8a;">
+                    <strong>Note on Dud Torpedoes:</strong> Early in WWII, US submarines suffered from notoriously 
+                    unreliable Mark 14 torpedoes. Faulty magnetic exploders and contact detonators caused up to 
+                    70% failure rates in some patrols. Many confirmed hits failed to detonate.</p>
+                </div>
+                <button id="replay-btn" class="nav-btn">REPLAY MISSION</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
+

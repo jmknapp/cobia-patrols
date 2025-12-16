@@ -1,0 +1,53 @@
+# Virtual environments
+venv/
+.venv/
+patrolReports/venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local config (if any)
+.env
+patrolReports/.env
+*.local
+
+# Credentials - NEVER commit these!
+google-vision-key.json
+*-key.json
+*.pem
+*.key
+
+# Large files - PDFs and scanned images (backed up to Google Drive)
+*.pdf
+cobia_1st_patrol_report/
+cobia_2nd_patrol_report/
+cobia_3rd_patrol_report/
+cobia_4th_patrol_report/
+cobia_5th_patrol_report/
+cobia_6th_patrol_report/
+cobia_muster_rolls/
+hammerhead_patrol_report/
+hammerhead_patrol_report_enhanced/
+hammerhead_patrol_report_enhanced_v2/
+patrol_report/
+
+# Large data files
+*.nc
+south_china_sea_bathymetry.nc
+
