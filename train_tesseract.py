@@ -180,7 +180,7 @@ def main():
     
     if not training_pairs:
         print("\nNo training data found! Please correct some pages first.")
-        print("Use the correction tool at: http://localhost:5003/correct")
+        print("Use the correction tool at: http://localhost:5012/correct")
         return
     
     print(f"\nCreated {len(training_pairs)} training pairs")

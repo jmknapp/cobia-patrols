@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <!-- Homepage -->
+    <url>
+        <loc>https://cobiapatrols.com/</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    
+    <!-- About Page -->
+    <url>
+        <loc>https://cobiapatrols.com/about</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <!-- Interactive Patrol Maps -->
+    <url>
+        <loc>https://cobiapatrols.com/static/patrol_tracks.html</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- 1st Patrol Report -->
+    <url>
+        <loc>https://cobiapatrols.com/view?file=USS_Cobia_1st_Patrol_Report.pdf</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- 2nd Patrol Report -->
+    <url>
+        <loc>https://cobiapatrols.com/view?file=USS_Cobia_2nd_Patrol_Report.pdf</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- 3rd Patrol Report -->
+    <url>
+        <loc>https://cobiapatrols.com/view?file=USS_Cobia_3rd_Patrol_Report.pdf</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- 4th Patrol Report -->
+    <url>
+        <loc>https://cobiapatrols.com/view?file=USS_Cobia_4th_Patrol_Report.pdf</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- 5th Patrol Report -->
+    <url>
+        <loc>https://cobiapatrols.com/view?file=USS_Cobia_5th_Patrol_Report.pdf</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- 6th Patrol Report -->
+    <url>
+        <loc>https://cobiapatrols.com/view?file=USS_Cobia_6th_Patrol_Report.pdf</loc>
+        <lastmod>2025-01-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.8</priority>
+    </url>
+</urlset>
+

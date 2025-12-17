@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Viewer - USS Cobia Patrol Reports</title>
+    <title>{{ pdf_file | replace('_', ' ') | replace('.pdf', '') }} - USS Cobia Patrol Reports</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="View {{ pdf_file | replace('_', ' ') | replace('.pdf', '') }} from the USS Cobia (SS-245) WWII patrol archive. Original wartime documents with searchable text and glossary tooltips.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cobiapatrols.com/view?file={{ pdf_file }}">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ pdf_file | replace('_', ' ') | replace('.pdf', '') }} - USS Cobia">
+    <meta property="og:description" content="Original WWII patrol report from USS Cobia (SS-245) submarine.">
+    <meta property="og:image" content="https://cobiapatrols.com/static/cobia.png">
+    
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -281,6 +294,7 @@
 <body>
     <div class="toolbar">
         <a href="/">← Back to Search</a>
+        <a href="/about" style="margin-left: 1rem;">Help</a>
         <span class="toolbar-title" id="pdfTitle">Loading...</span>
         <span class="current-page-indicator" id="currentPageIndicator">Page -</span>
         <span class="toolbar-info" id="pageInfo"></span>
@@ -418,7 +432,8 @@
             'B-24': '/static/aircraft_images/liberator.jpg',
             'B-26': '/static/aircraft_images/b26.jpg',
             'Hellcat': '/static/aircraft_images/hellcat.jpg',
-            'SBD': '/static/aircraft_images/sbd.jpg'
+            'SBD': '/static/aircraft_images/sbd.jpg',
+            'PB2Y': '/static/aircraft_images/pb2y.jpg'
         };
         
         // Tooltip handling

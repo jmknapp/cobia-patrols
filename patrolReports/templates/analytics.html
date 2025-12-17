@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Analytics - USS Cobia Patrol Reports</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --sea-foam: #7fcdcd;
+            --cream: #f5f0e1;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+            --success: #4daf4a;
+            --warning: #ff9800;
+            --error: #e74c3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            color: var(--cream);
+        }
+        
+        .back-link {
+            color: var(--brass);
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--navy-mid);
+            border: 1px solid var(--navy-light);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            color: var(--brass-light);
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .panel {
+            background: var(--navy-mid);
+            border: 1px solid var(--navy-light);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .panel h2 {
+            font-size: 1.2rem;
+            color: var(--sea-foam);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        
+        td {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        td:last-child {
+            text-align: right;
+            color: var(--brass-light);
+        }
+        
+        .path-cell {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            padding-top: 1rem;
+        }
+        
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, var(--brass), var(--brass-light));
+            border-radius: 2px 2px 0 0;
+            min-width: 8px;
+            position: relative;
+            transition: opacity 0.2s;
+        }
+        
+        .bar:hover {
+            opacity: 0.8;
+        }
+        
+        .bar-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        
+        .bar-value {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: var(--text-light);
+            white-space: nowrap;
+        }
+        
+        .hourly-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 100px;
+            gap: 1px;
+        }
+        
+        .hourly-bar {
+            flex: 1;
+            background: var(--sea-foam);
+            border-radius: 1px 1px 0 0;
+            min-height: 2px;
+        }
+        
+        .browser-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .browser-name {
+            width: 80px;
+            font-size: 0.85rem;
+        }
+        
+        .browser-fill {
+            height: 20px;
+            background: var(--brass);
+            border-radius: 3px;
+            margin-right: 0.5rem;
+        }
+        
+        .browser-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-2xx { background: var(--success); color: white; }
+        .status-3xx { background: var(--sea-foam); color: var(--navy-dark); }
+        .status-4xx { background: var(--warning); color: var(--navy-dark); }
+        .status-5xx { background: var(--error); color: white; }
+        
+        .meta-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--navy-mid);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .error-message {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid var(--error);
+            border-radius: 8px;
+            padding: 1.5rem;
+            color: var(--error);
+            margin-bottom: 2rem;
+        }
+        
+        .time-filter {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .time-filter a {
+            padding: 0.4rem 0.8rem;
+            background: var(--navy-dark);
+            border: 1px solid var(--navy-light);
+            border-radius: 4px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        
+        .time-filter a:hover,
+        .time-filter a.active {
+            border-color: var(--brass);
+            color: var(--brass-light);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <a href="/" class="back-link">← Back to Site</a>
+                <h1>📊 Site Analytics</h1>
+            </div>
+            <div class="time-filter">
+                <a href="?days=7" {% if days == 7 %}class="active"{% endif %}>7 days</a>
+                <a href="?days=30" {% if days == 30 %}class="active"{% endif %}>30 days</a>
+                <a href="?days=90" {% if days == 90 %}class="active"{% endif %}>90 days</a>
+            </div>
+        </header>
+        
+        {% if stats.error %}
+        <div class="error-message">
+            <strong>Error:</strong> {{ stats.error }}
+        </div>
+        {% endif %}
+        
+        <div class="stats-overview">
+            <div class="stat-card">
+                <span class="stat-value">{{ stats.total_hits | default(0) }}</span>
+                <span class="stat-label">Total Hits</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ stats.unique_visitors | default(0) }}</span>
+                <span class="stat-label">Unique Visitors</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ stats.bot_hits | default(0) }}</span>
+                <span class="stat-label">Bot Requests</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ stats.ai_bot_hits.values() | sum if stats.ai_bot_hits else 0 }}</span>
+                <span class="stat-label">🤖 AI Scrapers</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ stats.filtered_hits | default(0) }}</span>
+                <span class="stat-label">Filtered (Local)</span>
+            </div>
+        </div>
+        
+        {% if stats.daily_hits %}
+        <div class="panel" style="margin-bottom: 1.5rem;">
+            <h2>Daily Traffic (Last {{ days }} Days)</h2>
+            <div class="chart-container">
+                {% set max_hits = stats.daily_hits.values() | max if stats.daily_hits.values() else 1 %}
+                {% for date, hits in stats.daily_hits.items() %}
+                <div class="bar" style="height: {{ (hits / max_hits * 180) | int }}px;" title="{{ date }}: {{ hits }} hits">
+                    {% if loop.index % 5 == 1 or loop.last %}
+                    <span class="bar-label">{{ date[5:] }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="grid-2">
+            <div class="panel">
+                <h2>Top Pages</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Path</th>
+                            <th>Views</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for path, count in stats.page_views.items() %}
+                        <tr>
+                            <td class="path-cell" title="{{ path }}">{{ path }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="panel">
+                <h2>Top Referers</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Visits</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for referer, count in stats.top_referers %}
+                        <tr>
+                            <td class="path-cell" title="{{ referer }}">{{ referer }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" style="color: var(--text-muted);">No external referers</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="panel">
+                <h2>Browsers</h2>
+                {% set browser_max = stats.browsers.values() | max if stats.browsers.values() else 1 %}
+                {% for browser, count in stats.browsers.items() %}
+                <div class="browser-bar">
+                    <span class="browser-name">{{ browser }}</span>
+                    <div class="browser-fill" style="width: {{ (count / browser_max * 200) | int }}px;"></div>
+                    <span class="browser-count">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="panel">
+                <h2>Status Codes</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for code, count in stats.status_codes.items() | sort %}
+                        <tr>
+                            <td>
+                                <span class="status-badge status-{{ code[0] }}xx">{{ code }}</span>
+                            </td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if stats.error_paths %}
+            <div class="panel">
+                <h2>⚠️ 404 Paths</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Path</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for path, count in stats.error_paths.items() %}
+                        <tr>
+                            <td class="path-cell" title="{{ path }}">{{ path }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            
+            {% if stats.last_24h %}
+            <div class="panel">
+                <h2>Last 24 Hours</h2>
+                <div class="hourly-chart">
+                    {% set h24_max = stats.last_24h.values() | max if stats.last_24h.values() else 1 %}
+                    {% for hour_key, hits in stats.last_24h.items() %}
+                    <div class="hourly-bar" style="height: {{ (hits / h24_max * 80) | int }}px; background: var(--brass);" title="{{ hour_key }} - {{ hits }} hits"></div>
+                    {% endfor %}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    <span>24h ago</span>
+                    <span>Now</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if stats.hourly_distribution %}
+            <div class="panel">
+                <h2>Hourly Distribution (All Days)</h2>
+                <div class="hourly-chart">
+                    {% set hourly_max = stats.hourly_distribution.values() | max if stats.hourly_distribution.values() else 1 %}
+                    {% for hour in range(24) %}
+                    {% set hits = stats.hourly_distribution.get(hour, 0) %}
+                    <div class="hourly-bar" style="height: {{ (hits / hourly_max * 80) | int }}px;" title="{{ hour }}:00 - {{ hits }} hits"></div>
+                    {% endfor %}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    <span>00:00</span>
+                    <span>06:00</span>
+                    <span>12:00</span>
+                    <span>18:00</span>
+                    <span>24:00</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if stats.paths_by_type and stats.paths_by_type.pdfs %}
+            <div class="panel">
+                <h2>PDF Downloads</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Downloads</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for path, count in stats.paths_by_type.pdfs.items() %}
+                        <tr>
+                            <td class="path-cell" title="{{ path }}">{{ path.split('/')[-1] }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            
+            {% if stats.ai_bot_hits %}
+            <div class="panel">
+                <h2>🤖 AI Bot Scraping</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>AI Bot</th>
+                            <th>Hits</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bot, count in stats.ai_bot_hits.items() %}
+                        <tr>
+                            <td>
+                                {% if 'gpt' in bot or 'openai' in bot or 'chatgpt' in bot %}
+                                    OpenAI ({{ bot }})
+                                {% elif 'claude' in bot or 'anthropic' in bot %}
+                                    Anthropic ({{ bot }})
+                                {% elif 'bytespider' in bot %}
+                                    ByteDance/TikTok ({{ bot }})
+                                {% elif 'ccbot' in bot %}
+                                    Common Crawl ({{ bot }})
+                                {% elif 'google-extended' in bot %}
+                                    Google AI ({{ bot }})
+                                {% elif 'perplexity' in bot %}
+                                    Perplexity AI ({{ bot }})
+                                {% elif 'amazonbot' in bot %}
+                                    Amazon AI ({{ bot }})
+                                {% elif 'meta' in bot %}
+                                    Meta AI ({{ bot }})
+                                {% else %}
+                                    {{ bot }}
+                                {% endif %}
+                            </td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" style="color: var(--text-muted);">No AI bots detected</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            
+            {% if stats.top_ips %}
+            <div class="panel">
+                <h2>🔍 Top IPs (Debug)</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>IP Address</th>
+                            <th>Hits</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ip, count in stats.top_ips %}
+                        <tr>
+                            <td style="font-family: 'JetBrains Mono', monospace;">{{ ip }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            
+            {% if stats.top_user_agents %}
+            <div class="panel">
+                <h2>🔍 Top User Agents (Debug)</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User Agent</th>
+                            <th>Hits</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ua, count in stats.top_user_agents %}
+                        <tr>
+                            <td class="path-cell" title="{{ ua }}" style="font-size: 0.8rem;">{{ ua[:60] }}{% if ua|length > 60 %}...{% endif %}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="meta-info">
+            <strong>Log file:</strong> {{ stats.log_path | default('N/A') }}<br>
+            <strong>Period:</strong> Last {{ days }} days<br>
+            <strong>Generated:</strong> {{ now }}
+        </div>
+    </div>
+</body>
+</html>
+

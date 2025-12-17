@@ -161,6 +161,59 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/robots.txt')
+def robots():
+    """Serve robots.txt for SEO."""
+    return send_from_directory(app.static_folder, 'robots.txt', mimetype='text/plain')
+
+
+@app.route('/favicon.ico')
+def favicon():
+    """Serve favicon for browsers that request it directly."""
+    return send_from_directory(app.static_folder, 'cobiaicon.png', mimetype='image/png')
+
+
+@app.route('/favicon.png')
+def favicon_png():
+    """Serve PNG favicon for browsers that request it."""
+    return send_from_directory(app.static_folder, 'cobiaicon.png', mimetype='image/png')
+
+
+@app.route('/google6587657f8b526a48.html')
+def google_verify():
+    """Serve Google Search Console verification file."""
+    return send_from_directory(app.static_folder, 'google6587657f8b526a48.html')
+
+
+@app.route('/sitemap.xml')
+def sitemap():
+    """Serve sitemap.xml for SEO."""
+    return send_from_directory(app.static_folder, 'sitemap.xml', mimetype='application/xml')
+
+
+@app.route('/about')
+def about():
+    """Serve the about/help page."""
+    return render_template('about.html')
+
+
+@app.route('/analytics')
+def analytics():
+    """Serve the analytics page (hidden - not linked from main site)."""
+    from analytics import get_analytics
+    from datetime import datetime
+    
+    days = request.args.get('days', 30, type=int)
+    if days not in [7, 30, 90]:
+        days = 30
+    
+    stats = get_analytics(days=days)
+    return render_template('analytics.html', 
+                         stats=stats, 
+                         days=days,
+                         now=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+
 @app.route('/view')
 def viewer():
     """Serve the PDF viewer page."""
@@ -537,5 +590,5 @@ if __name__ == '__main__':
             print(f"  Cached (original): {pdf_file}")
     print("Ready!")
     
-    app.run(debug=True, port=5003, host='0.0.0.0')
+    app.run(debug=True, port=5012, host='0.0.0.0')
 

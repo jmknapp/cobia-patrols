@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - USS Cobia (SS-245) Patrol Reports Archive</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="About the USS Cobia (SS-245) War Patrol Reports Archive. Learn about the Gato-class submarine's WWII service and how to use this historical research tool.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cobiapatrols.com/about">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="About - USS Cobia Patrol Reports Archive">
+    <meta property="og:description" content="Learn about USS Cobia's WWII service and how to explore this historical archive.">
+    <meta property="og:image" content="https://cobiapatrols.com/static/cobia.png">
+    
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --sea-foam: #7fcdcd;
+            --cream: #f5f0e1;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            line-height: 1.7;
+            background-image: 
+                radial-gradient(ellipse at 20% 80%, rgba(45, 74, 111, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(127, 205, 205, 0.1) 0%, transparent 40%),
+                linear-gradient(180deg, var(--navy-dark) 0%, #0d1f35 100%);
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            padding: 1.5rem 0 2rem;
+            border-bottom: 1px solid var(--navy-light);
+            margin-bottom: 2rem;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--brass);
+            text-decoration: none;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--cream);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+        
+        section {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--navy-light);
+        }
+        
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--brass-light);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        h3 {
+            font-size: 1.1rem;
+            color: var(--sea-foam);
+            margin: 1.5rem 0 0.75rem;
+        }
+        
+        h3:first-of-type {
+            margin-top: 0.5rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+        
+        ul, ol {
+            margin: 1rem 0 1rem 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .highlight {
+            background: var(--navy-dark);
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+            border-left: 3px solid var(--brass);
+            margin: 1rem 0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .stat-card {
+            background: var(--navy-dark);
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            color: var(--brass-light);
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--navy-light);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .kbd {
+            background: var(--navy-dark);
+            border: 1px solid var(--navy-light);
+            border-radius: 4px;
+            padding: 0.15rem 0.4rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--brass-light);
+        }
+        
+        a {
+            color: var(--sea-foam);
+        }
+        
+        a:hover {
+            color: var(--brass-light);
+        }
+        
+        .glossary-demo {
+            display: inline-block;
+            background: rgba(232, 197, 71, 0.25);
+            border: 1px solid var(--brass);
+            border-radius: 3px;
+            padding: 0.1rem 0.3rem;
+            cursor: help;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--navy-light);
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Back to Search</a>
+            <h1>About This Archive</h1>
+            <p class="subtitle">USS Cobia (SS-245) War Patrol Reports</p>
+        </header>
+        
+        <section>
+            <h2>About USS Cobia</h2>
+            <p>
+                USS Cobia (SS-245) was a <strong>Gato-class submarine</strong> that served in the United States Navy 
+                during World War II. Commissioned on <strong>March 29, 1944</strong>, she conducted six war patrols 
+                in the Pacific Theater under the command of Commander Albert L. Becker.
+            </p>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">6</span>
+                    <span class="stat-label">War Patrols</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">13</span>
+                    <span class="stat-label">Ships Sunk</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">1944–45</span>
+                    <span class="stat-label">Service Period</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">311′</span>
+                    <span class="stat-label">Length</span>
+                </div>
+            </div>
+            
+            <p>
+                Operating primarily in the South China Sea, Java Sea, and waters around the Philippines and Formosa, 
+                Cobia was credited with sinking over 16,000 tons of enemy shipping. Her patrols took her from 
+                Pearl Harbor across the Pacific to bases in Australia (Fremantle) and the Philippines (Subic Bay).
+            </p>
+            
+            <div class="highlight">
+                <strong>Historical Note:</strong> Cobia was at sea on patrol off Formosa when word came on 
+                August 14, 1945 that Japan had accepted the terms of surrender, ending World War II.
+            </div>
+            
+            <p>
+                Today, USS Cobia is a <strong>museum ship</strong> at the Wisconsin Maritime Museum in Manitowoc, 
+                Wisconsin—the city where many Gato-class submarines were built during the war.
+            </p>
+        </section>
+        
+        <section>
+            <h2>About This Archive</h2>
+            <p>
+                This website provides searchable access to the original war patrol reports filed by USS Cobia 
+                after each combat patrol. These historical documents offer a detailed, day-by-day account of 
+                submarine operations during WWII.
+            </p>
+            
+            <h3>What's Included</h3>
+            <ul>
+                <li><strong>Six complete patrol reports</strong> — Original documents with narrative accounts, 
+                    position reports, and contact logs</li>
+                <li><strong>Interactive patrol maps</strong> — Visualize Cobia's routes across the Pacific with 
+                    ship contacts, aircraft sightings, and daily positions</li>
+                <li><strong>Full-text search</strong> — Search across all documents for specific terms, dates, 
+                    or events</li>
+                <li><strong>Glossary tooltips</strong> — Hover over military terms, aircraft names, and acronyms 
+                    for instant definitions</li>
+            </ul>
+        </section>
+        
+        <section>
+            <h2>How to Use This Site</h2>
+            
+            <ul class="feature-list">
+                <li>
+                    <span class="feature-icon">🔍</span>
+                    <div>
+                        <strong>Search</strong> — Enter any term in the search box on the homepage. 
+                        Results show matching text with context and link directly to the relevant page.
+                        <em style="color: var(--text-muted); display: block; margin-top: 0.5rem; font-size: 0.9rem;">
+                        Note: OCR quality varies considerably due to the condition of the original microfilm. 
+                        Some text may not be recognized, so searches might miss occurrences.
+                        </em>
+                    </div>
+                </li>
+                <li>
+                    <span class="feature-icon">📄</span>
+                    <div>
+                        <strong>Browse Documents</strong> — Use the dropdown menu to select and view 
+                        any patrol report. Navigate pages using the toolbar or keyboard shortcuts.
+                    </div>
+                </li>
+                <li>
+                    <span class="feature-icon">🗺️</span>
+                    <div>
+                        <strong>Patrol Maps</strong> — Click "Patrol Maps" to view interactive maps 
+                        showing Cobia's routes. Toggle individual patrols on/off using the layer control. 
+                        Click any waypoint marker to see details including date, time, position, 
+                        and for aircraft contacts, identification photos.
+                    </div>
+                </li>
+                <li>
+                    <span class="feature-icon">💡</span>
+                    <div>
+                        <strong>Glossary</strong> — When viewing documents, terms like 
+                        <span class="glossary-demo">Betty</span> or 
+                        <span class="glossary-demo">TDC</span> are highlighted. 
+                        Hover over them to see definitions and, for aircraft, identification photos.
+                    </div>
+                </li>
+            </ul>
+            
+            <h3>Keyboard Shortcuts (PDF Viewer)</h3>
+            <ul>
+                <li><span class="kbd">←</span> / <span class="kbd">→</span> — Previous/Next page</li>
+                <li><span class="kbd">+</span> / <span class="kbd">-</span> — Zoom in/out</li>
+                <li><span class="kbd">Ctrl</span> + <span class="kbd">F</span> — Search within document</li>
+            </ul>
+        </section>
+        
+        <section>
+            <h2>Map Legend</h2>
+            <p>The patrol track maps use the following markers:</p>
+            <ul>
+                <li><strong style="color: #c0392b;">● Red pins</strong> — Ship contacts (enemy vessels, fishing boats, friendly ships)</li>
+                <li><strong style="color: #2980b9;">● Blue pins</strong> — Aircraft contacts (enemy and friendly aircraft)</li>
+                <li><strong style="color: #4daf4a;">● Green circles</strong> — Noon positions (daily navigation fixes)</li>
+                <li><strong style="color: #ff7f00;">● Orange circles</strong> — Inferred positions (derived from narrative descriptions)</li>
+                <li><strong style="color: #ffd700;">⭐ Gold star</strong> — Special events (Japan surrender announcement)</li>
+            </ul>
+            <p>
+                <strong>Directional arrows</strong> on the track lines indicate the direction of travel. 
+                Each patrol is shown in a different color and can be toggled on/off using the layer control.
+            </p>
+        </section>
+        
+        <section>
+            <h2>Sources & Acknowledgments</h2>
+            <p>
+                The patrol reports in this archive are sourced from the <strong>National Archives and Records 
+                Administration (NARA)</strong>. Position data has been compiled from the original documents 
+                and cross-referenced with historical sources.
+            </p>
+            <p>
+                Additional historical context drawn from:
+            </p>
+            <ul>
+                <li><em>War Patrols of the USS Cobia SS-245</em> by C.F. "Doc" Starmer</li>
+                <li>Clay Blair's <em>Silent Victory: The U.S. Submarine War Against Japan</em></li>
+                <li>Wisconsin Maritime Museum archives</li>
+            </ul>
+            <p>
+                Aircraft identification images sourced from Wikipedia Commons and other public domain sources.
+            </p>
+        </section>
+        
+        <section>
+            <h2>Contact</h2>
+            <p>
+                This archive was created and is maintained by <strong>Joe Knapp</strong> 
+                (<a href="mailto:jmknapp@gmail.com">jmknapp@gmail.com</a>).
+            </p>
+            <p>
+                Questions, corrections, or additional information about USS Cobia's wartime service 
+                are welcome. For inquiries about the submarine herself, contact the 
+                <a href="https://www.wisconsinmaritime.org/" target="_blank" rel="noopener">Wisconsin Maritime Museum</a>.
+            </p>
+        </section>
+    </div>
+    
+    <footer>
+        USS Cobia (SS-245) • Gato-class submarine • Commissioned March 1944<br>
+        <a href="/">Return to Search</a>
+    </footer>
+</body>
+</html>
+

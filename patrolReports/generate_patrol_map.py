@@ -86,8 +86,8 @@ AIRCRAFT_IMAGES = {
     'SBD': ('Douglas SBD Dauntless', '/static/aircraft_images/sbd.jpg'),
     'Liberator': ('Consolidated B-24 Liberator', '/static/aircraft_images/liberator.jpg'),
     'US Liberator': ('Consolidated B-24 Liberator', '/static/aircraft_images/liberator.jpg'),
-    'PB2Y': ('Consolidated PB2Y Coronado', None),
-    'US PB2Y': ('Consolidated PB2Y Coronado', None),
+    'PB2Y': ('Consolidated PB2Y Coronado', '/static/aircraft_images/pb2y.jpg'),
+    'US PB2Y': ('Consolidated PB2Y Coronado', '/static/aircraft_images/pb2y.jpg'),
     'B-26': ('Martin B-26 Marauder', '/static/aircraft_images/b26.jpg'),
     'Twin Engine Pat Bomber': ('Martin B-26 Marauder', '/static/aircraft_images/b26.jpg'),
     'Hellcat': ('Grumman F6F Hellcat', '/static/aircraft_images/hellcat.jpg'),
@@ -97,10 +97,6 @@ AIRCRAFT_IMAGES = {
 
 def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, observation_date):
     """Generate popup HTML with aircraft image if available."""
-    # Get link to patrol report
-    report_link, search_text = get_report_link(patrol_num, observation_date, time)
-    link_button = f'<a href="{report_link}" target="_blank" style="display:inline-block; margin-top:8px; padding:4px 12px; background:#0066cc; color:white; text-decoration:none; border-radius:4px; font-size:12px;">📖 View in Report</a>'
-    
     # Try to find a matching aircraft info
     aircraft_info = None
     if aircraft_type:
@@ -122,24 +118,21 @@ def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, obse
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
                 {position_str}<br>
-                <img src="{img_url}" style="width:300px; margin-top:5px;"><br>
-                {link_button}
+                <img src="{img_url}" style="width:300px; margin-top:5px;">
             </div>'''
         else:
             return f'''<div style="width:280px">
                 <b>P{patrol_num} Aircraft Contact</b><br>
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
-                {position_str}<br>
-                {link_button}
+                {position_str}
             </div>'''
     else:
         return f'''<div style="width:280px">
             <b>P{patrol_num} Aircraft Contact</b><br>
             <b>{aircraft_type or 'Unknown'}</b><br>
             {date} {time}<br>
-            {position_str}<br>
-            {link_button}
+            {position_str}
         </div>'''
 
 # Colors for each patrol
@@ -151,34 +144,6 @@ PATROL_COLORS = {
     5: '#ff7f00',  # Orange
     6: '#a65628',  # Brown
 }
-
-# Month names for date formatting
-MONTH_NAMES = ['', 'January', 'February', 'March', 'April', 'May', 'June',
-               'July', 'August', 'September', 'October', 'November', 'December']
-
-def get_report_link(patrol_num, observation_date, observation_time):
-    """Generate a link to the patrol report viewer for this date/time."""
-    # Map patrol number to PDF filename
-    ordinal = {1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th', 6: '6th'}
-    pdf_file = f"USS_Cobia_{ordinal.get(patrol_num, str(patrol_num))}_Patrol_Report.pdf"
-    
-    # Format date for search (e.g., "15 October" for 1944-10-15)
-    if observation_date:
-        day = observation_date.day
-        month = MONTH_NAMES[observation_date.month]
-        # Search for the day and month in the narrative
-        search_query = f"{day} {month}"
-    else:
-        search_query = ""
-    
-    # URL encode the search query
-    import urllib.parse
-    encoded_query = urllib.parse.quote(search_query)
-    
-    # Build the viewer URL
-    viewer_url = f"/view?file={pdf_file}&q={encoded_query}"
-    
-    return viewer_url, search_query
 
 def get_all_positions():
     """Fetch all positions from all tables including inferred positions."""
@@ -555,18 +520,13 @@ def create_map(positions):
             # Format position as deg/min
             pos_str = format_position_str(p)
             
-            # Get link to patrol report
-            report_link, search_text = get_report_link(patrol_num, date, time)
-            link_button = f'<a href="{report_link}" target="_blank" style="display:inline-block; margin-top:8px; padding:4px 12px; background:#0066cc; color:white; text-decoration:none; border-radius:4px; font-size:12px;">📖 View in Report</a>'
-            
             # Different marker styles for different sources
             if source == 'ship':
                 popup_html = f'''<div style="width:280px">
                     <b>P{patrol_num} Ship Contact</b><br>
                     <b>{detail}</b><br>
                     {date} {time}<br>
-                    {pos_str}<br>
-                    {link_button}
+                    {pos_str}
                 </div>'''
                 popup = folium.Popup(popup_html, max_width=350)
                 # Smaller custom icon with ship graphic
@@ -627,7 +587,6 @@ def create_map(positions):
                         USS Cobia was patrolling off Formosa when word came<br>
                         that Japan had accepted the terms of surrender.
                         </p>
-                        {link_button}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     
@@ -645,8 +604,7 @@ def create_map(positions):
                         {"<b>" + detail + "</b><br>" if detail else ""}
                         {date} {time}<br>
                         {pos_str}<br>
-                        <i style="font-size:11px; color:#666;">Position derived from narrative</i><br>
-                        {link_button}
+                        <i style="font-size:11px; color:#666;">Position derived from narrative</i>
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     folium.CircleMarker(
@@ -665,8 +623,7 @@ def create_map(positions):
                 popup_html = f'''<div style="width:280px">
                     <b>P{patrol_num} Noon Position</b><br>
                     {date} {time}<br>
-                    {pos_str}<br>
-                    {link_button}
+                    {pos_str}
                 </div>'''
                 popup = folium.Popup(popup_html, max_width=350)
                 folium.CircleMarker(
@@ -721,6 +678,32 @@ def main():
     
     output_file = 'static/patrol_tracks.html'
     m.save(output_file)
+    
+    # Inject SEO meta tags into the generated HTML
+    with open(output_file, 'r') as f:
+        html_content = f.read()
+    
+    seo_tags = '''
+    <title>USS Cobia (SS-245) Patrol Track Maps | WWII Pacific Submarine Routes</title>
+    <meta name="description" content="Interactive maps showing USS Cobia's six war patrols across the Pacific during WWII (1944-1945). View ship contacts, aircraft sightings, and patrol routes from Honolulu to the South China Sea.">
+    <meta name="keywords" content="USS Cobia, SS-245, patrol map, submarine routes, WWII Pacific, war patrol tracks, interactive map">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cobiapatrols.com/static/patrol_tracks.html">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="USS Cobia Patrol Track Maps - WWII Submarine Routes">
+    <meta property="og:description" content="Interactive maps of USS Cobia's six war patrols in the Pacific (1944-1945).">
+    <meta property="og:image" content="https://cobiapatrols.com/static/cobia.png">
+    <meta property="og:url" content="https://cobiapatrols.com/static/patrol_tracks.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/svg+xml" href="/static/mapicon.svg">
+    '''
+    
+    # Insert SEO tags after the opening <head> tag
+    html_content = html_content.replace('<head>', '<head>' + seo_tags, 1)
+    
+    with open(output_file, 'w') as f:
+        f.write(html_content)
+    
     print(f"Map saved to {output_file}")
 
 if __name__ == '__main__':
