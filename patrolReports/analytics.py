@@ -1,9 +1,12 @@
 """
 Analytics module for parsing Apache access logs.
+Supports reading rotated logs (including .gz compressed files).
 """
 
 import re
 import os
+import gzip
+import glob
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from pathlib import Path
@@ -97,8 +100,21 @@ def get_analytics(log_path=None, days=30):
     if log_path is None:
         log_path = DEFAULT_LOG_PATH
     
-    # Check if log file exists
-    if not os.path.exists(log_path):
+    # Find all log files (current + rotated)
+    log_files = []
+    if os.path.exists(log_path):
+        log_files.append(log_path)
+    
+    # Find rotated logs: access.log.1, access.log.2.gz, etc.
+    log_dir = os.path.dirname(log_path)
+    log_base = os.path.basename(log_path)
+    for rotated in glob.glob(os.path.join(log_dir, f'{log_base}.*')):
+        log_files.append(rotated)
+    
+    # Sort by modification time (newest first) for efficiency
+    log_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+    
+    if not log_files:
         return {
             'error': f'Log file not found: {log_path}',
             'total_hits': 0,
@@ -138,111 +154,120 @@ def get_analytics(log_path=None, days=30):
     }
     
     try:
-        with open(log_path, 'r', errors='ignore') as f:
-            for line in f:
-                parsed = parse_log_line(line)
-                if not parsed:
-                    continue
-                
-                ip = parsed['ip']
-                
-                # Filter local IPs
-                if should_filter_ip(ip):
-                    filtered_hits += 1
-                    continue
-                
-                # Parse timestamp
-                log_time = parse_apache_time(parsed['time'])
-                if not log_time or log_time < cutoff_date:
-                    continue
-                
-                total_hits += 1
-                path = parsed['path']
-                user_agent = parsed['user_agent']
-                status = parsed['status']
-                referer = parsed['referer']
-                
-                # Check for bots
-                if is_bot(user_agent):
-                    bot_hits += 1
-                    # Track AI bots specifically
-                    if is_ai_bot(user_agent):
-                        for pattern in AI_BOT_PATTERNS:
-                            if pattern in user_agent.lower():
-                                ai_bot_hits[pattern] += 1
-                                break
-                    continue  # Skip bots from main stats
-                
-                # Track unique visitors
-                unique_ips.add(ip)
-                ip_hits[ip] += 1
-                user_agents[user_agent[:100]] += 1  # Truncate long UAs
-                
-                # Daily stats
-                date_key = log_time.strftime('%Y-%m-%d')
-                daily_hits[date_key] += 1
-                daily_visitors[date_key].add(ip)
-                
-                # Hourly distribution (aggregate by hour of day)
-                hourly_hits[log_time.hour] += 1
-                
-                # Last 24 hours timeline (actual hours)
-                hours_ago = (datetime.now() - log_time).total_seconds() / 3600
-                if hours_ago <= 24:
-                    hour_key = log_time.strftime('%Y-%m-%d %H:00')
-                    last_24h_hits[hour_key] += 1
-                
-                # Status codes
-                status_codes[status] += 1
-                
-                # Track 404 paths
-                if status == '404':
-                    error_paths[path.split('?')[0]] += 1
-                
-                # Categorize paths
-                if path.startswith('/static/'):
-                    paths_by_type['static'][path] += 1
-                elif path.startswith('/api/') or path.startswith('/search'):
-                    paths_by_type['api'][path.split('?')[0]] += 1
-                elif path.startswith('/pdfs/') or path.endswith('.pdf'):
-                    paths_by_type['pdfs'][path] += 1
-                elif path.startswith('/view'):
-                    # Extract PDF name from query
-                    if 'file=' in path:
-                        pdf_name = path.split('file=')[1].split('&')[0]
-                        paths_by_type['pages'][f'/view ({pdf_name})'] += 1
+        for log_file in log_files:
+            # Open gzipped or plain text files
+            if log_file.endswith('.gz'):
+                f = gzip.open(log_file, 'rt', errors='ignore')
+            else:
+                f = open(log_file, 'r', errors='ignore')
+            
+            try:
+                for line in f:
+                    parsed = parse_log_line(line)
+                    if not parsed:
+                        continue
+                    
+                    ip = parsed['ip']
+                    
+                    # Filter local IPs
+                    if should_filter_ip(ip):
+                        filtered_hits += 1
+                        continue
+                    
+                    # Parse timestamp
+                    log_time = parse_apache_time(parsed['time'])
+                    if not log_time or log_time < cutoff_date:
+                        continue
+                    
+                    total_hits += 1
+                    path = parsed['path']
+                    user_agent = parsed['user_agent']
+                    status = parsed['status']
+                    referer = parsed['referer']
+                    
+                    # Check for bots
+                    if is_bot(user_agent):
+                        bot_hits += 1
+                        # Track AI bots specifically
+                        if is_ai_bot(user_agent):
+                            for pattern in AI_BOT_PATTERNS:
+                                if pattern in user_agent.lower():
+                                    ai_bot_hits[pattern] += 1
+                                    break
+                        continue  # Skip bots from main stats
+                    
+                    # Track unique visitors
+                    unique_ips.add(ip)
+                    ip_hits[ip] += 1
+                    user_agents[user_agent[:100]] += 1  # Truncate long UAs
+                    
+                    # Daily stats
+                    date_key = log_time.strftime('%Y-%m-%d')
+                    daily_hits[date_key] += 1
+                    daily_visitors[date_key].add(ip)
+                    
+                    # Hourly distribution (aggregate by hour of day)
+                    hourly_hits[log_time.hour] += 1
+                    
+                    # Last 24 hours timeline (actual hours)
+                    hours_ago = (datetime.now() - log_time).total_seconds() / 3600
+                    if hours_ago <= 24:
+                        hour_key = log_time.strftime('%Y-%m-%d %H:00')
+                        last_24h_hits[hour_key] += 1
+                    
+                    # Status codes
+                    status_codes[status] += 1
+                    
+                    # Track 404 paths
+                    if status == '404':
+                        error_paths[path.split('?')[0]] += 1
+                    
+                    # Categorize paths
+                    if path.startswith('/static/'):
+                        paths_by_type['static'][path] += 1
+                    elif path.startswith('/api/') or path.startswith('/search'):
+                        paths_by_type['api'][path.split('?')[0]] += 1
+                    elif path.startswith('/pdfs/') or path.endswith('.pdf'):
+                        paths_by_type['pdfs'][path] += 1
+                    elif path.startswith('/view'):
+                        # Extract PDF name from query
+                        if 'file=' in path:
+                            pdf_name = path.split('file=')[1].split('&')[0]
+                            paths_by_type['pages'][f'/view ({pdf_name})'] += 1
+                        else:
+                            paths_by_type['pages']['/view'] += 1
                     else:
-                        paths_by_type['pages']['/view'] += 1
-                else:
-                    paths_by_type['pages'][path.split('?')[0]] += 1
-                
-                # Page views (exclude static assets)
-                if not path.startswith('/static/') and not path.endswith(('.js', '.css', '.png', '.jpg', '.ico', '.svg')):
-                    page_views[path.split('?')[0]] += 1
-                
-                # Referers (external only)
-                if referer and referer != '-' and 'cobiapatrols.com' not in referer:
-                    # Clean up referer
-                    try:
-                        from urllib.parse import urlparse
-                        parsed_ref = urlparse(referer)
-                        ref_domain = parsed_ref.netloc
-                        if ref_domain:
-                            referers[ref_domain] += 1
-                    except:
-                        pass
-                
-                # Browsers
-                if 'Firefox' in user_agent:
-                    browsers['Firefox'] += 1
-                elif 'Chrome' in user_agent and 'Edg' not in user_agent:
-                    browsers['Chrome'] += 1
-                elif 'Safari' in user_agent and 'Chrome' not in user_agent:
-                    browsers['Safari'] += 1
-                elif 'Edg' in user_agent:
-                    browsers['Edge'] += 1
-                else:
-                    browsers['Other'] += 1
+                        paths_by_type['pages'][path.split('?')[0]] += 1
+                    
+                    # Page views (exclude static assets)
+                    if not path.startswith('/static/') and not path.endswith(('.js', '.css', '.png', '.jpg', '.ico', '.svg')):
+                        page_views[path.split('?')[0]] += 1
+                    
+                    # Referers (external only)
+                    if referer and referer != '-' and 'cobiapatrols.com' not in referer:
+                        # Clean up referer
+                        try:
+                            from urllib.parse import urlparse
+                            parsed_ref = urlparse(referer)
+                            ref_domain = parsed_ref.netloc
+                            if ref_domain:
+                                referers[ref_domain] += 1
+                        except:
+                            pass
+                    
+                    # Browsers
+                    if 'Firefox' in user_agent:
+                        browsers['Firefox'] += 1
+                    elif 'Chrome' in user_agent and 'Edg' not in user_agent:
+                        browsers['Chrome'] += 1
+                    elif 'Safari' in user_agent and 'Chrome' not in user_agent:
+                        browsers['Safari'] += 1
+                    elif 'Edg' in user_agent:
+                        browsers['Edge'] += 1
+                    else:
+                        browsers['Other'] += 1
+            finally:
+                f.close()
     
     except Exception as e:
         return {'error': str(e)}
@@ -273,6 +298,7 @@ def get_analytics(log_path=None, days=30):
         'top_user_agents': user_agents.most_common(10),
         'days_analyzed': days,
         'log_path': log_path,
+        'log_files_read': len(log_files),
     }
 
 
