@@ -140,9 +140,10 @@ AIRCRAFT_IMAGES = {
     'Helldiver': ('Curtiss SB2C Helldiver', None),  # No image yet
 }
 
-def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, observation_date, remarks=''):
+def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, observation_date, remarks='', contact_no=''):
     """Generate popup HTML with aircraft image if available."""
     remarks_html = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
+    contact_str = f' #{contact_no}' if contact_no else ''
     
     # Try to find a matching aircraft info
     aircraft_info = None
@@ -161,7 +162,7 @@ def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, obse
         full_name, img_url = aircraft_info
         if img_url:
             return f'''<div style="width:320px">
-                <b>P{patrol_num} Aircraft Contact</b><br>
+                <b>P{patrol_num} Aircraft Contact{contact_str}</b><br>
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
                 {position_str}{remarks_html}<br>
@@ -169,14 +170,14 @@ def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, obse
             </div>'''
         else:
             return f'''<div style="width:280px">
-                <b>P{patrol_num} Aircraft Contact</b><br>
+                <b>P{patrol_num} Aircraft Contact{contact_str}</b><br>
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
                 {position_str}{remarks_html}
             </div>'''
     else:
         return f'''<div style="width:280px">
-            <b>P{patrol_num} Aircraft Contact</b><br>
+            <b>P{patrol_num} Aircraft Contact{contact_str}</b><br>
             <b>{aircraft_type or 'Unknown'}</b><br>
             {date} {time}<br>
             {position_str}{remarks_html}
@@ -206,7 +207,7 @@ def get_all_positions():
                latitude, longitude, 'ship' as source, ship_type as detail,
                latitude_deg, latitude_min, latitude_hemisphere,
                longitude_deg, longitude_min, longitude_hemisphere,
-               remarks
+               remarks, contact_no
         FROM ship_contacts
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
     """)
@@ -219,7 +220,7 @@ def get_all_positions():
                latitude, longitude, 'aircraft' as source, aircraft_type as detail,
                latitude_deg, latitude_min, latitude_hemisphere,
                longitude_deg, longitude_min, longitude_hemisphere,
-               remarks
+               remarks, contact_no
         FROM aircraft_contacts
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
     """)
@@ -573,12 +574,14 @@ def create_map(positions):
             pos_str = format_position_str(p)
             
             remarks = p.get('remarks', '')
+            contact_no = p.get('contact_no', '')
             
             # Different marker styles for different sources
             if source == 'ship':
                 remarks_html = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
+                contact_str = f' #{contact_no}' if contact_no else ''
                 popup_html = f'''<div style="width:280px">
-                    <b>P{patrol_num} Ship Contact</b><br>
+                    <b>P{patrol_num} Ship Contact{contact_str}</b><br>
                     <b>{detail}</b><br>
                     {date} {time}<br>
                     {pos_str}{remarks_html}
@@ -605,7 +608,7 @@ def create_map(positions):
                 folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
                 continue
             elif source == 'aircraft':
-                popup_html = get_aircraft_popup(detail, patrol_num, date, time, pos_str, date, remarks)
+                popup_html = get_aircraft_popup(detail, patrol_num, date, time, pos_str, date, remarks, contact_no)
                 popup = folium.Popup(popup_html, max_width=350)
                 # Smaller custom icon with plane graphic
                 icon_html = '''<div style="
