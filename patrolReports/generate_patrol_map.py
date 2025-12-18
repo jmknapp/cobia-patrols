@@ -13,7 +13,8 @@ Sorts by date/time and plots piecewise linear paths for each patrol.
 
 import mysql.connector
 import folium
-from folium import Element
+from folium import Element, MacroElement
+from jinja2 import Template
 from datetime import datetime, timedelta
 import math
 import re
@@ -439,21 +440,6 @@ def create_map(positions):
         tiles=None  # Don't add default tiles
     )
     
-    # Add dynamic distance scale control (uses Folium's map variable naming convention)
-    map_var = m.get_name()
-    scale_js = f"""
-    <script>
-        {map_var}.whenReady(function() {{
-            L.control.scale({{
-                metric: true,
-                imperial: true,
-                maxWidth: 200,
-                position: 'bottomright'
-            }}).addTo({map_var});
-        }});
-    </script>
-    """
-    m.get_root().html.add_child(Element(scale_js))
     
     # Add ESRI World Imagery FIRST (underneath) as fallback for high zoom levels
     folium.TileLayer(
@@ -756,6 +742,21 @@ def create_map(positions):
         
         # Add the feature group to the map
         fg.add_to(m)
+    
+    # Add dynamic distance scale control
+    class ScaleControl(MacroElement):
+        _template = Template("""
+            {% macro script(this, kwargs) %}
+                L.control.scale({
+                    metric: true,
+                    imperial: true,
+                    maxWidth: 200,
+                    position: 'bottomright'
+                }).addTo({{this._parent.get_name()}});
+            {% endmacro %}
+        """)
+    
+    ScaleControl().add_to(m)
     
     # Add layer control to toggle patrols
     folium.LayerControl(collapsed=False).add_to(m)
