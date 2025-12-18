@@ -579,6 +579,7 @@
         let animationId = null;
         let explosions = [];
         let simulationStartTime = null;
+        let aftermathStartTime = null;  // Track when attack completed for aftermath phase
         const attackStartTime = attackData.date;
         let speedMultiplier = 10;  // Default 10x speed
         
@@ -1009,19 +1010,22 @@
             
             // Move convoy ships - they keep moving even after target is hit
             // Only the hit ship (primary target) stops; escorts and other ships continue
+            // Calculate total elapsed time for movement (including aftermath)
+            const elapsedMs = simulationStartTime ? (Date.now() - simulationStartTime) : 0;
+            const torpedoRunTime = (attackData.targetRange / (torpedoSpeed * 1.852 * 1000 / 3600)) * 1000;  // ms
+            const totalProgress = (elapsedMs / torpedoRunTime) * speedMultiplier;
+            
             convoyShips.forEach(ship => {
-                if (maxTorpProgress > 0) {
-                    // Ships that were hit stop, others keep going
-                    if (ship.wasHit && firstHit) {
-                        // Stop on hit
-                    } else {
-                        const shipMove = compassToMovement(ship.course);
-                        const shipTravel = (ship.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
-                        // Continue moving beyond torpedo impact
-                        const progress = Math.min(maxTorpProgress, 2.0);  // Cap at 2x for animation
-                        ship.x = ship.startX + shipMove.dx * progress * shipTravel;
-                        ship.y = ship.startY + shipMove.dy * progress * shipTravel;
-                    }
+                // Ships that were hit stop, others keep going
+                if (ship.wasHit && firstHit) {
+                    // Stop on hit
+                } else if (totalProgress > 0) {
+                    const shipMove = compassToMovement(ship.course);
+                    const shipTravel = (ship.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
+                    // Continue moving based on elapsed time
+                    const progress = Math.min(totalProgress, 3.0);  // Cap at 3x for animation
+                    ship.x = ship.startX + shipMove.dx * progress * shipTravel;
+                    ship.y = ship.startY + shipMove.dy * progress * shipTravel;
                 }
             });
             
@@ -1032,7 +1036,19 @@
             
             draw();
             
-            if (!allFiredAndDone || explosions.some(e => e.size < e.maxSize)) {
+            // Keep animation running for aftermath (convoy ships fleeing)
+            const attackPhaseComplete = allFiredAndDone && !explosions.some(e => e.size < e.maxSize);
+            
+            if (attackPhaseComplete && !aftermathStartTime) {
+                aftermathStartTime = Date.now();
+            }
+            
+            // Continue aftermath for 10 seconds (adjusted for speed)
+            const aftermathDuration = 10000 / speedMultiplier;
+            const aftermathComplete = aftermathStartTime && 
+                                      (Date.now() - aftermathStartTime > aftermathDuration);
+            
+            if (!attackPhaseComplete || !aftermathComplete) {
                 animationId = requestAnimationFrame(animate);
             }
         }
@@ -1064,6 +1080,7 @@
             });
             explosions = [];
             simulationStartTime = null;
+            aftermathStartTime = null;
             draw();
         }
         
