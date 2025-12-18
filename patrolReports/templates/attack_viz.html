@@ -1012,8 +1012,8 @@
             // Only the hit ship (primary target) stops; escorts and other ships continue
             // Calculate total elapsed time for movement (including aftermath)
             const elapsedMs = simulationStartTime ? (Date.now() - simulationStartTime) : 0;
-            const torpedoRunTime = (attackData.targetRange / (torpedoSpeed * 1.852 * 1000 / 3600)) * 1000;  // ms
-            const totalProgress = (elapsedMs / torpedoRunTime) * speedMultiplier;
+            const runTimeMs = torpedoRunTime * 1000;  // Convert to ms (torpedoRunTime is in seconds)
+            const totalProgress = runTimeMs > 0 ? (elapsedMs / runTimeMs) * speedMultiplier : 0;
             
             convoyShips.forEach(ship => {
                 // Ships that were hit stop, others keep going
