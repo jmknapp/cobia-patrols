@@ -322,7 +322,7 @@
             <span class="zoom-level" id="zoomLevel">100%</span>
             <button class="zoom-btn" id="zoomIn" title="Zoom in">+</button>
         </div>
-        <a class="download-btn" id="downloadBtn" href="/pdfs/{{ pdf_file }}" download="{{ pdf_file }}" title="Download PDF">
+        <a class="download-btn" id="downloadBtn" href="#" download title="Download PDF">
             ⬇ Download
         </a>
         <span class="search-highlight-info" id="searchTerm"></span>
@@ -504,6 +504,13 @@
         if (!searchQuery) {
             document.getElementById('searchTerm').style.display = 'none';
             document.querySelector('.nav-buttons').style.display = 'none';
+        }
+        
+        // Set up download button
+        if (pdfFile) {
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.href = `/pdfs/${encodeURIComponent(pdfFile)}`;
+            downloadBtn.download = pdfFile;
         }
         
         async function loadPDF() {
