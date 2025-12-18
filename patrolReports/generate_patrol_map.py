@@ -761,6 +761,46 @@ def create_map(positions):
     
     ScaleControl().add_to(m)
     
+    # Add click handler to show coordinates popup
+    class ClickCoordinates(MacroElement):
+        _template = Template("""
+            {% macro script(this, kwargs) %}
+                var clickPopup = null;
+                {{this._parent.get_name()}}.on('click', function(e) {
+                    var lat = e.latlng.lat;
+                    var lng = e.latlng.lng;
+                    
+                    // Format as degrees and decimal minutes
+                    var latHemi = lat >= 0 ? 'N' : 'S';
+                    var lngHemi = lng >= 0 ? 'E' : 'W';
+                    lat = Math.abs(lat);
+                    lng = Math.abs(lng);
+                    var latDeg = Math.floor(lat);
+                    var latMin = ((lat - latDeg) * 60).toFixed(1);
+                    var lngDeg = Math.floor(lng);
+                    var lngMin = ((lng - lngDeg) * 60).toFixed(1);
+                    
+                    var content = '<div style="font-family: Arial; font-size: 13px;">' +
+                        '<b>Position</b><br>' +
+                        latDeg + '°' + latMin + "'" + latHemi + ' ' +
+                        lngDeg + '°' + lngMin + "'" + lngHemi +
+                        '<br><span style="font-size:11px; color:#666;">(' + 
+                        e.latlng.lat.toFixed(5) + ', ' + e.latlng.lng.toFixed(5) + ')</span>' +
+                        '</div>';
+                    
+                    if (clickPopup) {
+                        {{this._parent.get_name()}}.closePopup(clickPopup);
+                    }
+                    clickPopup = L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(content)
+                        .openOn({{this._parent.get_name()}});
+                });
+            {% endmacro %}
+        """)
+    
+    ClickCoordinates().add_to(m)
+    
     # Add layer control to toggle patrols
     folium.LayerControl(collapsed=False).add_to(m)
     
