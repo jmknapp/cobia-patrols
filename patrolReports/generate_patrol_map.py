@@ -439,6 +439,22 @@ def create_map(positions):
         tiles=None  # Don't add default tiles
     )
     
+    # Add dynamic distance scale control (uses Folium's map variable naming convention)
+    map_var = m.get_name()
+    scale_js = f"""
+    <script>
+        {map_var}.whenReady(function() {{
+            L.control.scale({{
+                metric: true,
+                imperial: true,
+                maxWidth: 200,
+                position: 'bottomright'
+            }}).addTo({map_var});
+        }});
+    </script>
+    """
+    m.get_root().html.add_child(Element(scale_js))
+    
     # Add ESRI World Imagery FIRST (underneath) as fallback for high zoom levels
     folium.TileLayer(
         tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
