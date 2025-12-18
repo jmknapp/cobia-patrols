@@ -718,8 +718,9 @@
             const totalDist = attackData.targetRange * dynamicScale;
             const steps = 50;
             
-            // Determine if this is a stern tube (tubes 7+ or gyro > 180°)
-            const isSternTube = torp.tube >= 7 || Math.abs(torp.gyro) > 180;
+            // Determine if this is a stern tube (tubes 7+)
+            // Note: gyro angle > 180 just means port turn, not stern tube
+            const isSternTube = torp.tube >= 7;
             
             const tubeOffset = 35;
             let launchDir, launchX, launchY;
