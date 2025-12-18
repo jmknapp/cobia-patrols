@@ -16,8 +16,9 @@ import folium
 from folium import Element
 from datetime import datetime, timedelta
 import math
+import re
 
-# CSS for animated surrender marker
+# CSS for animated surrender marker and torpedo attack marker
 SURRENDER_MARKER_CSS = """
 <style>
 @keyframes pulse-gold {
@@ -34,6 +35,20 @@ SURRENDER_MARKER_CSS = """
         box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
     }
 }
+@keyframes pulse-red {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 12px 4px rgba(220, 53, 69, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
 .surrender-marker {
     animation: pulse-gold 2s ease-in-out infinite;
     background: linear-gradient(135deg, #ffd700 0%, #ffec8b 50%, #ffd700 100%);
@@ -46,6 +61,21 @@ SURRENDER_MARKER_CSS = """
     justify-content: center;
     font-size: 16px;
     box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.6);
+}
+.torpedo-attack-marker {
+    animation: pulse-red 1.5s ease-in-out infinite;
+    background: linear-gradient(135deg, #dc3545 0%, #ff6b6b 50%, #dc3545 100%);
+    border: 2px solid #a71d2a;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 0 8px 2px rgba(220, 53, 69, 0.5);
+    color: white;
+    font-weight: bold;
 }
 .direction-arrow {
     font-size: 12px;
@@ -584,6 +614,8 @@ def create_map(positions):
             elif source == 'inferred':
                 # Check if this is the surrender announcement (special animated marker)
                 is_surrender = detail and 'Japan has accepted' in detail
+                # Check if this is a torpedo attack
+                is_torpedo_attack = detail and 'Torpedo Attack' in detail
                 
                 if is_surrender:
                     # Special animated surrender marker
@@ -604,6 +636,28 @@ def create_map(positions):
                         html=icon_html,
                         icon_size=(30, 30),
                         icon_anchor=(15, 15)
+                    )
+                    folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
+                elif is_torpedo_attack:
+                    # Special torpedo attack marker with explosion icon
+                    remarks_line = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks and remarks != detail else ''
+                    popup_html = f'''<div style="width:280px">
+                        <b>P{patrol_num} {detail}</b><br>
+                        {date} {time}<br>
+                        {pos_str}{remarks_line}<br>
+                        <a href="/torpedo_attacks?attack={patrol_num}" style="font-size:11px;">View Attack Simulation</a>
+                    </div>'''
+                    popup = folium.Popup(popup_html, max_width=350)
+                    
+                    # Extract attack number for display
+                    attack_match = re.search(r'#(\d+)', detail)
+                    attack_num = attack_match.group(1) if attack_match else '💥'
+                    
+                    icon_html = f'<div class="torpedo-attack-marker">{attack_num}</div>'
+                    icon = folium.DivIcon(
+                        html=icon_html,
+                        icon_size=(24, 24),
+                        icon_anchor=(12, 12)
                     )
                     folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
                 else:
@@ -664,6 +718,7 @@ def create_map(positions):
         <div style="display:flex; align-items:center;"><span style="display:inline-block; width:14px; height:14px; border-radius:50% 50% 50% 0; background:#2980b9; margin-right:5px; transform:rotate(-45deg);"></span> Aircraft contact</div>
         <div style="display:flex; align-items:center;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#4daf4a; margin-right:5px;"></span> Noon position</div>
         <div style="display:flex; align-items:center;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff7f00; margin-right:5px;"></span> Inferred position</div>
+        <div style="display:flex; align-items:center;"><span style="display:inline-block; width:16px; height:16px; border-radius:3px; background:linear-gradient(135deg, #dc3545 0%, #ff6b6b 50%, #dc3545 100%); margin-right:5px; border:1px solid #a71d2a; font-size:9px; color:white; text-align:center; line-height:16px; font-weight:bold;">#</span> Torpedo attack</div>
     </div>
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
