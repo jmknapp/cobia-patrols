@@ -644,8 +644,7 @@ def create_map(positions):
                     popup_html = f'''<div style="width:280px">
                         <b>P{patrol_num} {detail}</b><br>
                         {date} {time}<br>
-                        {pos_str}{remarks_line}<br>
-                        <a href="/torpedo_attacks?attack={patrol_num}" style="font-size:11px;">View Attack Simulation</a>
+                        {pos_str}{remarks_line}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     
