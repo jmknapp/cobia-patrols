@@ -518,8 +518,8 @@
         const dynamicScale = baseRangePixels > maxRangePixels ? maxRangePixels / (attackData.targetRange * scaleMultiplier) : SCALE;
         const rangePixels = attackData.targetRange * dynamicScale;
         
-        // Target is ahead of Cobia, in the direction Cobia is heading
-        const targetBearingFromCobia = attackData.ownCourse;
+        // Target is positioned at the bearing it was observed from Cobia
+        const targetBearingFromCobia = attackData.targetBearing || attackData.ownCourse;
         const bearingDir = compassToMovement(targetBearingFromCobia);
         
         // For "down the throat" attacks, target starts further away (will approach)

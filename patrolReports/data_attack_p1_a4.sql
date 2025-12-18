@@ -21,7 +21,7 @@ INSERT INTO torpedo_attacks (
     139, 24, 'E',
     'Arizona Maru Class', 'AK', 9500,
     'Arizona Maru Class (DC) Mago 174 ONI 208J with one large AK on line of bearing, escorted by one CHIDORI ahead, small escort on port side and 1,000 ton AK on starboard side.',
-    115, 8, 28, 900, NULL,
+    115, 8, 28, 900, 277,  -- target bearing ~277° (4° port of ahead)
     '4° port',
     281, 2.8, 64,
     'Submerged periscope', 'Calm', 'Intermittent rain squalls and low clouds, visibility 30 miles between squalls',
