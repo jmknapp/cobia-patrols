@@ -1007,13 +1007,21 @@
                 // Target stops on hit (sinking)
             }
             
-            // Move convoy ships with the formation - each moves in its heading direction
+            // Move convoy ships - they keep moving even after target is hit
+            // Only the hit ship (primary target) stops; escorts and other ships continue
             convoyShips.forEach(ship => {
-                if (maxTorpProgress > 0 && maxTorpProgress < 1.5) {
-                    const shipMove = compassToMovement(ship.course);
-                    const shipTravel = (ship.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
-                    ship.x = ship.startX + shipMove.dx * Math.min(maxTorpProgress, 1) * shipTravel;
-                    ship.y = ship.startY + shipMove.dy * Math.min(maxTorpProgress, 1) * shipTravel;
+                if (maxTorpProgress > 0) {
+                    // Ships that were hit stop, others keep going
+                    if (ship.wasHit && firstHit) {
+                        // Stop on hit
+                    } else {
+                        const shipMove = compassToMovement(ship.course);
+                        const shipTravel = (ship.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
+                        // Continue moving beyond torpedo impact
+                        const progress = Math.min(maxTorpProgress, 2.0);  // Cap at 2x for animation
+                        ship.x = ship.startX + shipMove.dx * progress * shipTravel;
+                        ship.y = ship.startY + shipMove.dy * progress * shipTravel;
+                    }
                 }
             });
             
