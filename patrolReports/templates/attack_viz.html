@@ -510,15 +510,12 @@
         const torpedoSpeed = 46;  // knots (Mk 23 torpedo)
         
         // Adjust scale to fit everything on canvas
-        // Account for convoy ships and "down the throat" extra distance
-        const hasConvoy = convoyData.length > 1;
-        const maxConvoyRange = hasConvoy ? Math.max(...convoyData.map(s => s.relativeRange || 0)) : 0;
-        const totalRange = attackData.targetRange + maxConvoyRange;
-        const scaleMultiplier = isDownTheThroat ? 1.5 : 1.0;
+        // Convoy ships are relative to target, so don't add to total range
+        const scaleMultiplier = isDownTheThroat ? 1.3 : 1.0;  // Extra room for approach
         
-        const maxRangePixels = Math.min(W, H) * 0.3;  // Reduced to 30% to fit more
-        const baseRangePixels = totalRange * scaleMultiplier * SCALE;
-        const dynamicScale = baseRangePixels > maxRangePixels ? maxRangePixels / (totalRange * scaleMultiplier) : SCALE;
+        const maxRangePixels = Math.min(W, H) * 0.4;  // 40% of canvas for attack range
+        const baseRangePixels = attackData.targetRange * scaleMultiplier * SCALE;
+        const dynamicScale = baseRangePixels > maxRangePixels ? maxRangePixels / (attackData.targetRange * scaleMultiplier) : SCALE;
         const rangePixels = attackData.targetRange * dynamicScale;
         
         // Target is ahead of Cobia, in the direction Cobia is heading
