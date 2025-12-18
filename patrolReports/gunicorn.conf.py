@@ -1,7 +1,5 @@
-import multiprocessing
-
 bind = "127.0.0.1:5012"
-workers = multiprocessing.cpu_count() * 2 + 1
+workers = 4  # Plenty for a low-traffic site; was cpu_count * 2 + 1 = 65!
 worker_class = "sync"
 timeout = 120
 keepalive = 5
