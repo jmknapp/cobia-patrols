@@ -963,16 +963,13 @@
                 const baseTravel = (target.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
                 
                 if (!isMissAttack || maxTorpProgress <= turnStartProgress) {
-                    // Phase 1: Original course
+                    // Phase 1: Original course - ships move in their heading direction
                     target.currentCourse = target.course;
                     target.currentSpeed = target.speed;
                     const targetMove = compassToMovement(target.course);
                     
-                    // For "down the throat" attacks, target approaches Cobia (moves toward firing position)
-                    // Use negative travel to move toward Cobia instead of away
-                    const travelDir = isDownTheThroat ? -1 : 1;
-                    target.x = target.startX + targetMove.dx * maxTorpProgress * baseTravel * travelDir;
-                    target.y = target.startY + targetMove.dy * maxTorpProgress * baseTravel * travelDir;
+                    target.x = target.startX + targetMove.dx * maxTorpProgress * baseTravel;
+                    target.y = target.startY + targetMove.dy * maxTorpProgress * baseTravel;
                 } else {
                     // Phase 2: Turning toward Cobia
                     // First, calculate position at turn start point
@@ -1010,15 +1007,13 @@
                 // Target stops on hit (sinking)
             }
             
-            // Move convoy ships with the formation
+            // Move convoy ships with the formation - each moves in its heading direction
             convoyShips.forEach(ship => {
                 if (maxTorpProgress > 0 && maxTorpProgress < 1.5) {
                     const shipMove = compassToMovement(ship.course);
                     const shipTravel = (ship.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
-                    // For "down the throat", convoy approaches Cobia
-                    const travelDir = isDownTheThroat ? -1 : 1;
-                    ship.x = ship.startX + shipMove.dx * Math.min(maxTorpProgress, 1) * shipTravel * travelDir;
-                    ship.y = ship.startY + shipMove.dy * Math.min(maxTorpProgress, 1) * shipTravel * travelDir;
+                    ship.x = ship.startX + shipMove.dx * Math.min(maxTorpProgress, 1) * shipTravel;
+                    ship.y = ship.startY + shipMove.dy * Math.min(maxTorpProgress, 1) * shipTravel;
                 }
             });
             
