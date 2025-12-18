@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Torpedo Attack Visualizations - USS Cobia</title>
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            color: var(--brass-light);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+        }
+        
+        .selector-panel {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .selector-panel h2 {
+            color: var(--brass);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+        
+        .attack-select {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            border: 1px solid var(--navy-light);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .attack-select option {
+            padding: 0.5rem;
+        }
+        
+        .attack-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--navy-light);
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .detail-label {
+            color: var(--text-muted);
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+        }
+        
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .btn-primary {
+            background: var(--brass);
+            color: var(--navy-dark);
+        }
+        
+        .btn-primary:hover {
+            background: var(--brass-light);
+        }
+        
+        .btn-primary:disabled {
+            background: var(--navy-light);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        
+        .visualization-container {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .visualization-container iframe {
+            width: 100%;
+            height: 700px;
+            border: none;
+            border-radius: 6px;
+        }
+        
+        .no-attack {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .attack-list {
+            margin-top: 2rem;
+        }
+        
+        .attack-list h2 {
+            color: var(--brass);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+        
+        .attack-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--navy-mid);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .attack-table th {
+            background: var(--navy-light);
+            padding: 0.75rem;
+            text-align: left;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .attack-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        .attack-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .result-sunk { color: #4daf4a; font-weight: bold; }
+        .result-damaged { color: #ff9800; font-weight: bold; }
+        .result-missed { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ Torpedo Attack Visualizations</h1>
+            <p class="subtitle">USS Cobia (SS-245) Historical Attack Reconstructions</p>
+        </header>
+        
+        <div class="selector-panel">
+            <h2>Select Attack</h2>
+            <select class="attack-select" id="attackSelector">
+                <option value="">-- Select an attack --</option>
+                {% for attack in attacks %}
+                <option value="{{ attack.id }}" 
+                        data-patrol="{{ attack.patrol }}"
+                        data-number="{{ attack.attack_number }}"
+                        data-date="{{ attack.attack_date }}"
+                        data-time="{{ attack.attack_time }}"
+                        data-target="{{ attack.target_name }}"
+                        data-tonnage="{{ attack.target_tonnage }}"
+                        data-result="{{ attack.result }}">
+                    Patrol {{ attack.patrol }}, Attack #{{ attack.attack_number }} - {{ attack.target_name }} ({{ attack.result }})
+                </option>
+                {% endfor %}
+            </select>
+            
+            <div class="attack-details" id="attackDetails" style="display: none;">
+                <div class="detail-item">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value" id="detailDate">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Time</span>
+                    <span class="detail-value" id="detailTime">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Target</span>
+                    <span class="detail-value" id="detailTarget">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Tonnage</span>
+                    <span class="detail-value" id="detailTonnage">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Result</span>
+                    <span class="detail-value" id="detailResult">-</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" id="runAttackBtn" disabled>
+                ▶ Run Attack Visualization
+            </button>
+        </div>
+        
+        <div class="visualization-container" id="vizContainer">
+            <p class="no-attack">Select an attack above to view the visualization</p>
+        </div>
+        
+        <div class="attack-list">
+            <h2>All Attacks in Database</h2>
+            <table class="attack-table">
+                <thead>
+                    <tr>
+                        <th>Patrol</th>
+                        <th>Attack #</th>
+                        <th>Date</th>
+                        <th>Target</th>
+                        <th>Type</th>
+                        <th>Tonnage</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attack in attacks %}
+                    <tr>
+                        <td>{{ attack.patrol }}</td>
+                        <td>{{ attack.attack_number }}</td>
+                        <td>{{ attack.attack_date }}</td>
+                        <td>{{ attack.target_name or 'Unknown' }}</td>
+                        <td>{{ attack.target_type or '-' }}</td>
+                        <td>{{ attack.target_tonnage or '-' }}</td>
+                        <td class="result-{{ attack.result|lower if attack.result else '' }}">
+                            {{ attack.result or 'Unknown' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not attacks %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted);">
+                            No attacks in database yet
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        const selector = document.getElementById('attackSelector');
+        const details = document.getElementById('attackDetails');
+        const runBtn = document.getElementById('runAttackBtn');
+        const vizContainer = document.getElementById('vizContainer');
+        
+        selector.addEventListener('change', function() {
+            const option = this.selectedOptions[0];
+            
+            if (this.value) {
+                details.style.display = 'grid';
+                runBtn.disabled = false;
+                
+                document.getElementById('detailDate').textContent = option.dataset.date;
+                document.getElementById('detailTime').textContent = option.dataset.time || '-';
+                document.getElementById('detailTarget').textContent = option.dataset.target || 'Unknown';
+                document.getElementById('detailTonnage').textContent = 
+                    option.dataset.tonnage ? Number(option.dataset.tonnage).toLocaleString() + ' tons' : '-';
+                
+                const result = option.dataset.result || 'Unknown';
+                const resultEl = document.getElementById('detailResult');
+                resultEl.textContent = result;
+                resultEl.className = 'detail-value result-' + result.toLowerCase();
+            } else {
+                details.style.display = 'none';
+                runBtn.disabled = true;
+            }
+        });
+        
+        runBtn.addEventListener('click', function() {
+            const attackId = selector.value;
+            if (attackId) {
+                // Load the attack visualization
+                vizContainer.innerHTML = `<iframe src="/attack_viz/${attackId}"></iframe>`;
+            }
+        });
+    </script>
+</body>
+</html>
+

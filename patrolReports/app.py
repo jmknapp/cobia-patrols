@@ -10,6 +10,13 @@ import glob
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import fitz  # PyMuPDF
 
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not installed, env vars should be set another way
+
 app = Flask(__name__)
 
 # Corrections directory
@@ -212,6 +219,73 @@ def analytics():
                          stats=stats, 
                          days=days,
                          now=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+
+@app.route('/torpedo_attacks')
+def torpedo_attacks():
+    """Serve the torpedo attacks visualization page (hidden)."""
+    import mysql.connector
+    
+    conn = mysql.connector.connect(
+        host=os.getenv('DB_HOST', 'localhost'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_NAME')
+    )
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute('''
+        SELECT id, patrol, attack_number, attack_date, attack_time,
+               target_name, target_type, target_tonnage, result
+        FROM torpedo_attacks
+        ORDER BY patrol, attack_number
+    ''')
+    attacks = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('torpedo_attacks.html', attacks=attacks)
+
+
+@app.route('/attack_viz/<int:attack_id>')
+def attack_viz(attack_id):
+    """Serve the visualization for a specific attack."""
+    import mysql.connector
+    
+    conn = mysql.connector.connect(
+        host=os.getenv('DB_HOST', 'localhost'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_NAME')
+    )
+    cursor = conn.cursor(dictionary=True)
+    
+    # Get attack data
+    cursor.execute('SELECT * FROM torpedo_attacks WHERE id = %s', (attack_id,))
+    attack = cursor.fetchone()
+    
+    if not attack:
+        cursor.close()
+        conn.close()
+        return "Attack not found", 404
+    
+    # Get torpedo data
+    cursor.execute('SELECT * FROM torpedoes_fired WHERE attack_id = %s ORDER BY fire_sequence', (attack_id,))
+    torpedoes = cursor.fetchall()
+    
+    # Get convoy ships (if any)
+    convoy_ships = []
+    try:
+        cursor.execute('SELECT * FROM convoy_ships WHERE attack_id = %s ORDER BY ship_letter', (attack_id,))
+        convoy_ships = cursor.fetchall()
+    except:
+        pass  # Table may not exist yet
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('attack_viz.html', attack=attack, torpedoes=torpedoes, convoy_ships=convoy_ships)
 
 
 @app.route('/view')

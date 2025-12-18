@@ -73,7 +73,7 @@ AIRCRAFT_IMAGES = {
     'Mavis': ('Kawanishi H6K', '/static/aircraft_images/mavis.jpg'),
     'Emily': ('Kawanishi H8K', None),
     'Kate': ('Nakajima B5N', None),
-    'Jake': ('Aichi E13A', None),
+    'Jake': ('Aichi E13A', '/static/aircraft_images/jake.jpg'),
     'Pete': ('Mitsubishi F1M', '/static/aircraft_images/pete.jpg'),
     'Dave': ('Nakajima E8N', '/static/aircraft_images/dave.jpg'),
     'Tojo': ('Nakajima Ki-44 Shoki', '/static/aircraft_images/tojo.jpg'),
@@ -95,8 +95,10 @@ AIRCRAFT_IMAGES = {
     'Helldiver': ('Curtiss SB2C Helldiver', None),  # No image yet
 }
 
-def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, observation_date):
+def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, observation_date, remarks=''):
     """Generate popup HTML with aircraft image if available."""
+    remarks_html = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
+    
     # Try to find a matching aircraft info
     aircraft_info = None
     if aircraft_type:
@@ -117,7 +119,7 @@ def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, obse
                 <b>P{patrol_num} Aircraft Contact</b><br>
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
-                {position_str}<br>
+                {position_str}{remarks_html}<br>
                 <img src="{img_url}" style="width:300px; margin-top:5px;">
             </div>'''
         else:
@@ -125,14 +127,14 @@ def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, obse
                 <b>P{patrol_num} Aircraft Contact</b><br>
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
-                {position_str}
+                {position_str}{remarks_html}
             </div>'''
     else:
         return f'''<div style="width:280px">
             <b>P{patrol_num} Aircraft Contact</b><br>
             <b>{aircraft_type or 'Unknown'}</b><br>
             {date} {time}<br>
-            {position_str}
+            {position_str}{remarks_html}
         </div>'''
 
 # Colors for each patrol
@@ -158,7 +160,8 @@ def get_all_positions():
         SELECT patrol, observation_date, observation_time, 
                latitude, longitude, 'ship' as source, ship_type as detail,
                latitude_deg, latitude_min, latitude_hemisphere,
-               longitude_deg, longitude_min, longitude_hemisphere
+               longitude_deg, longitude_min, longitude_hemisphere,
+               remarks
         FROM ship_contacts
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
     """)
@@ -170,31 +173,34 @@ def get_all_positions():
         SELECT patrol, observation_date, observation_time,
                latitude, longitude, 'aircraft' as source, aircraft_type as detail,
                latitude_deg, latitude_min, latitude_hemisphere,
-               longitude_deg, longitude_min, longitude_hemisphere
+               longitude_deg, longitude_min, longitude_hemisphere,
+               remarks
         FROM aircraft_contacts
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
     """)
     for row in cursor.fetchall():
         all_positions.append(row)
     
-    # Noon/other positions
+    # Noon/other positions (no remarks column)
     cursor.execute("""
         SELECT patrol, observation_date, observation_time,
                latitude, longitude, 'position' as source, position_type as detail,
                latitude_deg, latitude_min, latitude_hemisphere,
-               longitude_deg, longitude_min, longitude_hemisphere
+               longitude_deg, longitude_min, longitude_hemisphere,
+               NULL as remarks
         FROM positions
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
     """)
     for row in cursor.fetchall():
         all_positions.append(row)
     
-    # Inferred positions (from narrative references)
+    # Inferred positions (from narrative references, use tag field for both detail and remarks)
     cursor.execute("""
         SELECT patrol, observation_date, observation_time,
                latitude, longitude, 'inferred' as source, tag as detail,
                NULL as latitude_deg, NULL as latitude_min, NULL as latitude_hemisphere,
-               NULL as longitude_deg, NULL as longitude_min, NULL as longitude_hemisphere
+               NULL as longitude_deg, NULL as longitude_min, NULL as longitude_hemisphere,
+               tag as remarks
         FROM inferred_positions
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
     """)
@@ -520,13 +526,16 @@ def create_map(positions):
             # Format position as deg/min
             pos_str = format_position_str(p)
             
+            remarks = p.get('remarks', '')
+            
             # Different marker styles for different sources
             if source == 'ship':
+                remarks_html = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
                 popup_html = f'''<div style="width:280px">
                     <b>P{patrol_num} Ship Contact</b><br>
                     <b>{detail}</b><br>
                     {date} {time}<br>
-                    {pos_str}
+                    {pos_str}{remarks_html}
                 </div>'''
                 popup = folium.Popup(popup_html, max_width=350)
                 # Smaller custom icon with ship graphic
@@ -550,7 +559,7 @@ def create_map(positions):
                 folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
                 continue
             elif source == 'aircraft':
-                popup_html = get_aircraft_popup(detail, patrol_num, date, time, pos_str, date)
+                popup_html = get_aircraft_popup(detail, patrol_num, date, time, pos_str, date, remarks)
                 popup = folium.Popup(popup_html, max_width=350)
                 # Smaller custom icon with plane graphic
                 icon_html = '''<div style="
@@ -599,12 +608,13 @@ def create_map(positions):
                     folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
                 else:
                     # Regular inferred positions - orange circle marker (smaller)
+                    remarks_line = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
                     popup_html = f'''<div style="width:280px">
                         <b>P{patrol_num} Inferred Position</b><br>
                         {"<b>" + detail + "</b><br>" if detail else ""}
                         {date} {time}<br>
                         {pos_str}<br>
-                        <i style="font-size:11px; color:#666;">Position derived from narrative</i>
+                        <i style="font-size:11px; color:#666;">Position derived from narrative</i>{remarks_line}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     folium.CircleMarker(
@@ -620,10 +630,11 @@ def create_map(positions):
                 continue  # Skip the Marker below
             else:
                 # Noon positions - green circle marker (smaller)
+                remarks_html = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
                 popup_html = f'''<div style="width:280px">
                     <b>P{patrol_num} Noon Position</b><br>
                     {date} {time}<br>
-                    {pos_str}
+                    {pos_str}{remarks_html}
                 </div>'''
                 popup = folium.Popup(popup_html, max_width=350)
                 folium.CircleMarker(

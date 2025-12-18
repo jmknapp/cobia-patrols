@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Attack #{{ attack.attack_number }} - Patrol {{ attack.patrol }} - USS Cobia</title>
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --sea: #1a3a5c;
+            --sea-light: #2a5a8c;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+            --hit: #4daf4a;
+            --miss: #e74c3c;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            color: var(--brass-light);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+        }
+        
+        .attack-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+        
+        .visualization-panel {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1rem;
+            position: relative;
+        }
+        
+        #attackCanvas {
+            width: 100%;
+            height: 600px;
+            background: linear-gradient(180deg, var(--sea) 0%, var(--sea-light) 100%);
+            border-radius: 6px;
+        }
+        
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .info-card {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1.25rem;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .info-card h3 {
+            color: var(--brass);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.35rem 0;
+            font-size: 0.9rem;
+        }
+        
+        .data-label {
+            color: var(--text-muted);
+        }
+        
+        .data-value {
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+        }
+        
+        .result-sunk { color: var(--hit); font-size: 1.1rem; }
+        .result-miss { color: var(--miss); font-size: 1.1rem; }
+        .result-damage { color: #f39c12; font-size: 1.1rem; }
+        
+        .torpedo-table {
+            width: 100%;
+            font-size: 0.85rem;
+            border-collapse: collapse;
+        }
+        
+        .torpedo-table th {
+            text-align: left;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0.4rem 0.25rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        .torpedo-table td {
+            padding: 0.4rem 0.25rem;
+            font-family: 'Consolas', monospace;
+        }
+        
+        .hit { color: var(--hit); font-weight: bold; }
+        .miss { color: var(--miss); }
+        
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--brass);
+            color: var(--navy-dark);
+        }
+        
+        .btn-primary:hover {
+            background: var(--brass-light);
+        }
+        
+        .btn-secondary {
+            background: var(--navy-light);
+            color: var(--text-light);
+        }
+        
+        .btn-secondary:hover {
+            background: #3d5a8f;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .damage-text {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .speed-control {
+            margin-top: 0.75rem;
+            text-align: center;
+        }
+        
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .checkbox-label input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 900px) {
+            .attack-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ Torpedo Attack #{{ attack.attack_number }} — Patrol {{ attack.patrol }}</h1>
+            <p class="subtitle">{{ attack.attack_date.strftime('%d %B %Y') if attack.attack_date else 'Unknown date' }} • 
+               {{ attack.latitude_deg }}°{{ attack.latitude_min }}'{{ attack.latitude_hemisphere }} 
+               {{ attack.longitude_deg }}°{{ attack.longitude_min }}'{{ attack.longitude_hemisphere }}</p>
+        </header>
+        
+        <div class="attack-grid">
+            <div class="visualization-panel">
+                <canvas id="attackCanvas"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffd700;"></div>
+                        <span>USS Cobia</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>{{ attack.target_name or 'Target' }}</span>
+                    </div>
+                    {% if convoy_ships %}
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #aaa;"></div>
+                        <span>Convoy</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #6b8cff;"></div>
+                        <span>Escort</span>
+                    </div>
+                    {% endif %}
+                    {% if torpedoes|selectattr('hit_miss', 'equalto', 'Hit')|list %}
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--hit);"></div>
+                        <span>Hit</span>
+                    </div>
+                    {% endif %}
+                    {% if torpedoes|selectattr('hit_miss', 'equalto', 'Miss')|list %}
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--miss);"></div>
+                        <span>Miss</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="playAnimation()">▶ Play Attack</button>
+                    <button class="btn btn-secondary" onclick="resetAnimation()">↺ Reset</button>
+                </div>
+                <div class="speed-control">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="realTimeCheckbox" onchange="updateSpeed()">
+                        <span>Real-time (uncheck for 10× speed)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-card">
+                    <h3>🎯 Target</h3>
+                    {% if attack.target_name %}
+                    <div class="data-row">
+                        <span class="data-label">Name</span>
+                        <span class="data-value">{{ attack.target_name }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="data-row">
+                        <span class="data-label">Type</span>
+                        <span class="data-value">{{ attack.target_type or 'Unknown' }}</span>
+                    </div>
+                    {% if attack.target_tonnage %}
+                    <div class="data-row">
+                        <span class="data-label">Tonnage</span>
+                        <span class="data-value">{{ "{:,}".format(attack.target_tonnage) }} tons</span>
+                    </div>
+                    {% endif %}
+                    <div class="data-row">
+                        <span class="data-label">Course</span>
+                        <span class="data-value">{{ attack.target_course }}°</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Speed</span>
+                        <span class="data-value">{{ attack.target_speed }} knots</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Result</span>
+                        {% if attack.result == 'Sunk' %}
+                        <span class="data-value result-sunk">⬇ SUNK</span>
+                        {% elif attack.result == 'Miss' %}
+                        <span class="data-value result-miss">✕ MISS</span>
+                        {% else %}
+                        <span class="data-value result-damage">{{ attack.result }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🔱 USS Cobia</h3>
+                    <div class="data-row">
+                        <span class="data-label">Course</span>
+                        <span class="data-value">{{ attack.own_course }}°</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Speed</span>
+                        <span class="data-value">{{ attack.own_speed }} knots</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Depth</span>
+                        <span class="data-value">{{ attack.own_depth }} feet</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Range</span>
+                        <span class="data-value">{{ "{:,}".format(attack.target_range) }} yards</span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🔥 Torpedoes Fired</h3>
+                    <table class="torpedo-table">
+                        <thead>
+                            <tr>
+                                <th>Tube</th>
+                                <th>Gyro</th>
+                                <th>Track</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for torp in torpedoes %}
+                            <tr>
+                                <td>#{{ torp.tube_number }}</td>
+                                <td>{{ "%03d"|format(torp.gyro_angle) }}°</td>
+                                <td>{{ torp.track_angle }}°{{ torp.track_side }}</td>
+                                <td class="{{ 'hit' if torp.hit_miss == 'Hit' else 'miss' }}">{{ torp.hit_miss|upper }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if attack.remarks or attack.damage_description %}
+                <div class="info-card">
+                    <h3>📋 Remarks</h3>
+                    <p class="damage-text">
+                        {{ attack.damage_description or attack.remarks }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Attack data from database
+        // Note: attack_time is a timedelta, extract hours/minutes from total_seconds
+        {% set time_seconds = attack.attack_time.total_seconds() if attack.attack_time else 0 %}
+        {% set time_hours = (time_seconds // 3600)|int %}
+        {% set time_minutes = ((time_seconds % 3600) // 60)|int %}
+        const attackData = {
+            patrol: {{ attack.patrol }},
+            attackNumber: {{ attack.attack_number }},
+            date: new Date({{ attack.attack_date.year }}, {{ attack.attack_date.month - 1 }}, {{ attack.attack_date.day }}, 
+                          {{ time_hours }}, {{ time_minutes }}, 0),
+            ownCourse: {{ attack.own_course or 0 }},
+            ownSpeed: {{ attack.own_speed or 0 }},
+            targetCourse: {{ attack.target_course or 0 }},
+            targetSpeed: {{ attack.target_speed or 0 }},
+            targetRange: {{ attack.target_range or 1000 }},
+            targetBearing: {{ attack.target_bearing or 0 }},
+            targetName: "{{ attack.target_name or 'Target' }}",
+            result: "{{ attack.result or 'Unknown' }}",
+            angleOnBow: "{{ attack.angle_on_bow or '' }}"
+        };
+        
+        // Detect "down the throat" attack (courses nearly reciprocal, within 30° of opposite)
+        const courseDiff = Math.abs(attackData.ownCourse - attackData.targetCourse);
+        const isDownTheThroat = Math.abs(courseDiff - 180) < 30 || Math.abs(courseDiff + 180) < 30;
+        
+        const torpedoData = [
+            {% for torp in torpedoes %}
+            { 
+                tube: {{ torp.tube_number }}, 
+                gyro: {{ torp.gyro_angle or 0 }}, 
+                track: {{ torp.track_angle or 0 }},
+                trackSide: "{{ torp.track_side or 'S' }}",
+                result: "{{ 'hit' if torp.hit_miss == 'Hit' else 'miss' }}"
+            }{{ "," if not loop.last else "" }}
+            {% endfor %}
+        ];
+        
+        // Convoy ships data
+        const convoyData = [
+            {% for ship in convoy_ships %}
+            {
+                letter: "{{ ship.ship_letter }}",
+                name: "{{ ship.ship_name or 'Unknown' }}",
+                type: "{{ ship.ship_type or 'AK' }}",
+                tonnage: {{ ship.tonnage or 0 }},
+                role: "{{ ship.role or 'secondary' }}",
+                relativeBearing: {{ ship.relative_bearing or 0 }},
+                relativeRange: {{ ship.relative_range or 0 }},
+                course: {{ ship.course or 0 }},
+                speed: {{ ship.speed or 0 }},
+                wasHit: {{ 'true' if ship.was_hit else 'false' }},
+                wasSunk: {{ 'true' if ship.was_sunk else 'false' }},
+                iconType: "{{ ship.icon_type or 'cargo' }}"
+            }{{ "," if not loop.last else "" }}
+            {% endfor %}
+        ];
+        
+        const canvas = document.getElementById('attackCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // High DPI support
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        
+        const W = rect.width;
+        const H = rect.height;
+        const CX = W / 2;
+        const CY = H / 2;
+        
+        // Scale: 1 yard = 0.3 pixels
+        const SCALE = 0.3;
+        
+        // Load images
+        const cobiaImg = new Image();
+        cobiaImg.src = '/static/cobiatop.png';
+        let cobiaImgLoaded = false;
+        cobiaImg.onload = () => { cobiaImgLoaded = true; draw(); };
+        
+        const targetImg = new Image();
+        targetImg.src = '/static/AKtop.png';
+        let targetImgLoaded = false;
+        targetImg.onload = () => { targetImgLoaded = true; draw(); };
+        
+        // Cobia starting position - place toward edge opposite to target direction
+        // This maximizes space for the attack to unfold
+        let cobiaStartX = CX;
+        let cobiaStartY = CY;
+        
+        // Offset Cobia away from the target direction
+        const headingRad = attackData.ownCourse * Math.PI / 180;
+        const offsetX = -Math.sin(headingRad) * W * 0.2;  // Move opposite to heading
+        const offsetY = Math.cos(headingRad) * H * 0.2;
+        
+        cobiaStartX = CX + offsetX;
+        cobiaStartY = CY + offsetY;
+        
+        // Clamp to keep Cobia on screen
+        cobiaStartX = Math.max(100, Math.min(W - 100, cobiaStartX));
+        cobiaStartY = Math.max(100, Math.min(H - 100, cobiaStartY));
+        
+        const cobiaStart = { x: cobiaStartX, y: cobiaStartY };
+        const cobia = {
+            x: cobiaStart.x,
+            y: cobiaStart.y,
+            startX: cobiaStart.x,
+            startY: cobiaStart.y,
+            course: attackData.ownCourse,
+            speed: attackData.ownSpeed
+        };
+        
+        // Fixed reference point for range circles
+        const firingPoint = { x: cobiaStart.x, y: cobiaStart.y };
+        
+        // Calculate target starting position based on range and bearing
+        function compassToMovement(deg) {
+            const rad = deg * Math.PI / 180;
+            return { dx: Math.sin(rad), dy: -Math.cos(rad) };
+        }
+        
+        function compassToRotation(deg) {
+            return deg * Math.PI / 180;
+        }
+        
+        // Target position: based on Cobia's heading and range
+        const torpedoSpeed = 46;  // knots (Mk 23 torpedo)
+        
+        // Adjust scale to fit everything on canvas
+        // Account for convoy ships and "down the throat" extra distance
+        const hasConvoy = convoyData.length > 1;
+        const maxConvoyRange = hasConvoy ? Math.max(...convoyData.map(s => s.relativeRange || 0)) : 0;
+        const totalRange = attackData.targetRange + maxConvoyRange;
+        const scaleMultiplier = isDownTheThroat ? 1.5 : 1.0;
+        
+        const maxRangePixels = Math.min(W, H) * 0.3;  // Reduced to 30% to fit more
+        const baseRangePixels = totalRange * scaleMultiplier * SCALE;
+        const dynamicScale = baseRangePixels > maxRangePixels ? maxRangePixels / (totalRange * scaleMultiplier) : SCALE;
+        const rangePixels = attackData.targetRange * dynamicScale;
+        
+        // Target is ahead of Cobia, in the direction Cobia is heading
+        const targetBearingFromCobia = attackData.ownCourse;
+        const bearingDir = compassToMovement(targetBearingFromCobia);
+        
+        // For "down the throat" attacks, target starts further away (will approach)
+        const rangeMultiplier = isDownTheThroat ? 1.3 : 1.0;  // Reduced from 1.5
+        
+        // Position target at the firing range, ahead of Cobia
+        const isStarboard = torpedoData.length === 0 || torpedoData[0].trackSide === 'S';
+        const trackOffset = isStarboard ? 30 : -30;
+        
+        const targetStart = {
+            x: cobiaStart.x + bearingDir.dx * rangePixels * rangeMultiplier + trackOffset,
+            y: cobiaStart.y + bearingDir.dy * rangePixels * rangeMultiplier
+        };
+        
+        const target = {
+            x: targetStart.x,
+            y: targetStart.y,
+            startX: targetStart.x,
+            startY: targetStart.y,
+            course: attackData.targetCourse,
+            currentCourse: attackData.targetCourse,  // Track current heading for rotation
+            speed: attackData.targetSpeed,
+            currentSpeed: attackData.targetSpeed
+        };
+        
+        // Initialize convoy ships (positioned relative to primary target)
+        // Relative bearing: 0°=ahead of target, 90°=starboard, 180°=astern, 270°=port
+        const convoyShips = convoyData.filter(s => s.role !== 'target').map(ship => {
+            // Convert relative bearing to absolute bearing
+            const absoluteBearing = (ship.relativeBearing + attackData.targetCourse) % 360;
+            const bearingRad = absoluteBearing * Math.PI / 180;
+            // Scale convoy ranges to fit on screen (max 50% of attack range)
+            const maxConvoyDist = attackData.targetRange * 0.5;
+            const shipRange = Math.min(ship.relativeRange, maxConvoyDist) * dynamicScale;
+            return {
+                ...ship,
+                x: targetStart.x + Math.sin(bearingRad) * shipRange,
+                y: targetStart.y - Math.cos(bearingRad) * shipRange,
+                startX: targetStart.x + Math.sin(bearingRad) * shipRange,
+                startY: targetStart.y - Math.cos(bearingRad) * shipRange,
+                currentCourse: ship.course
+            };
+        });
+        
+        // Initialize torpedoes with database data
+        const torpedoes = torpedoData.map(t => ({
+            tube: t.tube,
+            gyro: t.gyro,
+            track: t.track,
+            trackSide: t.trackSide,
+            result: t.result,
+            progress: 0,
+            active: false,
+            exploded: false
+        }));
+        
+        let animationId = null;
+        let explosions = [];
+        let simulationStartTime = null;
+        const attackStartTime = attackData.date;
+        let speedMultiplier = 10;  // Default 10x speed
+        
+        function updateSpeed() {
+            const checkbox = document.getElementById('realTimeCheckbox');
+            speedMultiplier = checkbox.checked ? 1 : 10;
+        }
+        
+        function getAttackTime() {
+            if (!simulationStartTime) return attackStartTime;
+            const elapsed = (Date.now() - simulationStartTime) * speedMultiplier;
+            return new Date(attackStartTime.getTime() + elapsed);
+        }
+        
+        function formatTime(date) {
+            return String(date.getHours()).padStart(2, '0') + ':' + 
+                   String(date.getMinutes()).padStart(2, '0') + ':' +
+                   String(date.getSeconds()).padStart(2, '0');
+        }
+        
+        function formatDate(date) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear();
+        }
+        
+        function getTorpedoHeading(subCourse, gyroAngle, progress) {
+            const turnStartProgress = 0.08;
+            const turnEndProgress = 0.25;
+            
+            // Normalize gyro angle: values > 180 are negative (port) turns
+            // e.g., 331° = -29° (29° to port/left)
+            let normalizedGyro = gyroAngle;
+            if (gyroAngle > 180) {
+                normalizedGyro = gyroAngle - 360;  // 331 -> -29
+            }
+            
+            const finalHeading = (subCourse + normalizedGyro + 360) % 360;
+            
+            if (progress < turnStartProgress) return subCourse;
+            if (progress < turnEndProgress) {
+                const turnProgress = (progress - turnStartProgress) / (turnEndProgress - turnStartProgress);
+                const easedProgress = turnProgress * turnProgress * (3 - 2 * turnProgress);
+                return (subCourse + normalizedGyro * easedProgress + 360) % 360;
+            }
+            return finalHeading;
+        }
+        
+        function drawConvoyShip(ship) {
+            const x = ship.x;
+            const y = ship.y;
+            const course = ship.currentCourse || ship.course;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(compassToRotation(course));
+            
+            // Different shapes for different ship types
+            ctx.beginPath();
+            if (ship.iconType === 'escort' || ship.type === 'DE' || ship.type === 'DD') {
+                // Escort: smaller, sleeker triangle
+                ctx.moveTo(0, -25);
+                ctx.lineTo(8, 20);
+                ctx.lineTo(-8, 20);
+                ctx.closePath();
+                ctx.fillStyle = '#6b8cff';  // Blue for escorts
+            } else if (ship.iconType === 'sampan' || ship.type === 'patrol') {
+                // Sampan: small oval
+                ctx.ellipse(0, 0, 6, 12, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#888';  // Gray for small craft
+            } else {
+                // Cargo ship: larger rounded shape
+                ctx.moveTo(0, -30);
+                ctx.lineTo(12, 25);
+                ctx.lineTo(-12, 25);
+                ctx.closePath();
+                ctx.fillStyle = ship.wasSunk ? '#ff6b6b' : '#aaa';  // Red if sunk, gray otherwise
+            }
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            ctx.restore();
+            
+            // Label with letter
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(ship.letter + ': ' + ship.name, x, y + 40);
+        }
+        
+        function drawShip(x, y, course, color, name, isSubmarine = false) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(compassToRotation(course));
+            
+            if (isSubmarine && cobiaImgLoaded) {
+                ctx.rotate(-Math.PI / 2);
+                const targetLength = 30;
+                const scale = targetLength / cobiaImg.width;
+                const imgW = cobiaImg.width * scale;
+                const imgH = cobiaImg.height * scale;
+                ctx.drawImage(cobiaImg, -imgW/2, -imgH/2, imgW, imgH);
+            } else if (!isSubmarine && targetImgLoaded) {
+                ctx.rotate(-Math.PI / 2);
+                const targetLength = 42;
+                const scale = targetLength / targetImg.width;
+                const imgW = targetImg.width * scale;
+                const imgH = targetImg.height * scale;
+                ctx.drawImage(targetImg, -imgW/2, -imgH/2, imgW, imgH);
+            } else {
+                // Fallback shapes
+                ctx.beginPath();
+                if (isSubmarine) {
+                    ctx.ellipse(0, 0, 12, 35, 0, 0, Math.PI * 2);
+                } else {
+                    ctx.moveTo(0, -40); ctx.lineTo(15, 30); ctx.lineTo(-15, 30); ctx.closePath();
+                }
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, x, y + (isSubmarine ? 25 : 60));
+        }
+        
+        function drawTorpedo(torp, fromX, fromY) {
+            const totalDist = attackData.targetRange * dynamicScale;
+            const steps = 50;
+            
+            // Determine if this is a stern tube (tubes 7+ or gyro > 180°)
+            const isSternTube = torp.tube >= 7 || Math.abs(torp.gyro) > 180;
+            
+            const tubeOffset = 35;
+            let launchDir, launchX, launchY;
+            
+            if (isSternTube) {
+                // Stern tubes - launch from aft, opposite direction
+                const sternCourse = (cobia.course + 180) % 360;
+                launchDir = compassToMovement(sternCourse);
+                launchX = fromX + launchDir.dx * tubeOffset;
+                launchY = fromY + launchDir.dy * tubeOffset;
+            } else {
+                // Bow tubes - launch from forward
+                launchDir = compassToMovement(cobia.course);
+                launchX = fromX + launchDir.dx * tubeOffset;
+                launchY = fromY + launchDir.dy * tubeOffset;
+            }
+            
+            // For stern tubes, use stern course as base for trajectory
+            const baseCourse = isSternTube ? (cobia.course + 180) % 360 : cobia.course;
+            
+            // For stern tubes, adjust gyro interpretation
+            let effectiveGyro = torp.gyro;
+            if (isSternTube && torp.gyro > 180) {
+                // Gyro 223° from stern = 43° turn from stern heading
+                effectiveGyro = torp.gyro - 180;
+            }
+            
+            const path = [];
+            let x = launchX, y = launchY;
+            const currentSteps = Math.floor(steps * torp.progress);
+            
+            for (let i = 0; i <= currentSteps; i++) {
+                const p = i / steps;
+                const heading = getTorpedoHeading(baseCourse, effectiveGyro, p);
+                const dir = compassToMovement(heading);
+                const stepDist = totalDist / steps;
+                
+                if (i === 0) {
+                    path.push({ x: launchX, y: launchY });
+                } else {
+                    x += dir.dx * stepDist;
+                    y += dir.dy * stepDist;
+                    path.push({ x, y });
+                }
+            }
+            
+            if (path.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(path[0].x, path[0].y);
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(path[i].x, path[i].y);
+                }
+                ctx.strokeStyle = torp.result === 'hit' ? 'rgba(77, 175, 74, 0.6)' : 'rgba(231, 76, 60, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            const lastPoint = path[path.length - 1];
+            if (torp.progress < 1 && lastPoint) {
+                ctx.beginPath();
+                ctx.arc(lastPoint.x, lastPoint.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                
+                const heading = getTorpedoHeading(cobia.course, torp.gyro, torp.progress);
+                const headDir = compassToMovement(heading);
+                ctx.beginPath();
+                ctx.moveTo(lastPoint.x, lastPoint.y);
+                ctx.lineTo(lastPoint.x + headDir.dx * 10, lastPoint.y + headDir.dy * 10);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
+            return lastPoint || { x: launchX, y: launchY };
+        }
+        
+        function drawExplosion(x, y, size) {
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+            gradient.addColorStop(0, 'rgba(255, 200, 50, 0.9)');
+            gradient.addColorStop(0.3, 'rgba(255, 100, 0, 0.7)');
+            gradient.addColorStop(0.7, 'rgba(100, 50, 0, 0.4)');
+            gradient.addColorStop(1, 'rgba(50, 50, 50, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+        
+        function drawRangeRings() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            [500, 1000, 1500, 2000].forEach(range => {
+                if (range <= attackData.targetRange * 1.5) {
+                    ctx.beginPath();
+                    ctx.arc(firingPoint.x, firingPoint.y, range * dynamicScale, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText(range + ' yds', firingPoint.x + range * dynamicScale + 5, firingPoint.y);
+                }
+            });
+        }
+        
+        function drawCompass() {
+            const cx = W - 50, cy = 50, r = 35;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.stroke();
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', cx, cy - r + 12);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('E', cx + r - 8, cy + 4);
+            ctx.fillText('S', cx, cy + r - 5);
+            ctx.fillText('W', cx - r + 8, cy + 4);
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#1a3a5c';
+            ctx.fillRect(0, 0, W, H);
+            
+            // Sea texture
+            for (let i = 0; i < 50; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.03})`;
+                ctx.fillRect(Math.random() * W, Math.random() * H, Math.random() * 100, 1);
+            }
+            
+            drawRangeRings();
+            drawCompass();
+            
+            // Draw torpedoes
+            torpedoes.forEach(torp => {
+                if (torp.active || torp.progress > 0) {
+                    const endPos = drawTorpedo(torp, firingPoint.x, firingPoint.y);
+                    
+                    if (torp.progress >= 1 && torp.result === 'hit' && !torp.exploded) {
+                        explosions.push({ x: target.x, y: target.y, size: 0, maxSize: 60 + Math.random() * 20 });
+                        torp.exploded = true;
+                    }
+                }
+            });
+            
+            // Draw explosions
+            explosions.forEach(exp => {
+                drawExplosion(exp.x + (Math.random() - 0.5) * 20, exp.y + (Math.random() - 0.5) * 20, exp.size);
+            });
+            
+            // Draw convoy ships first (behind the main ships)
+            convoyShips.forEach(ship => {
+                drawConvoyShip(ship);
+            });
+            
+            // Draw primary target (use currentCourse for rotation during maneuvers)
+            drawShip(target.x, target.y, target.currentCourse || target.course, '#ff6b6b', attackData.targetName, false);
+            
+            // Draw Cobia last (on top)
+            drawShip(cobia.x, cobia.y, cobia.course, '#ffd700', 'USS Cobia', true);
+            
+            // Calculate current range for display
+            const currentRange = Math.sqrt(Math.pow(target.x - cobia.x, 2) + Math.pow(target.y - cobia.y, 2)) / dynamicScale;
+            
+            // Info overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            const maxTorpProgressForUI = Math.max(...torpedoes.map(t => t.progress), 0);
+            const showTurn = attackData.result === 'Miss' && maxTorpProgressForUI > 0.3;
+            ctx.fillRect(10, 10, 180, showTurn ? 104 : 88);
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'left';
+            
+            const attackTime = getAttackTime();
+            ctx.fillText(formatDate(attackTime), 20, 28);
+            ctx.font = 'bold 16px monospace';
+            ctx.fillText(formatTime(attackTime), 20, 48);
+            ctx.font = '11px sans-serif';
+            ctx.fillText('Range: ' + Math.round(currentRange).toLocaleString() + ' yards', 20, 68);
+            ctx.fillText('Result: ' + attackData.result, 20, 84);
+            
+            // Show target maneuver status
+            if (showTurn) {
+                ctx.fillStyle = '#ff6b6b';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillText('⚠ TARGET TURNING TOWARD!', 20, 100);
+            }
+        }
+        
+        function animate() {
+            let anyActive = false;
+            let allFiredAndDone = true;
+            
+            // Torpedo speed: ~42 seconds for 1100 yards at 46 knots
+            // Scale increment based on range and speed multiplier
+            const torpedoRunTime = (attackData.targetRange / 1100) * 42;  // seconds
+            const increment = speedMultiplier / (torpedoRunTime * 60);  // 60 fps, adjusted for speed
+            
+            // For miss attacks, continue animation longer to show target approach
+            const maxProgress = attackData.result === 'Miss' ? 1.5 : 1.0;
+            
+            torpedoes.forEach(torp => {
+                if (torp.active) {
+                    anyActive = true;
+                    if (torp.progress < maxProgress) {
+                        torp.progress += increment;
+                        allFiredAndDone = false;
+                    }
+                } else {
+                    allFiredAndDone = false;
+                }
+            });
+            
+            const maxTorpProgress = Math.max(...torpedoes.map(t => t.progress), 0);
+            
+            // Cobia movement (scaled to own speed)
+            if (anyActive && maxTorpProgress < 1.2) {
+                const cobiaMove = compassToMovement(cobia.course);
+                const cobiaTravel = (cobia.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
+                cobia.x = cobia.startX + cobiaMove.dx * Math.min(maxTorpProgress, 1) * cobiaTravel;
+                cobia.y = cobia.startY + cobiaMove.dy * Math.min(maxTorpProgress, 1) * cobiaTravel;
+            }
+            
+            // Target movement
+            const firstHit = torpedoes.find(t => t.result === 'hit' && t.progress >= 1);
+            if (!firstHit && maxTorpProgress > 0) {
+                // For misses, target may turn toward Cobia (evasion/counter-attack)
+                // This happened in Attack #1 where CM "turned toward at 20 knots"
+                const isMissAttack = attackData.result === 'Miss';
+                const turnStartProgress = 0.3;  // Target detects attack at 30% torpedo travel
+                
+                // Calculate position in two phases: before turn and after turn
+                const baseTravel = (target.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
+                
+                if (!isMissAttack || maxTorpProgress <= turnStartProgress) {
+                    // Phase 1: Original course
+                    target.currentCourse = target.course;
+                    target.currentSpeed = target.speed;
+                    const targetMove = compassToMovement(target.course);
+                    
+                    // For "down the throat" attacks, target approaches Cobia (moves toward firing position)
+                    // Use negative travel to move toward Cobia instead of away
+                    const travelDir = isDownTheThroat ? -1 : 1;
+                    target.x = target.startX + targetMove.dx * maxTorpProgress * baseTravel * travelDir;
+                    target.y = target.startY + targetMove.dy * maxTorpProgress * baseTravel * travelDir;
+                } else {
+                    // Phase 2: Turning toward Cobia
+                    // First, calculate position at turn start point
+                    const preMove = compassToMovement(target.course);
+                    const turnPointX = target.startX + preMove.dx * turnStartProgress * baseTravel;
+                    const turnPointY = target.startY + preMove.dy * turnStartProgress * baseTravel;
+                    
+                    // Calculate bearing from turn point to Cobia
+                    const dx = cobia.x - turnPointX;
+                    const dy = cobia.y - turnPointY;
+                    const bearingToCobia = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+                    
+                    // Smoothly interpolate the turn
+                    const turnDuration = 0.3;
+                    const progressSinceTurn = maxTorpProgress - turnStartProgress;
+                    const turnProgress = Math.min(progressSinceTurn / turnDuration, 1);
+                    const easedTurn = turnProgress * turnProgress * (3 - 2 * turnProgress);
+                    
+                    // Interpolate heading
+                    let courseDiff = bearingToCobia - target.course;
+                    if (courseDiff > 180) courseDiff -= 360;
+                    if (courseDiff < -180) courseDiff += 360;
+                    target.currentCourse = (target.course + courseDiff * easedTurn + 360) % 360;
+                    
+                    // Speed up to 20 knots
+                    target.currentSpeed = target.speed + (20 - target.speed) * easedTurn;
+                    const fastTravel = (target.currentSpeed / torpedoSpeed) * attackData.targetRange * dynamicScale;
+                    
+                    // Calculate position: turn point + movement on new heading
+                    const postMove = compassToMovement(target.currentCourse);
+                    target.x = turnPointX + postMove.dx * progressSinceTurn * fastTravel;
+                    target.y = turnPointY + postMove.dy * progressSinceTurn * fastTravel;
+                }
+            } else if (firstHit) {
+                // Target stops on hit (sinking)
+            }
+            
+            // Move convoy ships with the formation
+            convoyShips.forEach(ship => {
+                if (maxTorpProgress > 0 && maxTorpProgress < 1.5) {
+                    const shipMove = compassToMovement(ship.course);
+                    const shipTravel = (ship.speed / torpedoSpeed) * attackData.targetRange * dynamicScale;
+                    // For "down the throat", convoy approaches Cobia
+                    const travelDir = isDownTheThroat ? -1 : 1;
+                    ship.x = ship.startX + shipMove.dx * Math.min(maxTorpProgress, 1) * shipTravel * travelDir;
+                    ship.y = ship.startY + shipMove.dy * Math.min(maxTorpProgress, 1) * shipTravel * travelDir;
+                }
+            });
+            
+            // Update explosions
+            explosions.forEach(exp => {
+                if (exp.size < exp.maxSize) exp.size += 3;
+            });
+            
+            draw();
+            
+            if (!allFiredAndDone || explosions.some(e => e.size < e.maxSize)) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+        
+        function playAnimation() {
+            resetAnimation();
+            simulationStartTime = Date.now();
+            
+            // Fire torpedoes with 8-second intervals (adjusted for speed)
+            const firingInterval = 8000 / speedMultiplier;
+            torpedoes.forEach((torp, i) => {
+                setTimeout(() => { torp.active = true; if (i === 0) animate(); }, i * firingInterval);
+            });
+        }
+        
+        function resetAnimation() {
+            if (animationId) cancelAnimationFrame(animationId);
+            torpedoes.forEach(t => { t.progress = 0; t.active = false; t.exploded = false; });
+            target.x = target.startX;
+            target.y = target.startY;
+            target.currentCourse = target.course;  // Reset heading
+            target.currentSpeed = target.speed;
+            cobia.x = cobia.startX;
+            cobia.y = cobia.startY;
+            // Reset convoy ships
+            convoyShips.forEach(ship => {
+                ship.x = ship.startX;
+                ship.y = ship.startY;
+            });
+            explosions = [];
+            simulationStartTime = null;
+            draw();
+        }
+        
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>

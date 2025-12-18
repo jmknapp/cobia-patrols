@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torpedo Attack Visualization - USS Cobia</title>
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --sea: #1a3a5c;
+            --sea-light: #2a5a8c;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+            --hit: #4daf4a;
+            --miss: #e74c3c;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            color: var(--brass-light);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+        }
+        
+        .attack-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+        
+        .visualization-panel {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1rem;
+            position: relative;
+        }
+        
+        #attackCanvas {
+            width: 100%;
+            height: 600px;
+            background: linear-gradient(180deg, var(--sea) 0%, var(--sea-light) 100%);
+            border-radius: 6px;
+        }
+        
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .info-card {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1.25rem;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .info-card h3 {
+            color: var(--brass);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.35rem 0;
+            font-size: 0.9rem;
+        }
+        
+        .data-label {
+            color: var(--text-muted);
+        }
+        
+        .data-value {
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+        }
+        
+        .result-sunk {
+            color: var(--hit);
+            font-size: 1.1rem;
+        }
+        
+        .torpedo-table {
+            width: 100%;
+            font-size: 0.85rem;
+            border-collapse: collapse;
+        }
+        
+        .torpedo-table th {
+            text-align: left;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0.4rem 0.25rem;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        .torpedo-table td {
+            padding: 0.4rem 0.25rem;
+            font-family: 'Consolas', monospace;
+        }
+        
+        .hit { color: var(--hit); font-weight: bold; }
+        .miss { color: var(--miss); }
+        
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--brass);
+            color: var(--navy-dark);
+        }
+        
+        .btn-primary:hover {
+            background: var(--brass-light);
+        }
+        
+        .btn-secondary {
+            background: var(--navy-light);
+            color: var(--text-light);
+        }
+        
+        .btn-secondary:hover {
+            background: #3d5a8f;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .damage-text {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        @media (max-width: 900px) {
+            .attack-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ Torpedo Attack #2 — Patrol 1</h1>
+            <p class="subtitle">13 July 1944 • 27°23'N 140°33'E</p>
+        </header>
+        
+        <div class="attack-grid">
+            <div class="visualization-panel">
+                <canvas id="attackCanvas"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffd700;"></div>
+                        <span>USS Cobia</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>HIJMS Noshima</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--hit);"></div>
+                        <span>Hit</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--miss);"></div>
+                        <span>Miss</span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="playAnimation()">▶ Play Attack</button>
+                    <button class="btn btn-secondary" onclick="resetAnimation()">↺ Reset</button>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-card">
+                    <h3>🎯 Target</h3>
+                    <div class="data-row">
+                        <span class="data-label">Name</span>
+                        <span class="data-value">HIJMS Noshima</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Type</span>
+                        <span class="data-value">AF4 (Naval Auxiliary)</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Tonnage</span>
+                        <span class="data-value">8,751 tons</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Course</span>
+                        <span class="data-value">100°</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Speed</span>
+                        <span class="data-value">8 knots</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Result</span>
+                        <span class="data-value result-sunk">⬇ SUNK</span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🔱 USS Cobia</h3>
+                    <div class="data-row">
+                        <span class="data-label">Course</span>
+                        <span class="data-value">333°</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Speed</span>
+                        <span class="data-value">3.9 knots</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Depth</span>
+                        <span class="data-value">64 feet</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Range</span>
+                        <span class="data-value">1,100 yards</span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🔥 Torpedoes Fired</h3>
+                    <table class="torpedo-table">
+                        <thead>
+                            <tr>
+                                <th>Tube</th>
+                                <th>Gyro</th>
+                                <th>Track</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#1</td>
+                                <td>030°</td>
+                                <td>83°S</td>
+                                <td class="hit">HIT</td>
+                            </tr>
+                            <tr>
+                                <td>#2</td>
+                                <td>350°</td>
+                                <td>88°S</td>
+                                <td class="hit">HIT</td>
+                            </tr>
+                            <tr>
+                                <td>#3</td>
+                                <td>031°</td>
+                                <td>84°S</td>
+                                <td class="miss">MISS</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="info-card">
+                    <h3>💥 Damage Observed</h3>
+                    <p class="damage-text">
+                        "Huge cloud of black smoke... already listing to starboard showing a beautiful 
+                        snowy forecastle deck. Second torpedo hit forward of stack. Very loud sounds 
+                        of grinding and tearing metal... Bubbling and gurgling noises heard through 
+                        sound gear. Long rolling explosion - boilers?"
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('attackCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // High DPI support
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        
+        const W = rect.width;
+        const H = rect.height;
+        const CX = W / 2;
+        const CY = H / 2;
+        
+        // Scale: 1 yard = 0.3 pixels (so 1100 yards ≈ 330 pixels)
+        const SCALE = 0.3;
+        
+        // Load Cobia image
+        const cobiaImg = new Image();
+        cobiaImg.src = '/static/cobiatop.png';
+        let cobiaImgLoaded = false;
+        cobiaImg.onload = () => {
+            cobiaImgLoaded = true;
+            draw();  // Redraw once image loads
+        };
+        
+        // Load target (AK cargo ship) image
+        const targetImg = new Image();
+        targetImg.src = '/static/AKtop.png';
+        let targetImgLoaded = false;
+        targetImg.onload = () => {
+            targetImgLoaded = true;
+            draw();  // Redraw once image loads
+        };
+        
+        // Attack geometry:
+        // - Cobia heading 333° (NNW), target on starboard bow
+        // - Target heading 100° (roughly east) at 8 knots
+        // - Torpedoes turn ~30° starboard to head ~003° (north)
+        // - Intercept point is where northbound torpedoes meet eastbound target
+        
+        // Geometry: Cobia is SOUTH of target, fires NORTH
+        // Target heads EAST (100°), crosses northbound torpedo path
+        // 80° starboard track = torpedo hits target's starboard side (beam shot)
+        const cobiaStart = {
+            x: CX - 50,
+            y: CY + 180  // South position
+        };
+        const cobia = {
+            x: cobiaStart.x,
+            y: cobiaStart.y,
+            startX: cobiaStart.x,
+            startY: cobiaStart.y,
+            course: 333,  // Heading NNW (from attack data)
+            speed: 3.9
+        };
+        
+        // Fixed reference point for range circles (firing position)
+        const firingPoint = { x: cobiaStart.x, y: cobiaStart.y };
+        
+        // Target positioning: work backwards from intercept point
+        // Position target so it arrives at intercept when torpedoes do
+        
+        // Intercept point: where torpedoes end up (north of Cobia)
+        const torpedoDir = compassToMovement(3);  // Torpedo heading ~003°
+        const torpedoTravel = 330;  // 1,100 yards at scale 0.3 (matches drawTorpedo)
+        const bowOffset = 35;  // Torpedoes exit from bow
+        const bowDir = compassToMovement(cobia.course);
+        const interceptX = cobia.x + bowDir.dx * bowOffset + torpedoDir.dx * torpedoTravel;
+        const interceptY = cobia.y + bowDir.dy * bowOffset + torpedoDir.dy * torpedoTravel;
+        
+        // Target starts WEST of intercept, moves EAST into it
+        // Target moves proportionally during the attack (8 knots vs ~46 knots torpedo)
+        const targetMoveDir = compassToMovement(100);  // Target heading 100° (east)
+        const targetTravel = 57;  // Scaled down with torpedo travel (330/400 * 80)
+        const targetStart = {
+            x: interceptX - targetMoveDir.dx * targetTravel,  // Start west of intercept
+            y: interceptY - targetMoveDir.dy * targetTravel
+        };
+        const target = {
+            x: targetStart.x,
+            y: targetStart.y,
+            startX: targetStart.x,
+            startY: targetStart.y,
+            course: 100,  // Heading east
+            speed: 8
+        };
+        
+        // Torpedo data - using actual GYRO angles from fire control
+        // Gyro angles: 030°, 035° (was mistyped as 350°), 031°
+        // Final torpedo headings: 333+30=003°, 333+35=008°, 333+31=004°
+        // Torpedoes head roughly NORTH to intercept eastbound target
+        // ~5° spread pattern (30° to 35°)
+        const torpedoes = [
+            { tube: 1, gyro: 30, result: 'hit', progress: 0, active: false },
+            { tube: 2, gyro: 35, result: 'hit', progress: 0, active: false },  // Corrected from 350° typo
+            { tube: 3, gyro: 31, result: 'miss', progress: 0, active: false }
+        ];
+        
+        let animationId = null;
+        let explosions = [];
+        
+        // Attack clock - starts at 0728 on July 13, 1944
+        const attackStartTime = new Date(1944, 6, 13, 7, 28, 0);  // July is month 6 (0-indexed)
+        let simulationStartTime = null;
+        
+        function getAttackTime() {
+            if (!simulationStartTime) return attackStartTime;
+            const elapsed = Date.now() - simulationStartTime;
+            return new Date(attackStartTime.getTime() + elapsed);
+        }
+        
+        function formatTime(date) {
+            const h = String(date.getHours()).padStart(2, '0');
+            const m = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+        
+        function formatDate(date) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+        
+        // Convert compass bearing to canvas ROTATION (for drawing ships)
+        // Ship is drawn pointing UP (north = -Y in canvas)
+        // Canvas rotate() is mathematically counterclockwise, but VISUALLY clockwise 
+        // (because Y is inverted). Compass is also clockwise, so use positive angle.
+        function compassToRotation(deg) {
+            return deg * Math.PI / 180;
+        }
+        
+        // Convert compass bearing to movement direction (dx, dy)
+        // Returns unit vector for the compass heading
+        function compassToMovement(deg) {
+            const rad = deg * Math.PI / 180;
+            return {
+                dx: Math.sin(rad),   // East component
+                dy: -Math.cos(rad)   // North component (negative because canvas Y is down)
+            };
+        }
+        
+        // Calculate torpedo trajectory using gyro angle
+        // Torpedo exits bow, then turns by gyro angle to intercept heading
+        function getTorpedoHeading(subCourse, gyroAngle, progress) {
+            const turnStartProgress = 0.08;  // Start turning after clearing the tubes
+            const turnEndProgress = 0.25;    // Complete turn by 25% of travel
+            
+            // Final heading = sub course + gyro turn
+            const finalHeading = (subCourse + gyroAngle + 360) % 360;
+            
+            let currentHeading;
+            if (progress < turnStartProgress) {
+                // Initially traveling in sub's direction (out of bow)
+                currentHeading = subCourse;
+            } else if (progress < turnEndProgress) {
+                const turnProgress = (progress - turnStartProgress) / (turnEndProgress - turnStartProgress);
+                // Smooth easing for the turn
+                const easedProgress = turnProgress * turnProgress * (3 - 2 * turnProgress);
+                currentHeading = subCourse + gyroAngle * easedProgress;
+            } else {
+                // Running straight on intercept heading
+                currentHeading = finalHeading;
+            }
+            
+            return currentHeading;
+        }
+        
+        function drawShip(x, y, course, color, name, isSubmarine = false) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(compassToRotation(course));
+            
+            // Ship body
+            ctx.beginPath();
+            if (isSubmarine) {
+                // Use Cobia image if loaded
+                if (cobiaImgLoaded) {
+                    // Cobia ~100 yards = 30px at scale 0.3
+                    // Image is horizontal (bow pointing right), need to rotate -90° to point up
+                    ctx.rotate(-Math.PI / 2);  // Rotate image to point bow up
+                    const targetLength = 30;  // 100 yards at scale
+                    const scale = targetLength / cobiaImg.width;  // Image width is the length
+                    const imgW = cobiaImg.width * scale;
+                    const imgH = cobiaImg.height * scale;
+                    ctx.drawImage(cobiaImg, -imgW/2, -imgH/2, imgW, imgH);
+                } else {
+                    // Fallback: draw ellipse shape
+                    ctx.ellipse(0, 0, 12, 35, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(-4, -8, 8, 12);
+                }
+            } else {
+                // Surface ship - use AK image if loaded
+                if (targetImgLoaded) {
+                    // Noshima ~140 yards = 42px at scale 0.3
+                    // Adjust rotation if image orientation differs
+                    ctx.rotate(-Math.PI / 2);  // Rotate if image is horizontal
+                    const targetLength = 42;  // 140 yards at scale
+                    const scale = targetLength / targetImg.width;
+                    const imgW = targetImg.width * scale;
+                    const imgH = targetImg.height * scale;
+                    ctx.drawImage(targetImg, -imgW/2, -imgH/2, imgW, imgH);
+                } else {
+                    // Fallback: triangle shape
+                    ctx.moveTo(0, -40);
+                    ctx.lineTo(15, 30);
+                    ctx.lineTo(-15, 30);
+                    ctx.closePath();
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.restore();
+            
+            // Label
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, x, y + (isSubmarine ? 25 : 60));
+        }
+        
+        function drawTorpedo(torp, fromX, fromY) {
+            const totalDist = 330;  // 1,100 yards at scale 0.3
+            const steps = 50;  // Number of points in the path
+            
+            // Calculate the bow position (offset from sub center)
+            const bowOffset = 35;
+            const bowDir = compassToMovement(cobia.course);
+            const bowX = fromX + bowDir.dx * bowOffset;
+            const bowY = fromY + bowDir.dy * bowOffset;
+            
+            // All torpedoes originate from bow (no lateral offset - Cobia icon is small)
+            const startX = bowX;
+            const startY = bowY;
+            
+            // Build the curved path using new trajectory function
+            const path = [];
+            let x = startX, y = startY;
+            const currentSteps = Math.floor(steps * torp.progress);
+            
+            for (let i = 0; i <= currentSteps; i++) {
+                const p = i / steps;
+                const heading = getTorpedoHeading(cobia.course, torp.gyro, p);
+                const dir = compassToMovement(heading);
+                const stepDist = totalDist / steps;
+                
+                if (i === 0) {
+                    path.push({ x: startX, y: startY });
+                } else {
+                    x += dir.dx * stepDist;
+                    y += dir.dy * stepDist;
+                    path.push({ x, y });
+                }
+            }
+            
+            // Draw wake (curved path)
+            if (path.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(path[0].x, path[0].y);
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(path[i].x, path[i].y);
+                }
+                ctx.strokeStyle = torp.result === 'hit' ? 'rgba(77, 175, 74, 0.6)' : 'rgba(231, 76, 60, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Torpedo head at current position
+            const lastPoint = path[path.length - 1];
+            if (torp.progress < 1 && lastPoint) {
+                ctx.beginPath();
+                ctx.arc(lastPoint.x, lastPoint.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                
+                // Draw small direction indicator
+                const heading = getTorpedoHeading(cobia.course, torp.gyro, torp.progress);
+                const headDir = compassToMovement(heading);
+                ctx.beginPath();
+                ctx.moveTo(lastPoint.x, lastPoint.y);
+                ctx.lineTo(lastPoint.x + headDir.dx * 10, lastPoint.y + headDir.dy * 10);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
+            return lastPoint || { x: startX, y: startY };
+        }
+        
+        function drawExplosion(x, y, size) {
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+            gradient.addColorStop(0, 'rgba(255, 200, 50, 0.9)');
+            gradient.addColorStop(0.3, 'rgba(255, 100, 0, 0.7)');
+            gradient.addColorStop(0.7, 'rgba(100, 50, 0, 0.4)');
+            gradient.addColorStop(1, 'rgba(50, 50, 50, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+        
+        function drawRangeRings() {
+            // Range circles fixed at firing point (not moving with Cobia)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            [500, 1000, 1500].forEach(range => {
+                ctx.beginPath();
+                ctx.arc(firingPoint.x, firingPoint.y, range * SCALE, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(range + ' yds', firingPoint.x + range * SCALE + 5, firingPoint.y);
+            });
+        }
+        
+        function drawCompass() {
+            const cx = W - 50;
+            const cy = 50;
+            const r = 35;
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.stroke();
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', cx, cy - r + 12);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('E', cx + r - 8, cy + 4);
+            ctx.fillText('S', cx, cy + r - 5);
+            ctx.fillText('W', cx - r + 8, cy + 4);
+        }
+        
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#1a3a5c';
+            ctx.fillRect(0, 0, W, H);
+            
+            // Sea texture
+            for (let i = 0; i < 50; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.03})`;
+                ctx.fillRect(Math.random() * W, Math.random() * H, Math.random() * 100, 1);
+            }
+            
+            drawRangeRings();
+            drawCompass();
+            
+            // Draw torpedoes (originate from FIRING position, not current Cobia position)
+            torpedoes.forEach((torp, i) => {
+                if (torp.active || torp.progress > 0) {
+                    const endPos = drawTorpedo(torp, firingPoint.x, firingPoint.y);
+                    
+                    // Create explosion when hit
+                    if (torp.progress >= 1 && torp.result === 'hit' && !torp.exploded) {
+                        explosions.push({ x: target.x, y: target.y, size: 0, maxSize: 60 + Math.random() * 20 });
+                        torp.exploded = true;
+                    }
+                }
+            });
+            
+            // Draw explosions
+            explosions.forEach(exp => {
+                drawExplosion(exp.x + (Math.random() - 0.5) * 20, exp.y + (Math.random() - 0.5) * 20, exp.size);
+            });
+            
+            // Draw ships
+            drawShip(target.x, target.y, target.course, '#ff6b6b', 'HIJMS Noshima', false);
+            drawShip(cobia.x, cobia.y, cobia.course, '#ffd700', 'USS Cobia', true);
+            
+            // Info overlay with live clock
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(10, 10, 170, 88);
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'left';
+            
+            const attackTime = getAttackTime();
+            ctx.fillText(formatDate(attackTime), 20, 28);
+            ctx.font = 'bold 16px monospace';
+            ctx.fillText(formatTime(attackTime), 20, 48);
+            ctx.font = '11px sans-serif';
+            ctx.fillText('Range: 1,100 yards', 20, 68);
+            ctx.fillText('Attack: Submerged', 20, 84);
+        }
+        
+        function animate() {
+            let anyActive = false;
+            let allFiredAndDone = true;
+            
+            // Update torpedo progress
+            // Real time: 1100 yards at 46 knots = ~42 seconds
+            // At 60fps: 42 * 60 = 2520 frames, so increment = 1/2520 ≈ 0.0004
+            torpedoes.forEach((torp, i) => {
+                if (torp.active) {
+                    anyActive = true;
+                    if (torp.progress < 1) {
+                        torp.progress += 0.0004;  // Real-time speed
+                        allFiredAndDone = false;
+                    }
+                } else {
+                    // Torpedo not yet fired
+                    allFiredAndDone = false;
+                }
+            });
+            
+            // Update positions based on max torpedo progress
+            const maxTorpProgress = Math.max(...torpedoes.map(t => t.progress), 0);
+            
+            // Cobia keeps moving throughout the attack
+            if (anyActive && maxTorpProgress < 1.2) {
+                const cobiaMove = compassToMovement(cobia.course);
+                cobia.x = cobia.startX + cobiaMove.dx * Math.min(maxTorpProgress, 1) * 28;
+                cobia.y = cobia.startY + cobiaMove.dy * Math.min(maxTorpProgress, 1) * 28;
+            }
+            
+            // Target moves until first hit, then stops (sinking)
+            const firstHit = torpedoes.find(t => t.result === 'hit' && t.progress >= 1);
+            if (!firstHit && maxTorpProgress > 0) {
+                const targetMove = compassToMovement(target.course);
+                target.x = target.startX + targetMove.dx * Math.min(maxTorpProgress, 1) * 57;
+                target.y = target.startY + targetMove.dy * Math.min(maxTorpProgress, 1) * 57;
+            }
+            
+            // Update explosions
+            explosions.forEach(exp => {
+                if (exp.size < exp.maxSize) {
+                    exp.size += 3;
+                }
+            });
+            
+            draw();
+            
+            // Continue until all torpedoes done and explosions finished
+            if (!allFiredAndDone || explosions.some(e => e.size < e.maxSize)) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+        
+        function playAnimation() {
+            resetAnimation();
+            simulationStartTime = Date.now();  // Start the clock
+            
+            // Fire torpedoes with real-time intervals (~8 seconds between each)
+            setTimeout(() => { torpedoes[0].active = true; animate(); }, 0);
+            setTimeout(() => { torpedoes[1].active = true; }, 8000);   // 8 sec
+            setTimeout(() => { torpedoes[2].active = true; }, 16000);  // 16 sec
+        }
+        
+        function resetAnimation() {
+            if (animationId) cancelAnimationFrame(animationId);
+            torpedoes.forEach(t => {
+                t.progress = 0;
+                t.active = false;
+                t.exploded = false;
+            });
+            // Reset target and Cobia to starting positions
+            target.x = target.startX;
+            target.y = target.startY;
+            cobia.x = cobia.startX;
+            cobia.y = cobia.startY;
+            explosions = [];
+            simulationStartTime = null;  // Reset clock
+            draw();
+        }
+        
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>
+
