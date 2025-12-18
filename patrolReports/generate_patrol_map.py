@@ -77,6 +77,20 @@ SURRENDER_MARKER_CSS = """
     color: white;
     font-weight: bold;
 }
+.gun-attack-marker {
+    background: linear-gradient(135deg, #495057 0%, #6c757d 50%, #495057 100%);
+    border: 2px solid #343a40;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 0 6px 2px rgba(73, 80, 87, 0.5);
+    color: white;
+    font-weight: bold;
+}
 .direction-arrow {
     font-size: 12px;
     color: white;
@@ -616,6 +630,8 @@ def create_map(positions):
                 is_surrender = detail and 'Japan has accepted' in detail
                 # Check if this is a torpedo attack
                 is_torpedo_attack = detail and 'Torpedo Attack' in detail
+                # Check if this is a gun attack
+                is_gun_attack = detail and 'Gun Attack' in detail
                 
                 if is_surrender:
                     # Special animated surrender marker
@@ -653,6 +669,27 @@ def create_map(positions):
                     attack_num = attack_match.group(1) if attack_match else '💥'
                     
                     icon_html = f'<div class="torpedo-attack-marker">{attack_num}</div>'
+                    icon = folium.DivIcon(
+                        html=icon_html,
+                        icon_size=(24, 24),
+                        icon_anchor=(12, 12)
+                    )
+                    folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
+                elif is_gun_attack:
+                    # Special gun attack marker
+                    remarks_line = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks and remarks != detail else ''
+                    popup_html = f'''<div style="width:280px">
+                        <b>P{patrol_num} {detail}</b><br>
+                        {date} {time}<br>
+                        {pos_str}{remarks_line}
+                    </div>'''
+                    popup = folium.Popup(popup_html, max_width=350)
+                    
+                    # Extract attack number for display
+                    attack_match = re.search(r'#(\d+)', detail)
+                    attack_num = attack_match.group(1) if attack_match else '🔫'
+                    
+                    icon_html = f'<div class="gun-attack-marker">{attack_num}</div>'
                     icon = folium.DivIcon(
                         html=icon_html,
                         icon_size=(24, 24),
@@ -718,6 +755,7 @@ def create_map(positions):
         <div style="display:flex; align-items:center;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#4daf4a; margin-right:5px;"></span> Noon position</div>
         <div style="display:flex; align-items:center;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff7f00; margin-right:5px;"></span> Inferred position</div>
         <div style="display:flex; align-items:center;"><span style="display:inline-block; width:16px; height:16px; border-radius:3px; background:linear-gradient(135deg, #dc3545 0%, #ff6b6b 50%, #dc3545 100%); margin-right:5px; border:1px solid #a71d2a; font-size:9px; color:white; text-align:center; line-height:16px; font-weight:bold;">#</span> Torpedo attack</div>
+        <div style="display:flex; align-items:center;"><span style="display:inline-block; width:16px; height:16px; border-radius:3px; background:linear-gradient(135deg, #495057 0%, #6c757d 50%, #495057 100%); margin-right:5px; border:1px solid #343a40; font-size:9px; color:white; text-align:center; line-height:16px; font-weight:bold;">#</span> Gun attack</div>
     </div>
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
