@@ -7,9 +7,14 @@ import re
 import os
 import gzip
 import glob
+import json
+import requests
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from pathlib import Path
+
+# Cache file for IP geolocation
+GEO_CACHE_FILE = '/tmp/ip_geo_cache.json'
 
 # Apache combined log format regex
 LOG_PATTERN = re.compile(
@@ -85,6 +90,69 @@ def parse_apache_time(time_str):
         return datetime.strptime(time_str.split()[0], '%d/%b/%Y:%H:%M:%S')
     except:
         return None
+
+def load_geo_cache():
+    """Load cached IP geolocation data."""
+    try:
+        if os.path.exists(GEO_CACHE_FILE):
+            with open(GEO_CACHE_FILE, 'r') as f:
+                return json.load(f)
+    except:
+        pass
+    return {}
+
+def save_geo_cache(cache):
+    """Save IP geolocation cache."""
+    try:
+        with open(GEO_CACHE_FILE, 'w') as f:
+            json.dump(cache, f)
+    except:
+        pass
+
+def get_ip_geolocations(ips, max_ips=50):
+    """
+    Get geolocation data for a list of IPs using ip-api.com batch API.
+    Returns dict: ip -> {lat, lon, country, city, countryCode}
+    """
+    cache = load_geo_cache()
+    result = {}
+    ips_to_lookup = []
+    
+    # Check cache first
+    for ip in ips[:max_ips]:
+        if ip in cache:
+            result[ip] = cache[ip]
+        else:
+            ips_to_lookup.append(ip)
+    
+    # Batch lookup for uncached IPs (ip-api.com allows 100 per batch)
+    if ips_to_lookup:
+        try:
+            # ip-api.com batch endpoint
+            response = requests.post(
+                'http://ip-api.com/batch?fields=status,country,countryCode,city,lat,lon,query',
+                json=ips_to_lookup[:100],
+                timeout=10
+            )
+            if response.status_code == 200:
+                for item in response.json():
+                    if item.get('status') == 'success':
+                        ip = item['query']
+                        geo_data = {
+                            'lat': item.get('lat'),
+                            'lon': item.get('lon'),
+                            'country': item.get('country'),
+                            'city': item.get('city'),
+                            'countryCode': item.get('countryCode')
+                        }
+                        result[ip] = geo_data
+                        cache[ip] = geo_data
+                
+                save_geo_cache(cache)
+        except Exception as e:
+            print(f"Geolocation lookup failed: {e}")
+    
+    return result
 
 def get_analytics(log_path=None, days=30):
     """
@@ -278,6 +346,24 @@ def get_analytics(log_path=None, days=30):
     # Sort daily data
     sorted_dates = sorted(daily_hits.keys())
     
+    # Get geolocation data for top IPs
+    top_ip_list = [ip for ip, count in ip_hits.most_common(50)]
+    geo_data = get_ip_geolocations(top_ip_list)
+    
+    # Build visitor locations list for map
+    visitor_locations = []
+    for ip, count in ip_hits.most_common(50):
+        if ip in geo_data and geo_data[ip].get('lat'):
+            visitor_locations.append({
+                'ip': ip,
+                'lat': geo_data[ip]['lat'],
+                'lon': geo_data[ip]['lon'],
+                'country': geo_data[ip].get('country', ''),
+                'city': geo_data[ip].get('city', ''),
+                'countryCode': geo_data[ip].get('countryCode', ''),
+                'hits': count
+            })
+    
     return {
         'total_hits': total_hits,
         'filtered_hits': filtered_hits,
@@ -296,6 +382,7 @@ def get_analytics(log_path=None, days=30):
         'paths_by_type': {k: dict(v.most_common(10)) for k, v in paths_by_type.items()},
         'top_ips': ip_hits.most_common(15),
         'top_user_agents': user_agents.most_common(10),
+        'visitor_locations': visitor_locations,
         'days_analyzed': days,
         'log_path': log_path,
         'log_files_read': len(log_files),
