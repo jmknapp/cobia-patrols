@@ -258,6 +258,32 @@ def get_all_positions():
     
     return all_positions
 
+def get_torpedo_attack_results():
+    """Fetch torpedo attack results for popup display."""
+    from db_config import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT patrol, attack_number, result, target_name, target_type
+        FROM torpedo_attacks
+    """)
+    
+    # Create lookup dict: (patrol, attack_number) -> {result, target_name, target_type}
+    results = {}
+    for row in cursor.fetchall():
+        key = (row['patrol'], row['attack_number'])
+        results[key] = {
+            'result': row['result'],
+            'target_name': row['target_name'],
+            'target_type': row['target_type']
+        }
+    
+    cursor.close()
+    conn.close()
+    
+    return results
+
 def format_position_str(p):
     """Format position as degrees/minutes string."""
     lat_d = p.get('latitude_deg')
@@ -407,6 +433,9 @@ def split_at_antimeridian(coords):
 
 def create_map(positions):
     """Create a Folium map with patrol tracks."""
+    
+    # Get torpedo attack results for popup display
+    torpedo_results = get_torpedo_attack_results()
     
     # Group by patrol
     patrols = {}
@@ -661,19 +690,33 @@ def create_map(positions):
                     folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
                 elif is_torpedo_attack:
                     # Special torpedo attack marker with explosion icon
+                    # Extract attack number (handles "No. 1", "#1", etc.)
+                    attack_match = re.search(r'(?:No\.?\s*|#)(\d+)', detail)
+                    attack_num_int = int(attack_match.group(1)) if attack_match else None
+                    attack_num_str = attack_match.group(1) if attack_match else '💥'
+                    
+                    # Look up result from torpedo_attacks table
+                    result_info = torpedo_results.get((patrol_num, attack_num_int), {})
+                    result = result_info.get('result', '')
+                    target_name = result_info.get('target_name', '')
+                    
+                    # Build popup with result
+                    result_line = ''
+                    if result:
+                        result_color = '#28a745' if result == 'Sunk' else '#dc3545' if result == 'Miss' else '#ffc107'
+                        result_line = f'<br><b style="color:{result_color};">{result}</b>'
+                        if target_name:
+                            result_line += f' - {target_name}'
+                    
                     remarks_line = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks and remarks != detail else ''
                     popup_html = f'''<div style="width:280px">
-                        <b>P{patrol_num} {detail}</b><br>
+                        <b>P{patrol_num} {detail}</b>{result_line}<br>
                         {date} {time}<br>
                         {pos_str}{remarks_line}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     
-                    # Extract attack number for display
-                    attack_match = re.search(r'#(\d+)', detail)
-                    attack_num = attack_match.group(1) if attack_match else '💥'
-                    
-                    icon_html = f'<div class="torpedo-attack-marker">{attack_num}</div>'
+                    icon_html = f'<div class="torpedo-attack-marker">{attack_num_str}</div>'
                     icon = folium.DivIcon(
                         html=icon_html,
                         icon_size=(24, 24),
