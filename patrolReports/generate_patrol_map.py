@@ -348,16 +348,10 @@ def find_narrative_page(narrative_index, patrol, obs_date, obs_time):
 
 def get_pdf_filename(patrol):
     """Get the PDF filename for a given patrol number."""
-    # Map patrol number to PDF filename
-    patrol_pdfs = {
-        1: 'USS_Cobia_P1.pdf',
-        2: 'USS_Cobia_P2.pdf',
-        3: 'USS_Cobia_P3.pdf',
-        4: 'USS_Cobia_P4.pdf',
-        5: 'USS_Cobia_P5.pdf',
-        6: 'USS_Cobia_P6.pdf',
-    }
-    return patrol_pdfs.get(patrol, f'USS_Cobia_P{patrol}.pdf')
+    # Map patrol number to PDF filename (using ordinal names)
+    ordinals = {1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th', 6: '6th'}
+    ordinal = ordinals.get(patrol, f'{patrol}th')
+    return f'USS_Cobia_{ordinal}_Patrol_Report.pdf'
 
 def format_position_str(p):
     """Format position as degrees/minutes string."""
