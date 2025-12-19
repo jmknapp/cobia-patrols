@@ -779,11 +779,12 @@ def create_map(positions):
                         <h3 style="color:#28a745; margin:0 0 10px 0;">🎖️ Special Operations 🎖️</h3>
                         <b>July 27, 1945</b><br><br>
                         <i style="font-size:14px;">"{detail}"</i><br><br>
-                        {pos_str}<br>
+                        {pos_str} <span style="font-size:10px; color:#999;">(approx.)</span><br>
                         <p style="font-size:11px; color:#666; margin-top:10px;">
                         USS Cobia conducted a special mission to land<br>
                         Javanese commandos on the west coast of Java<br>
-                        in the Sunda Strait area.
+                        in the Sunda Strait area.<br>
+                        <i>(Details redacted in patrol report)</i>
                         </p>
                         {view_link}
                     </div>'''
