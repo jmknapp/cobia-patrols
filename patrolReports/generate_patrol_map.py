@@ -140,7 +140,7 @@ AIRCRAFT_IMAGES = {
     'Helldiver': ('Curtiss SB2C Helldiver', None),  # No image yet
 }
 
-def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, observation_date, remarks='', contact_no=''):
+def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, observation_date, remarks='', contact_no='', view_link=''):
     """Generate popup HTML with aircraft image if available."""
     remarks_html = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
     contact_str = f' #{contact_no}' if contact_no else ''
@@ -165,7 +165,7 @@ def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, obse
                 <b>P{patrol_num} Aircraft Contact{contact_str}</b><br>
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
-                {position_str}{remarks_html}<br>
+                {position_str}{remarks_html}{view_link}<br>
                 <img src="{img_url}" style="width:300px; margin-top:5px;">
             </div>'''
         else:
@@ -173,14 +173,14 @@ def get_aircraft_popup(aircraft_type, patrol_num, date, time, position_str, obse
                 <b>P{patrol_num} Aircraft Contact{contact_str}</b><br>
                 <b>{aircraft_type}</b> ({full_name})<br>
                 {date} {time}<br>
-                {position_str}{remarks_html}
+                {position_str}{remarks_html}{view_link}
             </div>'''
     else:
         return f'''<div style="width:280px">
             <b>P{patrol_num} Aircraft Contact{contact_str}</b><br>
             <b>{aircraft_type or 'Unknown'}</b><br>
             {date} {time}<br>
-            {position_str}{remarks_html}
+            {position_str}{remarks_html}{view_link}
         </div>'''
 
 # Colors for each patrol
@@ -283,6 +283,81 @@ def get_torpedo_attack_results():
     conn.close()
     
     return results
+
+def get_narrative_page_index():
+    """Fetch narrative page index for linking popups to PDF pages."""
+    from db_config import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT patrol, page, observation_date, observation_time
+        FROM narrative_page_index
+        ORDER BY patrol, observation_date, observation_time
+    """)
+    
+    # Group by patrol: patrol -> list of {page, date, time}
+    index = {}
+    for row in cursor.fetchall():
+        patrol = row['patrol']
+        if patrol not in index:
+            index[patrol] = []
+        index[patrol].append({
+            'page': row['page'],
+            'date': row['observation_date'],
+            'time': row['observation_time']
+        })
+    
+    cursor.close()
+    conn.close()
+    
+    return index
+
+def find_narrative_page(narrative_index, patrol, obs_date, obs_time):
+    """
+    Find the appropriate PDF page for a given patrol, date, and time.
+    Returns the page number where the narrative starts at or before the given date/time.
+    Falls back to page 1 if no match found.
+    """
+    if patrol not in narrative_index:
+        return 1
+    
+    entries = narrative_index[patrol]
+    
+    # Convert obs_time to comparable format
+    if obs_time:
+        obs_time_str = str(obs_time).zfill(4)
+    else:
+        obs_time_str = "0000"
+    
+    # Find the latest entry that is at or before the given date/time
+    best_page = 1
+    for entry in entries:
+        entry_date = entry['date']
+        entry_time = entry['time'] or "0000"
+        
+        # Compare date first, then time
+        if entry_date < obs_date:
+            best_page = entry['page']
+        elif entry_date == obs_date and entry_time <= obs_time_str:
+            best_page = entry['page']
+        elif entry_date > obs_date:
+            break  # Entries are sorted, so we can stop
+    
+    return best_page
+
+def get_pdf_filename(patrol):
+    """Get the PDF filename for a given patrol number."""
+    # Map patrol number to PDF filename
+    patrol_pdfs = {
+        1: 'USS_Cobia_P1.pdf',
+        2: 'USS_Cobia_P2.pdf',
+        3: 'USS_Cobia_P3.pdf',
+        4: 'USS_Cobia_P4.pdf',
+        5: 'USS_Cobia_P5.pdf',
+        6: 'USS_Cobia_P6.pdf',
+    }
+    return patrol_pdfs.get(patrol, f'USS_Cobia_P{patrol}.pdf')
 
 def format_position_str(p):
     """Format position as degrees/minutes string."""
@@ -436,6 +511,9 @@ def create_map(positions):
     
     # Get torpedo attack results for popup display
     torpedo_results = get_torpedo_attack_results()
+    
+    # Get narrative page index for PDF links
+    narrative_index = get_narrative_page_index()
     
     # Group by patrol
     patrols = {}
@@ -605,6 +683,11 @@ def create_map(positions):
             remarks = p.get('remarks', '')
             contact_no = p.get('contact_no', '')
             
+            # Get PDF page for this date/time
+            pdf_page = find_narrative_page(narrative_index, patrol_num, date, time)
+            pdf_file = get_pdf_filename(patrol_num)
+            view_link = f'<br><a href="/view?file={pdf_file}&page={pdf_page}" target="_blank" style="font-size:11px; color:#2980b9;">View in Report →</a>'
+            
             # Different marker styles for different sources
             if source == 'ship':
                 remarks_html = f'<br><i style="font-size:11px; color:#666;">{remarks}</i>' if remarks else ''
@@ -613,7 +696,7 @@ def create_map(positions):
                     <b>P{patrol_num} Ship Contact{contact_str}</b><br>
                     <b>{detail}</b><br>
                     {date} {time}<br>
-                    {pos_str}{remarks_html}
+                    {pos_str}{remarks_html}{view_link}
                 </div>'''
                 popup = folium.Popup(popup_html, max_width=350)
                 # Smaller custom icon with ship graphic
@@ -637,7 +720,7 @@ def create_map(positions):
                 folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
                 continue
             elif source == 'aircraft':
-                popup_html = get_aircraft_popup(detail, patrol_num, date, time, pos_str, date, remarks, contact_no)
+                popup_html = get_aircraft_popup(detail, patrol_num, date, time, pos_str, date, remarks, contact_no, view_link)
                 popup = folium.Popup(popup_html, max_width=350)
                 # Smaller custom icon with plane graphic
                 icon_html = '''<div style="
@@ -678,6 +761,7 @@ def create_map(positions):
                         USS Cobia was patrolling off Formosa when word came<br>
                         that Japan had accepted the terms of surrender.
                         </p>
+                        {view_link}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     
@@ -712,7 +796,7 @@ def create_map(positions):
                     popup_html = f'''<div style="width:280px">
                         <b>P{patrol_num} {detail}</b>{result_line}<br>
                         {date} {time}<br>
-                        {pos_str}{remarks_line}
+                        {pos_str}{remarks_line}{view_link}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     
@@ -729,7 +813,7 @@ def create_map(positions):
                     popup_html = f'''<div style="width:280px">
                         <b>P{patrol_num} {detail}</b><br>
                         {date} {time}<br>
-                        {pos_str}{remarks_line}
+                        {pos_str}{remarks_line}{view_link}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     
@@ -752,7 +836,7 @@ def create_map(positions):
                         {"<b>" + detail + "</b><br>" if detail else ""}
                         {date} {time}<br>
                         {pos_str}<br>
-                        <i style="font-size:11px; color:#666;">Position derived from narrative</i>{remarks_line}
+                        <i style="font-size:11px; color:#666;">Position derived from narrative</i>{remarks_line}{view_link}
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     folium.CircleMarker(
@@ -772,7 +856,7 @@ def create_map(positions):
                 popup_html = f'''<div style="width:280px">
                     <b>P{patrol_num} Noon Position</b><br>
                     {date} {time}<br>
-                    {pos_str}{remarks_html}
+                    {pos_str}{remarks_html}{view_link}
                 </div>'''
                 popup = folium.Popup(popup_html, max_width=350)
                 folium.CircleMarker(
