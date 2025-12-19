@@ -811,8 +811,8 @@ def create_map(positions):
                     </div>'''
                     popup = folium.Popup(popup_html, max_width=350)
                     
-                    # Extract attack number for display
-                    attack_match = re.search(r'#(\d+)', detail)
+                    # Extract attack number for display (handles "No. 1", "#1", etc.)
+                    attack_match = re.search(r'(?:No\.?\s*|#)(\d+)', detail)
                     attack_num = attack_match.group(1) if attack_match else '🔫'
                     
                     icon_html = f'<div class="gun-attack-marker">{attack_num}</div>'
