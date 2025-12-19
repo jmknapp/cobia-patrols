@@ -9,3 +9,11 @@ errorlog = "/var/log/cobiapatrols/gunicorn_error.log"
 accesslog = "/var/log/cobiapatrols/gunicorn_access.log"
 loglevel = "info"
 
+# Worker lifecycle settings to prevent intermittent failures
+max_requests = 1000        # Restart workers after this many requests (prevents memory leaks)
+max_requests_jitter = 50   # Add randomness to prevent all workers restarting at once
+worker_connections = 1000  # Max simultaneous connections per worker
+
+# Retry settings
+backlog = 2048             # Connection queue size
+
