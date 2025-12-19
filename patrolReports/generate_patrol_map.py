@@ -119,6 +119,18 @@ SURRENDER_MARKER_CSS = """
     font-size: 16px;
     box-shadow: 0 0 12px 4px rgba(40, 167, 69, 0.6);
 }
+.memorial-marker {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+    border: 3px solid #4a4a6a;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 10px 3px rgba(74, 74, 106, 0.6);
+}
 .direction-arrow {
     font-size: 12px;
     color: white;
@@ -772,8 +784,32 @@ def create_map(positions):
                 is_gun_attack = detail and 'Gun Attack' in detail
                 # Check if this is a commando landing operation
                 is_commando_landing = detail and ('commando' in detail.lower() or 'landed' in detail.lower())
+                # Check if this is a memorial/casualty event
+                is_memorial = detail and ('killed in action' in detail.lower() or 'kia' in detail.lower() or 'wounded' in detail.lower())
                 
-                if is_commando_landing:
+                if is_memorial:
+                    # Memorial marker for crew casualties
+                    popup_html = f'''<div style="width:320px; text-align:center;">
+                        <h3 style="color:#4a4a6a; margin:0 0 10px 0;">✝ In Memoriam ✝</h3>
+                        <b>{date}</b><br><br>
+                        <i style="font-size:14px;">{detail}</i><br><br>
+                        {pos_str}<br>
+                        <p style="font-size:11px; color:#666; margin-top:10px;">
+                        We honor those who gave their lives<br>
+                        in service aboard USS Cobia.
+                        </p>
+                        {view_link}
+                    </div>'''
+                    popup = folium.Popup(popup_html, max_width=350)
+                    
+                    icon_html = '<div class="memorial-marker">✝</div>'
+                    icon = folium.DivIcon(
+                        html=icon_html,
+                        icon_size=(30, 30),
+                        icon_anchor=(15, 15)
+                    )
+                    folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
+                elif is_commando_landing:
                     # Special commando landing marker
                     popup_html = f'''<div style="width:320px; text-align:center;">
                         <h3 style="color:#28a745; margin:0 0 10px 0;">🎖️ Special Operations 🎖️</h3>
