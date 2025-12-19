@@ -92,6 +92,33 @@ SURRENDER_MARKER_CSS = """
     color: white;
     font-weight: bold;
 }
+@keyframes pulse-green {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 15px 8px rgba(40, 167, 69, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+.commando-marker {
+    animation: pulse-green 2s ease-in-out infinite;
+    background: linear-gradient(135deg, #28a745 0%, #5cb85c 50%, #28a745 100%);
+    border: 3px solid #1e7e34;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 12px 4px rgba(40, 167, 69, 0.6);
+}
 .direction-arrow {
     font-size: 12px;
     color: white;
@@ -743,8 +770,33 @@ def create_map(positions):
                 is_torpedo_attack = detail and 'Torpedo Attack' in detail
                 # Check if this is a gun attack
                 is_gun_attack = detail and 'Gun Attack' in detail
+                # Check if this is a commando landing operation
+                is_commando_landing = detail and ('commando' in detail.lower() or 'landed' in detail.lower())
                 
-                if is_surrender:
+                if is_commando_landing:
+                    # Special commando landing marker
+                    popup_html = f'''<div style="width:320px; text-align:center;">
+                        <h3 style="color:#28a745; margin:0 0 10px 0;">🎖️ Special Operations 🎖️</h3>
+                        <b>July 27, 1945</b><br><br>
+                        <i style="font-size:14px;">"{detail}"</i><br><br>
+                        {pos_str}<br>
+                        <p style="font-size:11px; color:#666; margin-top:10px;">
+                        USS Cobia conducted a special mission to land<br>
+                        Javanese commandos on the west coast of Java<br>
+                        in the Sunda Strait area.
+                        </p>
+                        {view_link}
+                    </div>'''
+                    popup = folium.Popup(popup_html, max_width=350)
+                    
+                    icon_html = '<div class="commando-marker">🪂</div>'
+                    icon = folium.DivIcon(
+                        html=icon_html,
+                        icon_size=(30, 30),
+                        icon_anchor=(15, 15)
+                    )
+                    folium.Marker([lat, lon], popup=popup, icon=icon).add_to(fg)
+                elif is_surrender:
                     # Special animated surrender marker
                     popup_html = f'''<div style="width:320px; text-align:center;">
                         <h3 style="color:#b8860b; margin:0 0 10px 0;">🕊️ End of the War 🕊️</h3>
