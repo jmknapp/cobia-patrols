@@ -474,21 +474,33 @@
         
         // Torpedo state
         const TORPEDO_SPEED_KNOTS = 46;
-        const TORPEDO_SPEED_YPS = TORPEDO_SPEED_KNOTS * 2025.4 / 3600;
+        const TORPEDO_SPEED_YPS = TORPEDO_SPEED_KNOTS * 2025.4 / 3600; // ~25.9 yps
         const HIT_RADIUS = 30; // yards - how close torpedo needs to be to target
+        
+        // Realistic torpedo trajectory parameters
+        const INITIAL_RUN_DISTANCE = 75; // yards straight ahead before gyro engages
+        const TORPEDO_TURN_RATE_DPS = 4.0; // degrees per second turn rate
+        // Turn radius = speed / angular velocity = 25.9 yps / (4 * π/180) rad/s ≈ 371 yards
+        const TORPEDO_TURN_RADIUS = TORPEDO_SPEED_YPS / (TORPEDO_TURN_RATE_DPS * Math.PI / 180);
         
         let torpedoes = []; // Array of active torpedoes
         
         function fireTorpedo() {
+            const gyroAngle = computed.gyroAngle;
             const torpedo = {
                 x: state.ownX,
                 y: state.ownY,
-                heading: inputs.ownCourse + computed.gyroAngle,
+                heading: inputs.ownCourse, // Start heading along sub's course
+                initialHeading: inputs.ownCourse,
+                targetHeading: inputs.ownCourse + gyroAngle, // Final heading after turn
+                gyroAngle: gyroAngle,
                 trail: [{x: state.ownX, y: state.ownY}],
                 active: true,
                 result: null, // 'hit' or 'miss'
                 distanceTraveled: 0,
-                maxRange: computed.torpedoRun * 1.5 // Allow some extra range before declaring miss
+                phase: 'initial', // 'initial', 'turning', 'final'
+                turnProgress: 0, // degrees turned so far
+                maxRange: computed.torpedoRun * 2.0 // Allow extra range before declaring miss
             };
             torpedoes.push(torpedo);
         }
@@ -497,13 +509,67 @@
             torpedoes.forEach(torpedo => {
                 if (!torpedo.active) return;
                 
-                // Move torpedo
                 const headingRad = torpedo.heading * Math.PI / 180;
-                const dx = TORPEDO_SPEED_YPS * Math.sin(headingRad) * dt;
-                const dy = TORPEDO_SPEED_YPS * Math.cos(headingRad) * dt;
-                torpedo.x += dx;
-                torpedo.y += dy;
-                torpedo.distanceTraveled += Math.sqrt(dx * dx + dy * dy);
+                let dx, dy, dist;
+                
+                // Phase-based movement
+                if (torpedo.phase === 'initial') {
+                    // Phase 1: Straight run along initial heading (sub's course)
+                    dx = TORPEDO_SPEED_YPS * Math.sin(headingRad) * dt;
+                    dy = TORPEDO_SPEED_YPS * Math.cos(headingRad) * dt;
+                    torpedo.x += dx;
+                    torpedo.y += dy;
+                    dist = Math.sqrt(dx * dx + dy * dy);
+                    torpedo.distanceTraveled += dist;
+                    
+                    // Check if initial run complete
+                    if (torpedo.distanceTraveled >= INITIAL_RUN_DISTANCE) {
+                        torpedo.phase = 'turning';
+                        torpedo.turnProgress = 0;
+                    }
+                }
+                else if (torpedo.phase === 'turning') {
+                    // Phase 2: Circular arc turn to achieve gyro angle
+                    const turnAmount = Math.abs(torpedo.gyroAngle);
+                    
+                    if (turnAmount < 0.5) {
+                        // Negligible turn, skip to final
+                        torpedo.phase = 'final';
+                        torpedo.heading = torpedo.targetHeading;
+                    } else {
+                        // Turn at TORPEDO_TURN_RATE_DPS
+                        const turnThisFrame = TORPEDO_TURN_RATE_DPS * dt;
+                        const turnDirection = torpedo.gyroAngle > 0 ? 1 : -1; // positive = starboard
+                        
+                        torpedo.heading += turnDirection * turnThisFrame;
+                        torpedo.turnProgress += turnThisFrame;
+                        
+                        // Move along the arc
+                        const newHeadingRad = torpedo.heading * Math.PI / 180;
+                        dx = TORPEDO_SPEED_YPS * Math.sin(newHeadingRad) * dt;
+                        dy = TORPEDO_SPEED_YPS * Math.cos(newHeadingRad) * dt;
+                        torpedo.x += dx;
+                        torpedo.y += dy;
+                        dist = Math.sqrt(dx * dx + dy * dy);
+                        torpedo.distanceTraveled += dist;
+                        
+                        // Check if turn complete
+                        if (torpedo.turnProgress >= turnAmount) {
+                            torpedo.phase = 'final';
+                            torpedo.heading = torpedo.targetHeading; // Snap to exact heading
+                        }
+                    }
+                }
+                else if (torpedo.phase === 'final') {
+                    // Phase 3: Straight run on final heading
+                    const finalHeadingRad = torpedo.heading * Math.PI / 180;
+                    dx = TORPEDO_SPEED_YPS * Math.sin(finalHeadingRad) * dt;
+                    dy = TORPEDO_SPEED_YPS * Math.cos(finalHeadingRad) * dt;
+                    torpedo.x += dx;
+                    torpedo.y += dy;
+                    dist = Math.sqrt(dx * dx + dy * dy);
+                    torpedo.distanceTraveled += dist;
+                }
                 
                 // Record trail
                 torpedo.trail.push({x: torpedo.x, y: torpedo.y});
