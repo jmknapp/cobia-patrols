@@ -279,6 +279,23 @@
                 <span class="value" id="runTime">-- sec</span>
             </div>
             
+            <h2 style="margin-top: 1.5rem;">📍 POSITION KEEPER</h2>
+            
+            <div class="output-value">
+                <span class="label">Present Bearing (B)</span>
+                <span class="value" id="presentBearing">--°</span>
+            </div>
+            
+            <div class="output-value">
+                <span class="label">Present Range (R)</span>
+                <span class="value" id="presentRange">-- yds</span>
+            </div>
+            
+            <div class="output-value">
+                <span class="label">Elapsed Time</span>
+                <span class="value" id="elapsedTime">-- sec</span>
+            </div>
+            
             <h2 style="margin-top: 1.5rem;">🔧 COMPONENT LEGEND</h2>
             <div class="component-legend">
                 <div class="legend-item">
@@ -406,15 +423,55 @@
             targetSpeed: 8
         };
         
+        // Position state (own ship at origin, target relative)
+        // Units: yards, with Y = North, X = East
+        let state = {
+            ownX: 0,
+            ownY: 0,
+            targetX: 0,
+            targetY: 0,
+            elapsedTime: 0
+        };
+        
         // Computed values
         let computed = {
             gyroAngle: 0,
-            relBearing: 0,
-            targetAngle: 0,
+            relBearing: 0,       // Br - relative bearing to target
+            targetAngle: 0,      // A - target angle
             trackAngle: 0,
             torpedoRun: 0,
-            runTime: 0
+            runTime: 0,
+            presentRange: 0,     // R - current range
+            presentBearing: 0    // B - current true bearing
         };
+        
+        const KNOTS_TO_YPS = 2025.4 / 3600; // yards per second per knot
+        
+        function initializeState() {
+            // Place target at initial bearing and range from own ship (at origin)
+            const bearingRad = inputs.targetBearing * Math.PI / 180;
+            state.ownX = 0;
+            state.ownY = 0;
+            state.targetX = inputs.targetRange * Math.sin(bearingRad);
+            state.targetY = inputs.targetRange * Math.cos(bearingRad);
+            state.elapsedTime = 0;
+        }
+        
+        function updatePositions(dt) {
+            // Move own ship along its course
+            const ownCourseRad = inputs.ownCourse * Math.PI / 180;
+            const ownSpeedYps = inputs.ownSpeed * KNOTS_TO_YPS;
+            state.ownX += ownSpeedYps * Math.sin(ownCourseRad) * dt;
+            state.ownY += ownSpeedYps * Math.cos(ownCourseRad) * dt;
+            
+            // Move target along its course
+            const targetCourseRad = inputs.targetCourse * Math.PI / 180;
+            const targetSpeedYps = inputs.targetSpeed * KNOTS_TO_YPS;
+            state.targetX += targetSpeedYps * Math.sin(targetCourseRad) * dt;
+            state.targetY += targetSpeedYps * Math.cos(targetCourseRad) * dt;
+            
+            state.elapsedTime += dt;
+        }
         
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -429,30 +486,43 @@
         }
         
         function computeTDC() {
-            // Relative bearing
-            computed.relBearing = normalizeAngle(inputs.targetBearing - inputs.ownCourse);
+            // Calculate current bearing and range from positions
+            // Vector from own ship to target
+            const dx = state.targetX - state.ownX;
+            const dy = state.targetY - state.ownY;
             
-            // Target angle
-            computed.targetAngle = normalizeAngle(inputs.targetBearing + 180 - inputs.targetCourse);
+            // Present range (R) - Position Keeper output
+            computed.presentRange = Math.sqrt(dx * dx + dy * dy);
             
-            // Simplified gyro calculation
+            // Present true bearing (B) - Position Keeper output
+            computed.presentBearing = Math.atan2(dx, dy) * 180 / Math.PI;
+            if (computed.presentBearing < 0) computed.presentBearing += 360;
+            
+            // Relative bearing (Br) = B - Co (Diff 7)
+            computed.relBearing = normalizeAngle(computed.presentBearing - inputs.ownCourse);
+            
+            // Target angle (A) = B + 180 - C (Diff 33)
+            computed.targetAngle = normalizeAngle(computed.presentBearing + 180 - inputs.targetCourse);
+            
+            // === Angle Solver: compute gyro angle for intercept ===
             const torpedoSpeed = 46; // knots
-            const torpedoSpeedYps = torpedoSpeed * 2025.4 / 3600;
-            const targetSpeedYps = inputs.targetSpeed * 2025.4 / 3600;
+            const torpedoSpeedYps = torpedoSpeed * KNOTS_TO_YPS;
+            const targetSpeedYps = inputs.targetSpeed * KNOTS_TO_YPS;
             
-            const runTime = inputs.targetRange / torpedoSpeedYps;
-            const targetAdvance = targetSpeedYps * runTime;
+            // Estimate run time based on current range
+            const estRunTime = computed.presentRange / torpedoSpeedYps;
+            const targetAdvance = targetSpeedYps * estRunTime;
             
-            const bearingRad = inputs.targetBearing * Math.PI / 180;
+            // Future target position (relative to own ship's current position)
             const courseRad = inputs.targetCourse * Math.PI / 180;
+            const futureX = dx + targetAdvance * Math.sin(courseRad);
+            const futureY = dy + targetAdvance * Math.cos(courseRad);
             
-            const targetX = inputs.targetRange * Math.sin(bearingRad);
-            const targetY = inputs.targetRange * Math.cos(bearingRad);
+            // Intercept bearing
+            let interceptBearing = Math.atan2(futureX, futureY) * 180 / Math.PI;
+            if (interceptBearing < 0) interceptBearing += 360;
             
-            const futureX = targetX + targetAdvance * Math.sin(courseRad);
-            const futureY = targetY + targetAdvance * Math.cos(courseRad);
-            
-            const interceptBearing = Math.atan2(futureX, futureY) * 180 / Math.PI;
+            // Gyro angle = intercept bearing - own course
             computed.gyroAngle = normalizeAngle(interceptBearing - inputs.ownCourse);
             
             // Track angle
@@ -460,7 +530,7 @@
             computed.trackAngle = Math.abs(normalizeAngle(torpedoHeading - inputs.targetCourse + 180));
             if (computed.trackAngle > 180) computed.trackAngle = 360 - computed.trackAngle;
             
-            // Torpedo run
+            // Torpedo run to intercept
             computed.torpedoRun = Math.sqrt(futureX * futureX + futureY * futureY);
             computed.runTime = computed.torpedoRun / torpedoSpeedYps;
         }
@@ -472,6 +542,14 @@
             document.getElementById('trackAngle').textContent = computed.trackAngle.toFixed(1) + '°';
             document.getElementById('torpedoRun').textContent = computed.torpedoRun.toFixed(0) + ' yds';
             document.getElementById('runTime').textContent = computed.runTime.toFixed(1) + ' sec';
+            
+            // Also show present bearing and range (Position Keeper outputs)
+            const bearingEl = document.getElementById('presentBearing');
+            const rangeEl = document.getElementById('presentRange');
+            const timeEl = document.getElementById('elapsedTime');
+            if (bearingEl) bearingEl.textContent = computed.presentBearing.toFixed(1) + '°';
+            if (rangeEl) rangeEl.textContent = computed.presentRange.toFixed(0) + ' yds';
+            if (timeEl) timeEl.textContent = state.elapsedTime.toFixed(1) + ' sec';
         }
         
         function drawGear(x, y, radius, teeth, rotation, color) {
@@ -746,11 +824,19 @@
         }
         
         function updateAnimation(dt) {
-            time += dt * simSpeed;
+            const scaledDt = dt * simSpeed;
+            time += scaledDt;
+            
+            // Update actual positions (Position Keeper tracking)
+            updatePositions(scaledDt);
+            
+            // Recompute TDC solution based on new positions
+            computeTDC();
+            updateOutputDisplay();
             
             // Animate components based on computed values
-            components['diff_7'].rotation += computed.relBearing * dt * 0.5;
-            components['diff_33'].rotation += computed.targetAngle * dt * 0.5;
+            components['diff_7'].rotation = computed.relBearing;  // Directly show current Br
+            components['diff_33'].rotation = computed.targetAngle; // Directly show current A
             components['resolver_13'].rotation = computed.relBearing;
             components['resolver_34'].rotation = computed.targetAngle;
             
@@ -793,6 +879,11 @@
             time = 0;
             document.getElementById('startBtn').textContent = '▶ START';
             
+            // Reset positions to initial state
+            initializeState();
+            computeTDC();
+            updateOutputDisplay();
+            
             // Reset component rotations
             for (const comp of Object.values(components)) {
                 comp.rotation = 0;
@@ -809,6 +900,10 @@
         ['ownCourse', 'ownSpeed', 'targetBearing', 'targetRange', 'targetCourse', 'targetSpeed'].forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
                 inputs[id] = parseFloat(e.target.value) || 0;
+                // Re-initialize positions when bearing or range changes (defines initial geometry)
+                if (id === 'targetBearing' || id === 'targetRange') {
+                    initializeState();
+                }
                 computeTDC();
                 updateOutputDisplay();
             });
@@ -817,6 +912,7 @@
         // Initialize
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
+        initializeState();
         computeTDC();
         updateOutputDisplay();
         requestAnimationFrame(animate);
