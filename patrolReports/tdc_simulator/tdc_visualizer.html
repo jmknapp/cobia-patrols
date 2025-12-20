@@ -647,9 +647,74 @@
         const TORPEDO_TURN_RATE_DPS = (TORPEDO_SPEED_YPS / TORPEDO_TURN_RADIUS) * (180 / Math.PI);
         
         let torpedoes = []; // Array of active torpedoes
+        let firedTracks = []; // Array of predicted tracks frozen at moment of firing
+        
+        function capturePredictedTrack() {
+            // Capture the current predicted track in world coordinates
+            // This freezes the track at the moment of firing
+            const ownHeadingRad = inputs.ownCourse * Math.PI / 180;
+            const bowX = state.ownX + Math.sin(ownHeadingRad) * TUBE_BASE_LINE;
+            const bowY = state.ownY + Math.cos(ownHeadingRad) * TUBE_BASE_LINE;
+            
+            const gyroAngle = computed.gyroAngle;
+            const torpedoRun = computed.torpedoRun;
+            
+            // Build path points in world coordinates
+            const pathPoints = [];
+            pathPoints.push({x: bowX, y: bowY});
+            
+            // Phase 1: Reach M (straight run before turn)
+            const reachEndX = bowX + Math.sin(ownHeadingRad) * REACH_DISTANCE;
+            const reachEndY = bowY + Math.cos(ownHeadingRad) * REACH_DISTANCE;
+            pathPoints.push({x: reachEndX, y: reachEndY});
+            
+            // Phase 2: Arc turn
+            if (Math.abs(gyroAngle) > 0.5) {
+                const steps = 12;
+                const angleStep = gyroAngle / steps;
+                const arcLengthPerStep = (Math.abs(gyroAngle) * Math.PI / 180) * TORPEDO_TURN_RADIUS / steps;
+                
+                let currentAngle = inputs.ownCourse;
+                let arcX = reachEndX;
+                let arcY = reachEndY;
+                
+                for (let i = 0; i < steps; i++) {
+                    currentAngle += angleStep;
+                    const stepRad = currentAngle * Math.PI / 180;
+                    arcX += Math.sin(stepRad) * arcLengthPerStep;
+                    arcY += Math.cos(stepRad) * arcLengthPerStep;
+                    pathPoints.push({x: arcX, y: arcY});
+                }
+                
+                // Phase 3: Final straight run
+                const torpedoHeading = inputs.ownCourse + gyroAngle;
+                const torpedoHeadingRad = torpedoHeading * Math.PI / 180;
+                const remainingDist = torpedoRun - REACH_DISTANCE - 
+                    Math.abs(gyroAngle) * Math.PI / 180 * TORPEDO_TURN_RADIUS;
+                if (remainingDist > 0) {
+                    pathPoints.push({
+                        x: arcX + Math.sin(torpedoHeadingRad) * remainingDist,
+                        y: arcY + Math.cos(torpedoHeadingRad) * remainingDist
+                    });
+                }
+            } else {
+                // No significant turn, straight line
+                const torpedoHeadingRad = inputs.ownCourse * Math.PI / 180;
+                pathPoints.push({
+                    x: bowX + Math.sin(torpedoHeadingRad) * torpedoRun,
+                    y: bowY + Math.cos(torpedoHeadingRad) * torpedoRun
+                });
+            }
+            
+            return pathPoints;
+        }
         
         function fireTorpedo() {
             const gyroAngle = computed.gyroAngle;
+            
+            // Capture the predicted track at moment of firing (freezes in world coords)
+            const firedTrack = capturePredictedTrack();
+            firedTracks.push(firedTrack);
             
             // Torpedo starts from bow (P yards ahead of conning tower/center)
             // TDC equations account for this via the Tube Base Line P
@@ -1070,8 +1135,33 @@
             tacticalCtx.fill();
             tacticalCtx.restore();
             
-            // --- Draw torpedo solution path (reach + turn + final run) ---
+            // --- Draw frozen fired tracks (in orange, fixed in world coords) ---
+            firedTracks.forEach(trackPoints => {
+                if (trackPoints.length < 2) return;
+                
+                tacticalCtx.strokeStyle = '#f97316'; // Orange for fired tracks
+                tacticalCtx.lineWidth = 2;
+                tacticalCtx.setLineDash([4, 4]);
+                tacticalCtx.beginPath();
+                
+                // Convert world coords to screen coords
+                const firstPt = trackPoints[0];
+                const firstScreen = worldToScreen(firstPt.x, firstPt.y);
+                tacticalCtx.moveTo(firstScreen.x, firstScreen.y);
+                
+                for (let i = 1; i < trackPoints.length; i++) {
+                    const pt = trackPoints[i];
+                    const ptScreen = worldToScreen(pt.x, pt.y);
+                    tacticalCtx.lineTo(ptScreen.x, ptScreen.y);
+                }
+                
+                tacticalCtx.stroke();
+                tacticalCtx.setLineDash([]);
+            });
+            
+            // --- Draw live torpedo solution path (reach + turn + final run) ---
             // Path starts from BOW (P yards ahead of center), same as actual torpedo
+            // This is the "ready for next shot" track that moves with Cobia
             const ownHeadingDeg = inputs.ownCourse;
             const ownHeadingRadTorp = ownHeadingDeg * Math.PI / 180;
             const torpedoHeading = inputs.ownCourse + computed.gyroAngle;
@@ -1083,7 +1173,7 @@
             const bowScreenX = ownScreen.x + bowOffsetX;
             const bowScreenY = ownScreen.y + bowOffsetY;
             
-            tacticalCtx.strokeStyle = '#c9a227';
+            tacticalCtx.strokeStyle = '#c9a227'; // Yellow/gold for live track
             tacticalCtx.lineWidth = 2;
             tacticalCtx.setLineDash([3, 3]);
             tacticalCtx.beginPath();
@@ -2039,8 +2129,9 @@
             document.getElementById('targetCourse').value = inputs.targetCourse;
             document.getElementById('targetSpeed').value = inputs.targetSpeed;
             
-            // Clear torpedoes
+            // Clear torpedoes and fired tracks
             torpedoes = [];
+            firedTracks = [];
             
             // Reset tactical map zoom/pan
             tacticalZoom = 1.0;
@@ -2101,8 +2192,9 @@
             time = 0;
             document.getElementById('startBtn').textContent = '▶ START';
             
-            // Clear torpedoes
+            // Clear torpedoes and fired tracks
             torpedoes = [];
+            firedTracks = [];
             
             // Reset TDC solving state - gyro starts at 0, not solved
             tdcState.displayGyro = 0;
