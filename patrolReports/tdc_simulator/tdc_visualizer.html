@@ -1521,6 +1521,16 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
+            // Scale to fit canvas - design is for 1050px wide, 550px tall
+            const designWidth = 1050;
+            const designHeight = 550;
+            const scaleX = canvas.width / designWidth;
+            const scaleY = canvas.height / designHeight;
+            const scale = Math.min(scaleX, scaleY, 1.0); // Don't scale up beyond 1x
+            
+            ctx.save();
+            ctx.scale(scale, scale);
+            
             // Draw connections first
             connections.forEach(([from, to]) => {
                 drawConnection(from, to);
@@ -1561,12 +1571,14 @@
             // Dividing line
             ctx.beginPath();
             ctx.moveTo(660, 50);
-            ctx.lineTo(660, canvas.height - 20);
+            ctx.lineTo(660, designHeight - 20);
             ctx.strokeStyle = COLORS.steel;
             ctx.lineWidth = 1;
             ctx.setLineDash([5, 5]);
             ctx.stroke();
             ctx.setLineDash([]);
+            
+            ctx.restore();
         }
         
         // Track previous values to calculate rates of change

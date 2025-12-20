@@ -198,9 +198,9 @@ class TDCMarkIII {
         
         // Current gyro angle being computed
         this.gyroAngle = 0;
-        this.gyroServoRate = 20; // degrees/second - realistic mechanical servo speed
+        this.gyroServoRate = 8; // degrees/second - slow realistic mechanical servo
         this.servoVelocity = 0;  // current servo angular velocity
-        this.servoInertia = 0.85; // momentum retention (0-1), simulates mechanical inertia
+        this.servoInertia = 0.95; // momentum retention (0-1), high inertia for slow response
         
         // Resolver 2FA: Resolves (G - Br)
         this.resolver2FA = new Resolver('resolver_2FA', 'Resolver 2FA (G - Br)');
