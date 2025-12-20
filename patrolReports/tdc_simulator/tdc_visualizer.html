@@ -533,6 +533,52 @@
         // Set initial cursor
         tacticalCanvas.style.cursor = 'grab';
         
+        // Mechanism schematic zoom and pan state
+        let mechZoom = 1.0;       // Zoom multiplier
+        let mechPanX = 0;         // Pan offset in pixels
+        let mechPanY = 0;
+        let mechDragging = false;
+        let mechDragStartX = 0;
+        let mechDragStartY = 0;
+        let mechPanStartX = 0;
+        let mechPanStartY = 0;
+        
+        // Mechanism canvas mouse events
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            mechZoom = Math.max(0.5, Math.min(5.0, mechZoom * zoomFactor));
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            mechDragging = true;
+            mechDragStartX = e.clientX;
+            mechDragStartY = e.clientY;
+            mechPanStartX = mechPanX;
+            mechPanStartY = mechPanY;
+            canvas.style.cursor = 'grabbing';
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (mechDragging) {
+                mechPanX = mechPanStartX + (e.clientX - mechDragStartX);
+                mechPanY = mechPanStartY + (e.clientY - mechDragStartY);
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mechDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            mechDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+        
+        // Set initial cursor for mechanism canvas
+        canvas.style.cursor = 'grab';
+        
         // Component colors
         const COLORS = {
             differential: '#c9a227',
@@ -1776,10 +1822,20 @@
             const designHeight = 550;
             const scaleX = canvas.width / designWidth;
             const scaleY = canvas.height / designHeight;
-            const scale = Math.min(scaleX, scaleY, 1.0); // Don't scale up beyond 1x
+            const baseScale = Math.min(scaleX, scaleY, 1.0); // Don't scale up beyond 1x
             
             ctx.save();
-            ctx.scale(scale, scale);
+            
+            // Apply user zoom and pan (in screen space, before base scale)
+            // First translate to center, then apply zoom, then pan
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            ctx.translate(centerX + mechPanX, centerY + mechPanY);
+            ctx.scale(mechZoom, mechZoom);
+            ctx.translate(-centerX, -centerY);
+            
+            // Apply base scale to fit design to canvas
+            ctx.scale(baseScale, baseScale);
             
             // Draw connections first
             connections.forEach(([from, to]) => {
@@ -2138,6 +2194,11 @@
             tacticalPanX = 0;
             tacticalPanY = 0;
             
+            // Reset mechanism schematic zoom/pan
+            mechZoom = 1.0;
+            mechPanX = 0;
+            mechPanY = 0;
+            
             // Reset TDC solving state - gyro starts at 0, not solved
             tdcState.displayGyro = 0;
             tdcState.targetGyro = 0;
@@ -2195,6 +2256,11 @@
             // Clear torpedoes and fired tracks
             torpedoes = [];
             firedTracks = [];
+            
+            // Reset mechanism schematic zoom/pan
+            mechZoom = 1.0;
+            mechPanX = 0;
+            mechPanY = 0;
             
             // Reset TDC solving state - gyro starts at 0, not solved
             tdcState.displayGyro = 0;
