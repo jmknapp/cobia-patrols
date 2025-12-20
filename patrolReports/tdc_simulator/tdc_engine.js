@@ -198,7 +198,9 @@ class TDCMarkIII {
         
         // Current gyro angle being computed
         this.gyroAngle = 0;
-        this.gyroServoRate = 200; // degrees/second servo response (fast for convergence)
+        this.gyroServoRate = 20; // degrees/second - realistic mechanical servo speed
+        this.servoVelocity = 0;  // current servo angular velocity
+        this.servoInertia = 0.85; // momentum retention (0-1), simulates mechanical inertia
         
         // Resolver 2FA: Resolves (G - Br)
         this.resolver2FA = new Resolver('resolver_2FA', 'Resolver 2FA (G - Br)');
@@ -290,6 +292,7 @@ class TDCMarkIII {
         
         // Reset gyro solver
         this.gyroAngle = 0;
+        this.servoVelocity = 0;
         this.outputs.isSolved = false;
     }
     
@@ -483,48 +486,55 @@ class TDCMarkIII {
         const isRangeSolved = Math.abs(errorXVII) < threshold * 2; // Range is less critical
         
         if (!isLateralSolved) {
-            // Proportional feedback on lateral error
-            // The servo responds to errorXVIII
-            const Kp = 0.002; // Proportional gain (degrees per yard of error)
-            const Kd = 0.05;  // Derivative damping
+            // === REALISTIC MECHANICAL SERVO SIMULATION ===
+            // The servo motor responds to error XVIII with physical inertia
             
-            // Compute derivative of errorXVIII with respect to G
+            // Compute derivative of errorXVIII with respect to G (which way to turn?)
             const delta = 0.5;
             const errPlus = computeError(this.gyroAngle + delta);
             const errMinus = computeError(this.gyroAngle - delta);
             const dErrXVIII_dG = (errPlus.errorXVIII - errMinus.errorXVIII) / (2 * delta);
             
-            // Servo step: proportional to error, scaled by inverse of sensitivity
-            // This implements Newton-Raphson: step = -error / derivative
-            let step = 0;
+            // Desired servo direction based on error gradient
+            let targetVelocity = 0;
             if (Math.abs(dErrXVIII_dG) > 0.1) {
-                // Newton-Raphson step
-                step = -errorXVIII / dErrXVIII_dG;
+                // Newton-Raphson tells us the ideal step
+                const idealStep = -errorXVIII / dErrXVIII_dG;
+                // But servo has limited speed - just go in that direction
+                targetVelocity = Math.sign(idealStep) * this.gyroServoRate;
+                
+                // Reduce speed as we get close to solution (proportional control)
+                const errorMag = Math.abs(errorXVIII);
+                if (errorMag < 50) {
+                    targetVelocity *= errorMag / 50;
+                }
             } else {
-                // Fallback: proportional control
-                step = -errorXVIII * Kp;
+                // Gradient too small - use proportional control on error
+                targetVelocity = -Math.sign(errorXVIII) * this.gyroServoRate * 0.5;
             }
             
-            // Damping to prevent overshoot
-            step *= (1 - Kd);
+            // Apply inertia: servo can't instantly change velocity
+            // This creates the characteristic "hunting" behavior
+            this.servoVelocity = this.servoVelocity * this.servoInertia + 
+                                 targetVelocity * (1 - this.servoInertia);
             
-            // Rate limit the servo motor
-            const maxStep = this.gyroServoRate * dt;
-            step = Math.max(-maxStep, Math.min(maxStep, step));
-            
-            // Apply step
+            // Apply velocity to position
+            const step = this.servoVelocity * dt;
             this.gyroAngle += step;
             this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle));
             
             // Debug
             if (Math.random() < 0.02) {
-                console.log('Servo: dErr/dG=', dErrXVIII_dG.toFixed(2), 'step=', step.toFixed(3), 
-                            'newG=', this.gyroAngle.toFixed(2));
+                console.log('Servo: err=', errorXVIII.toFixed(1), 
+                            'vel=', this.servoVelocity.toFixed(2), 
+                            'G=', this.gyroAngle.toFixed(2));
             }
             
             this.diff22FA.update(this.gyroAngle, 0);
             this.outputs.isSolved = false;
         } else {
+            // Solution found - servo stops but retains some residual motion
+            this.servoVelocity *= 0.9; // Gradually stop
             this.outputs.isSolved = true;
         }
         
