@@ -137,8 +137,18 @@ class TDCMarkIII {
         
         // Torpedo geometry (from O.P. 1056 Fig. 4)
         this.TUBE_BASE_LINE = 50;  // P - distance from conning tower to forward tubes (yards)
+                                    // Negative for stern tubes (e.g., -100)
         this.REACH = 75;           // M - straight run before gyro engages (yards)
         this.TURN_RADIUS = 130;    // Z - torpedo turning radius (yards)
+        
+        // Tube selection affects launch heading
+        // For bow tubes: launch heading = own course
+        // For stern tubes: launch heading = own course + 180°
+        this.isSternTubes = () => this.TUBE_BASE_LINE < 0;
+        this.getLaunchHeading = () => {
+            const base = this.inputs.ownCourse;
+            return this.isSternTubes() ? (base + 180) % 360 : base;
+        };
         
         // === INPUTS (set by operator) ===
         this.inputs = {
@@ -299,9 +309,10 @@ class TDCMarkIII {
         this.int35.reset();
         this.int36.reset();
         
-        // Reset gyro solver - initialize gyro toward target's relative bearing
+        // Reset gyro solver - initialize gyro toward target's relative bearing from LAUNCH heading
         // This prevents converging on wrong-side spurious solutions
-        const relBearing = this.normalizeAngle(this.inputs.targetBearing - this.inputs.ownCourse);
+        const launchHeading = this.getLaunchHeading();
+        const relBearing = this.normalizeAngle(this.inputs.targetBearing - launchHeading);
         // Start gyro roughly toward target (servo will refine from here)
         this.gyroAngle = relBearing * 0.8; // Start 80% of the way toward target
         this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle)); // Clamp to valid range
@@ -351,8 +362,13 @@ class TDCMarkIII {
         const Co = this.inputs.ownCourse;
         const C = this.inputs.targetCourse;
         
-        // Differential 7: Br = B - Co
-        const Br = this.diff7.update(B, Co);
+        // For TDC equations, relative bearing must be relative to LAUNCH heading
+        // For bow tubes: launch heading = own course
+        // For stern tubes: launch heading = own course + 180°
+        const launchHeading = this.getLaunchHeading();
+        
+        // Differential 7: Br = B - launchHeading (relative bearing from launch heading)
+        const Br = this.diff7.update(B, launchHeading);
         this.outputs.relativeBearing = this.normalizeAngle(Br);
         
         // Differential 33: A = (B + 180) - C
