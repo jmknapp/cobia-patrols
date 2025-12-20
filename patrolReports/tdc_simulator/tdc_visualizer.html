@@ -990,19 +990,65 @@
             tacticalCtx.fill();
             tacticalCtx.restore();
             
-            // --- Draw torpedo solution line (intercept bearing) ---
+            // --- Draw torpedo solution path (reach + turn + final run) ---
+            const ownHeadingDeg = inputs.ownCourse;
+            const ownHeadingRadTorp = ownHeadingDeg * Math.PI / 180;
             const torpedoHeading = inputs.ownCourse + computed.gyroAngle;
             const torpedoHeadingRad = torpedoHeading * Math.PI / 180;
+            
             tacticalCtx.strokeStyle = '#c9a227';
             tacticalCtx.lineWidth = 2;
             tacticalCtx.setLineDash([3, 3]);
             tacticalCtx.beginPath();
             tacticalCtx.moveTo(ownScreen.x, ownScreen.y);
-            const torpLineLen = computed.torpedoRun * scale;
-            tacticalCtx.lineTo(
-                ownScreen.x + Math.sin(torpedoHeadingRad) * torpLineLen,
-                ownScreen.y - Math.cos(torpedoHeadingRad) * torpLineLen
-            );
+            
+            // Phase 1: Initial straight run (75 yard reach along own course)
+            const reachDist = INITIAL_RUN_DISTANCE * scale;
+            const reachEndX = ownScreen.x + Math.sin(ownHeadingRadTorp) * reachDist;
+            const reachEndY = ownScreen.y - Math.cos(ownHeadingRadTorp) * reachDist;
+            tacticalCtx.lineTo(reachEndX, reachEndY);
+            
+            // Phase 2: Arc turn (approximate with line segments)
+            const gyroAngleDeg = computed.gyroAngle;
+            if (Math.abs(gyroAngleDeg) > 0.5) {
+                const turnRadius = TORPEDO_TURN_RADIUS * scale;
+                const turnDir = gyroAngleDeg > 0 ? 1 : -1;
+                const steps = 12;
+                const angleStep = gyroAngleDeg / steps;
+                
+                let currentAngle = ownHeadingDeg;
+                let arcX = reachEndX;
+                let arcY = reachEndY;
+                
+                // Calculate arc length per step
+                const arcLengthPerStep = (Math.abs(gyroAngleDeg) * Math.PI / 180) * TORPEDO_TURN_RADIUS / steps * scale;
+                
+                for (let i = 0; i < steps; i++) {
+                    currentAngle += angleStep;
+                    const stepRad = currentAngle * Math.PI / 180;
+                    arcX += Math.sin(stepRad) * arcLengthPerStep;
+                    arcY -= Math.cos(stepRad) * arcLengthPerStep;
+                    tacticalCtx.lineTo(arcX, arcY);
+                }
+                
+                // Phase 3: Continue straight on final heading
+                const remainingDist = (computed.torpedoRun - INITIAL_RUN_DISTANCE - 
+                    Math.abs(gyroAngleDeg) * Math.PI / 180 * TORPEDO_TURN_RADIUS) * scale;
+                if (remainingDist > 0) {
+                    tacticalCtx.lineTo(
+                        arcX + Math.sin(torpedoHeadingRad) * remainingDist,
+                        arcY - Math.cos(torpedoHeadingRad) * remainingDist
+                    );
+                }
+            } else {
+                // No significant turn, straight line
+                const torpLineLen = computed.torpedoRun * scale;
+                tacticalCtx.lineTo(
+                    ownScreen.x + Math.sin(torpedoHeadingRad) * torpLineLen,
+                    ownScreen.y - Math.cos(torpedoHeadingRad) * torpLineLen
+                );
+            }
+            
             tacticalCtx.stroke();
             tacticalCtx.setLineDash([]);
             
