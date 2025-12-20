@@ -1138,43 +1138,45 @@
             tacticalCtx.rotate(ownHeadingRad);
             
             if (cobiaImgLoaded) {
-                // Use Cobia image - scale to ~25 pixels for 100 yards
+                // Use Cobia image - scale with zoom level
+                // Cobia was ~100 yards long, scale to world coordinates
                 // Image is horizontal (bow pointing right), need to rotate -90° to point up
                 tacticalCtx.rotate(-Math.PI / 2);
-                const targetLength = 25;  // pixels for submarine length
+                const subLengthYards = 100;  // Gato-class ~311 feet ≈ 100 yards
+                const targetLength = subLengthYards * scale;  // Scale with zoom!
                 const imgScale = targetLength / cobiaImg.width;
                 const imgW = cobiaImg.width * imgScale;
                 const imgH = cobiaImg.height * imgScale;
                 tacticalCtx.drawImage(cobiaImg, -imgW/2, -imgH/2, imgW, imgH);
             } else {
-                // Fallback: simple ellipse
+                // Fallback: simple ellipse (scaled with zoom)
+                const subLen = 100 * scale;  // 100 yards
+                const subWid = 30 * scale;   // ~30 yards beam
                 tacticalCtx.fillStyle = '#3b82f6';
                 tacticalCtx.beginPath();
-                tacticalCtx.ellipse(0, 0, 6, 15, 0, 0, Math.PI * 2);
+                tacticalCtx.ellipse(0, 0, subWid/2, subLen/2, 0, 0, Math.PI * 2);
                 tacticalCtx.fill();
                 tacticalCtx.strokeStyle = '#1e40af';
                 tacticalCtx.lineWidth = 1;
                 tacticalCtx.stroke();
-                tacticalCtx.fillRect(-3, -5, 6, 6);
             }
             tacticalCtx.restore();
             
-            // --- Draw target ship ---
+            // --- Draw target ship (scaled with zoom) ---
+            const targetLen = 150 * scale;  // ~150 yards for a cargo ship
             tacticalCtx.save();
             tacticalCtx.translate(targetScreen.x, targetScreen.y);
             tacticalCtx.rotate(targetHeadingRad);
-            // Ship shape
+            // Ship shape - triangle
             tacticalCtx.fillStyle = '#ef4444';
             tacticalCtx.beginPath();
-            tacticalCtx.moveTo(0, -18);
-            tacticalCtx.lineTo(8, 10);
-            tacticalCtx.lineTo(8, 18);
-            tacticalCtx.lineTo(-8, 18);
-            tacticalCtx.lineTo(-8, 10);
+            tacticalCtx.moveTo(0, -targetLen/2);           // Bow
+            tacticalCtx.lineTo(targetLen/6, targetLen/3);  // Starboard
+            tacticalCtx.lineTo(-targetLen/6, targetLen/3); // Port
             tacticalCtx.closePath();
             tacticalCtx.fill();
             tacticalCtx.strokeStyle = '#991b1b';
-            tacticalCtx.lineWidth = 1;
+            tacticalCtx.lineWidth = Math.max(1, scale * 2);
             tacticalCtx.stroke();
             tacticalCtx.restore();
             
