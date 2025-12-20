@@ -155,6 +155,32 @@
             border-radius: 8px;
         }
         
+        .zoom-reset-btn {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: rgba(22, 33, 62, 0.85);
+            border: 1px solid var(--steel);
+            border-radius: 4px;
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        
+        .zoom-reset-btn:hover {
+            background: var(--steel);
+            color: var(--brass-light);
+            border-color: var(--brass);
+        }
+        
         .controls {
             display: flex;
             gap: 0.5rem;
@@ -372,11 +398,13 @@
             <!-- Tactical Map -->
             <div class="panel tactical-view">
                 <canvas id="tacticalCanvas"></canvas>
+                <button id="resetTacticalZoom" class="zoom-reset-btn" title="Reset zoom">⟲</button>
             </div>
             
             <!-- Mechanism Visualization -->
             <div class="panel mechanism-view">
                 <canvas id="mechanismCanvas"></canvas>
+                <button id="resetMechZoom" class="zoom-reset-btn" title="Reset zoom">⟲</button>
             </div>
         </div>
         
@@ -578,6 +606,19 @@
         
         // Set initial cursor for mechanism canvas
         canvas.style.cursor = 'grab';
+        
+        // Reset zoom buttons
+        document.getElementById('resetTacticalZoom').addEventListener('click', () => {
+            tacticalZoom = 1.0;
+            tacticalPanX = 0;
+            tacticalPanY = 0;
+        });
+        
+        document.getElementById('resetMechZoom').addEventListener('click', () => {
+            mechZoom = 1.0;
+            mechPanX = 0;
+            mechPanY = 0;
+        });
         
         // Component colors
         const COLORS = {
