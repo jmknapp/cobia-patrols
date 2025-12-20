@@ -1706,6 +1706,11 @@
             // Run just the TDC angle solver without moving ships
             // This allows convergence while paused
             
+            // Guard: make sure engine components exist
+            if (!tdc.components || !tdc.components.resolver_13) {
+                return;
+            }
+            
             // Sync inputs to engine
             tdc.setInputs({
                 ownCourse: inputs.ownCourse,
@@ -1716,12 +1721,22 @@
                 targetSpeed: inputs.targetSpeed
             });
             
-            // Run angle solver only (positions stay fixed)
+            // Need to calculate present geometry first (uses initial positions)
+            tdc.calculatePresentGeometry();
+            
+            // Run position keeper for relative bearing and target angle
+            tdc.runPositionKeeper(0); // dt=0 since ships aren't moving
+            
+            // Run angle solver
             tdc.runAngleSolver(dt);
             
             // Get outputs
             computed.gyroAngle = tdc.outputs.gyroAngle;
             computed.trackAngle = tdc.outputs.trackAngle;
+            computed.relBearing = tdc.outputs.relativeBearing;
+            computed.targetAngle = tdc.outputs.targetAngle;
+            computed.presentRange = tdc.outputs.presentRange;
+            computed.presentBearing = tdc.outputs.presentBearing;
             tdcState.isSolving = !tdc.outputs.isSolved;
             tdcState.solved = tdc.outputs.isSolved;
             tdcState.displayGyro = tdc.outputs.gyroAngle;
@@ -1730,19 +1745,19 @@
             const engineComponents = tdc.components;
             
             // Resolvers
-            components['resolver_13'].rotation = engineComponents.resolver_13.rotation;
-            components['resolver_34'].rotation = engineComponents.resolver_34.rotation;
-            components['resolver_2FA'].rotation = engineComponents.resolver_2FA.rotation;
+            if (engineComponents.resolver_13) components['resolver_13'].rotation = engineComponents.resolver_13.rotation;
+            if (engineComponents.resolver_34) components['resolver_34'].rotation = engineComponents.resolver_34.rotation;
+            if (engineComponents.resolver_2FA) components['resolver_2FA'].rotation = engineComponents.resolver_2FA.rotation;
             
             // Differentials
-            components['diff_7'].rotation = engineComponents.diff_7.rotation;
-            components['diff_33'].rotation = engineComponents.diff_33.rotation;
-            components['diff_22FA'].rotation = engineComponents.diff_22FA.rotation;
+            if (engineComponents.diff_7) components['diff_7'].rotation = engineComponents.diff_7.rotation;
+            if (engineComponents.diff_33) components['diff_33'].rotation = engineComponents.diff_33.rotation;
+            if (engineComponents.diff_22FA) components['diff_22FA'].rotation = engineComponents.diff_22FA.rotation;
             
             // Cams
-            components['cam_P'].rotation = engineComponents.cam_P.rotation;
-            components['cam_M'].rotation = engineComponents.cam_P.rotation;
-            components['cam_J'].rotation = engineComponents.cam_J.rotation;
+            if (engineComponents.cam_P) components['cam_P'].rotation = engineComponents.cam_P.rotation;
+            if (engineComponents.cam_P) components['cam_M'].rotation = engineComponents.cam_P.rotation;
+            if (engineComponents.cam_J) components['cam_J'].rotation = engineComponents.cam_J.rotation;
             
             updateOutputDisplay();
         }
