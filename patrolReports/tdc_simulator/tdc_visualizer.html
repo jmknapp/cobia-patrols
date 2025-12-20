@@ -478,6 +478,61 @@
         const tacticalCanvas = document.getElementById('tacticalCanvas');
         const tacticalCtx = tacticalCanvas.getContext('2d');
         
+        // Tactical map zoom and pan state
+        let tacticalZoom = 1.0;       // Zoom multiplier (1.0 = auto-fit)
+        let tacticalPanX = 0;         // Pan offset in world coordinates (yards)
+        let tacticalPanY = 0;
+        let tacticalDragging = false;
+        let tacticalDragStartX = 0;
+        let tacticalDragStartY = 0;
+        let tacticalPanStartX = 0;
+        let tacticalPanStartY = 0;
+        
+        // Tactical map mouse events
+        tacticalCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            tacticalZoom = Math.max(0.2, Math.min(5.0, tacticalZoom * zoomFactor));
+        });
+        
+        tacticalCanvas.addEventListener('mousedown', (e) => {
+            tacticalDragging = true;
+            tacticalDragStartX = e.clientX;
+            tacticalDragStartY = e.clientY;
+            tacticalPanStartX = tacticalPanX;
+            tacticalPanStartY = tacticalPanY;
+            tacticalCanvas.style.cursor = 'grabbing';
+        });
+        
+        tacticalCanvas.addEventListener('mousemove', (e) => {
+            if (tacticalDragging) {
+                // Convert pixel drag to world coordinates
+                // Need to know the current scale to convert properly
+                const w = tacticalCanvas.width;
+                const h = tacticalCanvas.height;
+                const baseScale = Math.min(w, h) / 2000 * 0.8; // Approximate base scale
+                const scale = baseScale * tacticalZoom;
+                
+                const dx = (e.clientX - tacticalDragStartX) / scale;
+                const dy = (e.clientY - tacticalDragStartY) / scale;
+                tacticalPanX = tacticalPanStartX - dx;
+                tacticalPanY = tacticalPanStartY + dy; // Y is inverted
+            }
+        });
+        
+        tacticalCanvas.addEventListener('mouseup', () => {
+            tacticalDragging = false;
+            tacticalCanvas.style.cursor = 'grab';
+        });
+        
+        tacticalCanvas.addEventListener('mouseleave', () => {
+            tacticalDragging = false;
+            tacticalCanvas.style.cursor = 'grab';
+        });
+        
+        // Set initial cursor
+        tacticalCanvas.style.cursor = 'grab';
+        
         // Component colors
         const COLORS = {
             differential: '#c9a227',
@@ -862,12 +917,13 @@
             const rangeX = Math.max(maxX - minX, 200);
             const rangeY = Math.max(maxY - minY, 200);
             const maxRange = Math.max(rangeX, rangeY) * 1.3;
-            const scale = Math.min(w, h) / maxRange * 0.8;
+            const baseScale = Math.min(w, h) / maxRange * 0.8;
+            const scale = baseScale * tacticalZoom;  // Apply zoom
             
             // Convert world coords (yards, Y=North, X=East) to screen coords
-            // Center on initial midpoint (fixed view)
-            const viewCenterX = (state.initialOwnX + state.initialTargetX) / 2;
-            const viewCenterY = (state.initialOwnY + state.initialTargetY) / 2;
+            // Center on initial midpoint plus any pan offset
+            const viewCenterX = (state.initialOwnX + state.initialTargetX) / 2 + tacticalPanX;
+            const viewCenterY = (state.initialOwnY + state.initialTargetY) / 2 + tacticalPanY;
             
             function toScreen(worldX, worldY) {
                 return {
@@ -1951,6 +2007,11 @@
             
             // Clear torpedoes
             torpedoes = [];
+            
+            // Reset tactical map zoom/pan
+            tacticalZoom = 1.0;
+            tacticalPanX = 0;
+            tacticalPanY = 0;
             
             // Reset TDC solving state - gyro starts at 0, not solved
             tdcState.displayGyro = 0;
