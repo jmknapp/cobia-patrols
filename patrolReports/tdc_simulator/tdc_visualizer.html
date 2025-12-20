@@ -578,9 +578,10 @@
         
         // Realistic torpedo trajectory parameters
         const INITIAL_RUN_DISTANCE = 75; // yards straight ahead before gyro engages
-        const TORPEDO_TURN_RATE_DPS = 4.0; // degrees per second turn rate
-        // Turn radius = speed / angular velocity = 25.9 yps / (4 * π/180) rad/s ≈ 371 yards
-        const TORPEDO_TURN_RADIUS = TORPEDO_SPEED_YPS / (TORPEDO_TURN_RATE_DPS * Math.PI / 180);
+        // Mark 14 torpedo turn radius ≈ 130 yards at high speed (historical)
+        const TORPEDO_TURN_RADIUS = 130; // yards - must match TDC engine!
+        // Turn rate = speed / radius = 25.9 / 130 ≈ 0.199 rad/s ≈ 11.4 deg/s
+        const TORPEDO_TURN_RATE_DPS = (TORPEDO_SPEED_YPS / TORPEDO_TURN_RADIUS) * (180 / Math.PI);
         
         let torpedoes = []; // Array of active torpedoes
         
