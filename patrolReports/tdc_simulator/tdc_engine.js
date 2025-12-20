@@ -425,19 +425,23 @@ class TDCMarkIII {
         
         if (this.outputs.solverError > errorThreshold) {
             // === MECHANICAL FEEDBACK ===
-            // The TDC servo adjusts G based on the error signals
-            // Key insight: Error XVIII tells us if we're leading too much or too little
-            //   Positive errorXVIII: R·sin(G-Br) > H·sin(I) → torpedo ahead of target → DECREASE G
-            //   Negative errorXVIII: R·sin(G-Br) < H·sin(I) → torpedo behind target → INCREASE G
+            // The TDC servo adjusts G based on Error XVIII (lateral balance)
+            // Error XVIII tells us the lateral miss distance:
+            //   Negative errorXVIII: torpedo trailing → need MORE lead → INCREASE G
+            //   Positive errorXVIII: torpedo leading too much → DECREASE G
             // So feedback is: ΔG ∝ -errorXVIII
             
-            const scaleFactor = 0.02; // degrees per yard of error
-            let gyroCorrection = -errorXVIII * scaleFactor;
+            // Use proportional control with damping to prevent oscillation
+            const Kp = 0.015; // Proportional gain (degrees per yard of error)
+            let gyroCorrection = -errorXVIII * Kp;
             
-            // Also use errorXVII to help when errorXVIII is small
-            if (Math.abs(errorXVIII) < 20) {
-                gyroCorrection -= errorXVII * 0.005;
-            }
+            // Add damping based on rate of change (derivative term)
+            // This helps prevent overshoot
+            if (!this._lastErrorXVIII) this._lastErrorXVIII = errorXVIII;
+            const errorRate = (errorXVIII - this._lastErrorXVIII) / dt;
+            const Kd = 0.001; // Derivative gain
+            gyroCorrection -= errorRate * Kd;
+            this._lastErrorXVIII = errorXVIII;
             
             // Rate limit the servo motor
             const maxStep = this.gyroServoRate * dt;
@@ -448,8 +452,8 @@ class TDCMarkIII {
             
             // Debug
             if (Math.random() < 0.02) {
-                console.log('Servo: correction=', gyroCorrection.toFixed(2), 'step=', step.toFixed(2), 
-                            'newG=', this.gyroAngle.toFixed(1));
+                console.log('Servo: errXVIII=', errorXVIII.toFixed(1), 'correction=', gyroCorrection.toFixed(2), 
+                            'step=', step.toFixed(2), 'newG=', this.gyroAngle.toFixed(1));
             }
             
             // Update differential for visualization
