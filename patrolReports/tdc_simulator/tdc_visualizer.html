@@ -2050,10 +2050,11 @@
             tdcState.solved = false;
             computed.gyroAngle = 0;
             
-            // Reset the TDC engine's gyro angle to 0
-            tdc.gyroAngle = 0;
+            // Reset the TDC engine's gyro angle toward target (prevents wrong-side solutions)
+            const relBearing = normalizeAngle(inputs.targetBearing - inputs.ownCourse);
+            tdc.gyroAngle = Math.max(-90, Math.min(90, relBearing * 0.8));
             tdc.servoVelocity = 0;
-            tdc.outputs.gyroAngle = 0;
+            tdc.outputs.gyroAngle = tdc.gyroAngle;
             tdc.outputs.isSolved = false;
             
             // Reset integrated values
@@ -2159,10 +2160,11 @@
                 // Re-initialize positions when bearing or range changes (defines initial geometry)
                 if (id === 'targetBearing' || id === 'targetRange') {
                     initializeState();
-                    // Reset gyro - it will need to find solution again when started
-                    tdc.gyroAngle = 0;
+                    // Reset gyro toward target - prevents wrong-side solutions
+                    const relBearing = normalizeAngle(inputs.targetBearing - inputs.ownCourse);
+                    tdc.gyroAngle = Math.max(-90, Math.min(90, relBearing * 0.8));
                     tdc.servoVelocity = 0;
-                    computed.gyroAngle = 0;
+                    computed.gyroAngle = tdc.gyroAngle;
                     tdcState.solved = false;
                 }
                 // Update geometry display only (gyro waits for Start)

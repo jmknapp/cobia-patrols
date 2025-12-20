@@ -297,8 +297,12 @@ class TDCMarkIII {
         this.int35.reset();
         this.int36.reset();
         
-        // Reset gyro solver
-        this.gyroAngle = 0;
+        // Reset gyro solver - initialize gyro toward target's relative bearing
+        // This prevents converging on wrong-side spurious solutions
+        const relBearing = this.normalizeAngle(this.inputs.targetBearing - this.inputs.ownCourse);
+        // Start gyro roughly toward target (servo will refine from here)
+        this.gyroAngle = relBearing * 0.8; // Start 80% of the way toward target
+        this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle)); // Clamp to valid range
         this.servoVelocity = 0;
         this.outputs.isSolved = false;
     }
