@@ -1063,21 +1063,28 @@
             tacticalCtx.restore();
             
             // --- Draw torpedo solution path (reach + turn + final run) ---
+            // Path starts from BOW (P yards ahead of center), same as actual torpedo
             const ownHeadingDeg = inputs.ownCourse;
             const ownHeadingRadTorp = ownHeadingDeg * Math.PI / 180;
             const torpedoHeading = inputs.ownCourse + computed.gyroAngle;
             const torpedoHeadingRad = torpedoHeading * Math.PI / 180;
             
+            // Calculate bow position (P yards ahead of center)
+            const bowOffsetX = Math.sin(ownHeadingRadTorp) * TUBE_BASE_LINE * scale;
+            const bowOffsetY = -Math.cos(ownHeadingRadTorp) * TUBE_BASE_LINE * scale;
+            const bowScreenX = ownScreen.x + bowOffsetX;
+            const bowScreenY = ownScreen.y + bowOffsetY;
+            
             tacticalCtx.strokeStyle = '#c9a227';
             tacticalCtx.lineWidth = 2;
             tacticalCtx.setLineDash([3, 3]);
             tacticalCtx.beginPath();
-            tacticalCtx.moveTo(ownScreen.x, ownScreen.y);
+            tacticalCtx.moveTo(bowScreenX, bowScreenY);  // Start from bow
             
-            // Phase 1: Tube Base Line P + Reach M (total straight run before turn)
-            const totalStraight = (TUBE_BASE_LINE + REACH_DISTANCE) * scale;
-            const reachEndX = ownScreen.x + Math.sin(ownHeadingRadTorp) * totalStraight;
-            const reachEndY = ownScreen.y - Math.cos(ownHeadingRadTorp) * totalStraight;
+            // Phase 1: Reach M (straight run from bow before turn)
+            const reachDist = REACH_DISTANCE * scale;
+            const reachEndX = bowScreenX + Math.sin(ownHeadingRadTorp) * reachDist;
+            const reachEndY = bowScreenY - Math.cos(ownHeadingRadTorp) * reachDist;
             tacticalCtx.lineTo(reachEndX, reachEndY);
             
             // Phase 2: Arc turn (approximate with line segments)
@@ -1104,7 +1111,8 @@
                 }
                 
                 // Phase 3: Continue straight on final heading
-                const remainingDist = (computed.torpedoRun - TUBE_BASE_LINE - REACH_DISTANCE - 
+                // torpedoRun is from submarine center, we started from bow, so subtract only M and arc
+                const remainingDist = (computed.torpedoRun - REACH_DISTANCE - 
                     Math.abs(gyroAngleDeg) * Math.PI / 180 * TORPEDO_TURN_RADIUS) * scale;
                 if (remainingDist > 0) {
                     tacticalCtx.lineTo(
