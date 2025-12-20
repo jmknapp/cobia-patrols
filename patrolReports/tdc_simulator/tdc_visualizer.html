@@ -578,14 +578,22 @@
         
         function fireTorpedo() {
             const gyroAngle = computed.gyroAngle;
+            
+            // Offset torpedo start position forward to the bow
+            // Gato-class sub ~100 yards long, so bow is ~50 yards ahead of center
+            const BOW_OFFSET = 50; // yards
+            const ownHeadingRad = inputs.ownCourse * Math.PI / 180;
+            const bowX = state.ownX + Math.sin(ownHeadingRad) * BOW_OFFSET;
+            const bowY = state.ownY + Math.cos(ownHeadingRad) * BOW_OFFSET;
+            
             const torpedo = {
-                x: state.ownX,
-                y: state.ownY,
+                x: bowX,
+                y: bowY,
                 heading: inputs.ownCourse, // Start heading along sub's course
                 initialHeading: inputs.ownCourse,
                 targetHeading: inputs.ownCourse + gyroAngle, // Final heading after turn
                 gyroAngle: gyroAngle,
-                trail: [{x: state.ownX, y: state.ownY}],
+                trail: [{x: bowX, y: bowY}],
                 active: true,
                 result: null, // 'hit' or 'miss'
                 distanceTraveled: 0,
