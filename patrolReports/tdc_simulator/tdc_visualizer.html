@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDC Mark III Mechanical Simulator</title>
+    <style>
+        :root {
+            --bg-dark: #1a1a2e;
+            --bg-panel: #16213e;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --steel: #4a5568;
+            --steel-light: #718096;
+            --text: #e2e8f0;
+            --text-muted: #a0aec0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--bg-panel), var(--bg-dark));
+            padding: 1rem 2rem;
+            border-bottom: 2px solid var(--brass);
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: var(--brass);
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .main-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 1rem;
+            padding: 1rem;
+            height: calc(100vh - 80px);
+        }
+        
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--steel);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .panel h2 {
+            color: var(--brass);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--steel);
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        .input-group label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--steel);
+            color: var(--brass-light);
+            font-family: inherit;
+            font-size: 1rem;
+            border-radius: 4px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--brass);
+        }
+        
+        .output-value {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .output-value .label {
+            color: var(--text-muted);
+        }
+        
+        .output-value .value {
+            color: var(--brass-light);
+            font-weight: bold;
+        }
+        
+        .mechanism-view {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #mechanismCanvas {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, #1e293b 0%, var(--bg-dark) 100%);
+            border-radius: 8px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 0.8rem;
+            background: var(--steel);
+            border: 1px solid var(--steel-light);
+            color: var(--text);
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: var(--steel-light);
+        }
+        
+        .btn.primary {
+            background: var(--brass);
+            color: var(--bg-dark);
+            border-color: var(--brass-light);
+        }
+        
+        .btn.primary:hover {
+            background: var(--brass-light);
+        }
+        
+        .component-legend {
+            margin-top: 1rem;
+            font-size: 0.75rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        
+        .speed-control {
+            margin-top: 1rem;
+        }
+        
+        .speed-control input[type="range"] {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚙️ TDC MARK III MECHANICAL SIMULATOR ⚙️</h1>
+        <p>Torpedo Data Computer - Analog Fire Control Computer Visualization</p>
+    </div>
+    
+    <div class="main-container">
+        <!-- Input Panel -->
+        <div class="panel">
+            <h2>📥 INPUTS</h2>
+            
+            <div class="input-group">
+                <label>Own Course (°)</label>
+                <input type="number" id="ownCourse" value="281" min="0" max="360">
+            </div>
+            
+            <div class="input-group">
+                <label>Own Speed (knots)</label>
+                <input type="number" id="ownSpeed" value="3" min="0" max="25">
+            </div>
+            
+            <div class="input-group">
+                <label>Target Bearing (°)</label>
+                <input type="number" id="targetBearing" value="291" min="0" max="360">
+            </div>
+            
+            <div class="input-group">
+                <label>Target Range (yards)</label>
+                <input type="number" id="targetRange" value="900" min="100" max="20000">
+            </div>
+            
+            <div class="input-group">
+                <label>Target Course (°)</label>
+                <input type="number" id="targetCourse" value="115" min="0" max="360">
+            </div>
+            
+            <div class="input-group">
+                <label>Target Speed (knots)</label>
+                <input type="number" id="targetSpeed" value="8" min="0" max="30">
+            </div>
+            
+            <div class="controls">
+                <button class="btn primary" id="startBtn">▶ START</button>
+                <button class="btn" id="resetBtn">↺ RESET</button>
+            </div>
+            
+            <div class="speed-control">
+                <label>Simulation Speed</label>
+                <input type="range" id="simSpeed" min="0.1" max="5" step="0.1" value="1">
+                <span id="speedLabel">1.0x</span>
+            </div>
+        </div>
+        
+        <!-- Mechanism Visualization -->
+        <div class="panel mechanism-view">
+            <canvas id="mechanismCanvas"></canvas>
+        </div>
+        
+        <!-- Output Panel -->
+        <div class="panel">
+            <h2>📤 OUTPUTS</h2>
+            
+            <div class="output-value">
+                <span class="label">Gyro Angle</span>
+                <span class="value" id="gyroAngle">--°</span>
+            </div>
+            
+            <div class="output-value">
+                <span class="label">Rel. Bearing (Br)</span>
+                <span class="value" id="relBearing">--°</span>
+            </div>
+            
+            <div class="output-value">
+                <span class="label">Target Angle (A)</span>
+                <span class="value" id="targetAngle">--°</span>
+            </div>
+            
+            <div class="output-value">
+                <span class="label">Track Angle</span>
+                <span class="value" id="trackAngle">--°</span>
+            </div>
+            
+            <div class="output-value">
+                <span class="label">Torpedo Run</span>
+                <span class="value" id="torpedoRun">-- yds</span>
+            </div>
+            
+            <div class="output-value">
+                <span class="label">Run Time</span>
+                <span class="value" id="runTime">-- sec</span>
+            </div>
+            
+            <h2 style="margin-top: 1.5rem;">🔧 COMPONENT LEGEND</h2>
+            <div class="component-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #c9a227;"></div>
+                    <span>Differential (Add/Subtract)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #48bb78;"></div>
+                    <span>Integrator (Multiply & Sum)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4299e1;"></div>
+                    <span>Resolver (Sin/Cos)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ed8936;"></div>
+                    <span>Cam (Function)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9f7aea;"></div>
+                    <span>Synchro (Transmit)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // TDC Mark III Mechanical Simulator
+        
+        const canvas = document.getElementById('mechanismCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Component colors
+        const COLORS = {
+            differential: '#c9a227',
+            integrator: '#48bb78',
+            resolver: '#4299e1',
+            cam: '#ed8936',
+            synchro: '#9f7aea',
+            connection: '#4a5568',
+            text: '#e2e8f0',
+            gear: '#718096'
+        };
+        
+        // Component definitions with positions
+        const components = {
+            // Position Keeper
+            'So': { x: 50, y: 80, type: 'input', label: 'So', rotation: 0 },
+            'Co': { x: 50, y: 160, type: 'input', label: 'Co', rotation: 0 },
+            'B': { x: 50, y: 240, type: 'input', label: 'B', rotation: 0 },
+            'S': { x: 50, y: 320, type: 'input', label: 'S', rotation: 0 },
+            'C': { x: 50, y: 400, type: 'input', label: 'C', rotation: 0 },
+            'R': { x: 50, y: 480, type: 'input', label: 'R', rotation: 0 },
+            
+            'diff_7': { x: 180, y: 200, type: 'differential', label: 'Diff 7\nBr=B-Co', rotation: 0 },
+            'diff_33': { x: 180, y: 360, type: 'differential', label: 'Diff 33\nA', rotation: 0 },
+            
+            'resolver_13': { x: 320, y: 160, type: 'resolver', label: 'Res 13\nsin/cos Br', rotation: 0 },
+            'resolver_34': { x: 320, y: 400, type: 'resolver', label: 'Res 34\nsin/cos A', rotation: 0 },
+            
+            'int_20': { x: 180, y: 80, type: 'integrator', label: 'Int 20\n∫So·dT', rotation: 0, discRotation: 0 },
+            'int_25': { x: 180, y: 440, type: 'integrator', label: 'Int 25\n∫S·dT', rotation: 0, discRotation: 0 },
+            
+            'int_14': { x: 460, y: 120, type: 'integrator', label: 'Int 14\n∫So·sinBr', rotation: 0, discRotation: 0 },
+            'int_15': { x: 460, y: 200, type: 'integrator', label: 'Int 15\n∫So·cosBr', rotation: 0, discRotation: 0 },
+            'int_35': { x: 460, y: 360, type: 'integrator', label: 'Int 35\n∫S·sinA', rotation: 0, discRotation: 0 },
+            'int_36': { x: 460, y: 440, type: 'integrator', label: 'Int 36\n∫S·cosA', rotation: 0, discRotation: 0 },
+            
+            'diff_28': { x: 600, y: 240, type: 'differential', label: 'Diff 28\nR·dB', rotation: 0 },
+            'diff_29': { x: 600, y: 320, type: 'differential', label: 'Diff 29\ndR', rotation: 0 },
+            
+            // Angle Solver
+            'resolver_2FA': { x: 740, y: 160, type: 'resolver', label: 'Res 2FA\nG-Br', rotation: 0 },
+            'cam_M': { x: 740, y: 280, type: 'cam', label: 'Cam M\nReach', rotation: 0 },
+            'cam_J': { x: 740, y: 360, type: 'cam', label: 'Cam J\nTransfer', rotation: 0 },
+            
+            'diff_22FA': { x: 880, y: 220, type: 'differential', label: 'Diff 22FA\nGyro G', rotation: 0 },
+            
+            'G_out': { x: 1000, y: 220, type: 'output', label: 'GYRO\nANGLE', rotation: 0 }
+        };
+        
+        // Connections between components
+        const connections = [
+            ['Co', 'diff_7'],
+            ['B', 'diff_7'],
+            ['diff_7', 'resolver_13'],
+            ['C', 'diff_33'],
+            ['B', 'diff_33'],
+            ['diff_33', 'resolver_34'],
+            ['So', 'int_20'],
+            ['S', 'int_25'],
+            ['resolver_13', 'int_14'],
+            ['resolver_13', 'int_15'],
+            ['int_20', 'int_14'],
+            ['int_20', 'int_15'],
+            ['resolver_34', 'int_35'],
+            ['resolver_34', 'int_36'],
+            ['int_25', 'int_35'],
+            ['int_25', 'int_36'],
+            ['int_14', 'diff_28'],
+            ['int_35', 'diff_28'],
+            ['int_15', 'diff_29'],
+            ['int_36', 'diff_29'],
+            ['diff_7', 'resolver_2FA'],
+            ['diff_28', 'resolver_2FA'],
+            ['diff_29', 'cam_M'],
+            ['R', 'cam_J'],
+            ['resolver_2FA', 'diff_22FA'],
+            ['cam_M', 'diff_22FA'],
+            ['diff_22FA', 'G_out']
+        ];
+        
+        // Simulation state
+        let isRunning = false;
+        let simSpeed = 1.0;
+        let time = 0;
+        
+        // Input values
+        let inputs = {
+            ownCourse: 281,
+            ownSpeed: 3,
+            targetBearing: 291,
+            targetRange: 900,
+            targetCourse: 115,
+            targetSpeed: 8
+        };
+        
+        // Computed values
+        let computed = {
+            gyroAngle: 0,
+            relBearing: 0,
+            targetAngle: 0,
+            trackAngle: 0,
+            torpedoRun: 0,
+            runTime: 0
+        };
+        
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width - 32;
+            canvas.height = rect.height - 32;
+        }
+        
+        function normalizeAngle(angle) {
+            while (angle < -180) angle += 360;
+            while (angle > 180) angle -= 360;
+            return angle;
+        }
+        
+        function computeTDC() {
+            // Relative bearing
+            computed.relBearing = normalizeAngle(inputs.targetBearing - inputs.ownCourse);
+            
+            // Target angle
+            computed.targetAngle = normalizeAngle(inputs.targetBearing + 180 - inputs.targetCourse);
+            
+            // Simplified gyro calculation
+            const torpedoSpeed = 46; // knots
+            const torpedoSpeedYps = torpedoSpeed * 2025.4 / 3600;
+            const targetSpeedYps = inputs.targetSpeed * 2025.4 / 3600;
+            
+            const runTime = inputs.targetRange / torpedoSpeedYps;
+            const targetAdvance = targetSpeedYps * runTime;
+            
+            const bearingRad = inputs.targetBearing * Math.PI / 180;
+            const courseRad = inputs.targetCourse * Math.PI / 180;
+            
+            const targetX = inputs.targetRange * Math.sin(bearingRad);
+            const targetY = inputs.targetRange * Math.cos(bearingRad);
+            
+            const futureX = targetX + targetAdvance * Math.sin(courseRad);
+            const futureY = targetY + targetAdvance * Math.cos(courseRad);
+            
+            const interceptBearing = Math.atan2(futureX, futureY) * 180 / Math.PI;
+            computed.gyroAngle = normalizeAngle(interceptBearing - inputs.ownCourse);
+            
+            // Track angle
+            const torpedoHeading = inputs.ownCourse + computed.gyroAngle;
+            computed.trackAngle = Math.abs(normalizeAngle(torpedoHeading - inputs.targetCourse + 180));
+            if (computed.trackAngle > 180) computed.trackAngle = 360 - computed.trackAngle;
+            
+            // Torpedo run
+            computed.torpedoRun = Math.sqrt(futureX * futureX + futureY * futureY);
+            computed.runTime = computed.torpedoRun / torpedoSpeedYps;
+        }
+        
+        function updateOutputDisplay() {
+            document.getElementById('gyroAngle').textContent = computed.gyroAngle.toFixed(1) + '°';
+            document.getElementById('relBearing').textContent = computed.relBearing.toFixed(1) + '°';
+            document.getElementById('targetAngle').textContent = computed.targetAngle.toFixed(1) + '°';
+            document.getElementById('trackAngle').textContent = computed.trackAngle.toFixed(1) + '°';
+            document.getElementById('torpedoRun').textContent = computed.torpedoRun.toFixed(0) + ' yds';
+            document.getElementById('runTime').textContent = computed.runTime.toFixed(1) + ' sec';
+        }
+        
+        function drawGear(x, y, radius, teeth, rotation, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation * Math.PI / 180);
+            
+            ctx.beginPath();
+            for (let i = 0; i < teeth; i++) {
+                const angle = (i / teeth) * Math.PI * 2;
+                const nextAngle = ((i + 0.5) / teeth) * Math.PI * 2;
+                
+                const innerR = radius * 0.85;
+                const outerR = radius;
+                
+                ctx.lineTo(Math.cos(angle) * outerR, Math.sin(angle) * outerR);
+                ctx.lineTo(Math.cos(nextAngle) * innerR, Math.sin(nextAngle) * innerR);
+            }
+            ctx.closePath();
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Center hub
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+        
+        function drawDifferential(x, y, rotation, label) {
+            // Draw three meshing bevel gears
+            drawGear(x - 15, y, 20, 12, rotation, COLORS.differential);
+            drawGear(x + 15, y, 20, 12, -rotation, COLORS.differential);
+            drawGear(x, y, 15, 10, rotation * 0.5, COLORS.gear);
+            
+            // Label
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            const lines = label.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, x, y + 35 + i * 12);
+            });
+        }
+        
+        function drawIntegrator(x, y, discRotation, rollerPos, label) {
+            // Draw disc
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(discRotation * Math.PI / 180);
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, 25, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.integrator;
+            ctx.fill();
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Radial lines on disc
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * 22, Math.sin(angle) * 22);
+                ctx.strokeStyle = '#1a1a2e';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+            
+            // Draw roller
+            const rollerX = x + rollerPos * 20;
+            ctx.beginPath();
+            ctx.arc(rollerX, y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.gear;
+            ctx.fill();
+            
+            // Label
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            const lines = label.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, x, y + 40 + i * 12);
+            });
+        }
+        
+        function drawResolver(x, y, rotation, label) {
+            // Draw resolver as a circle with angle indicator
+            ctx.beginPath();
+            ctx.arc(x, y, 22, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.resolver;
+            ctx.fill();
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Angle indicator
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation * Math.PI / 180);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -18);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+            
+            // Sin/Cos outputs
+            ctx.beginPath();
+            ctx.arc(x + 30, y - 8, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#48bb78';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 30, y + 8, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ed8936';
+            ctx.fill();
+            
+            // Label
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            const lines = label.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, x, y + 35 + i * 12);
+            });
+        }
+        
+        function drawCam(x, y, rotation, label) {
+            // Draw cam as eccentric circle
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation * Math.PI / 180);
+            
+            ctx.beginPath();
+            ctx.ellipse(5, 0, 20, 15, 0, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.cam;
+            ctx.fill();
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Center
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fill();
+            
+            ctx.restore();
+            
+            // Label
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            const lines = label.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, x, y + 35 + i * 12);
+            });
+        }
+        
+        function drawInput(x, y, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 18, 0, Math.PI * 2);
+            ctx.fillStyle = '#2d3748';
+            ctx.fill();
+            ctx.strokeStyle = COLORS.brass;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.fillStyle = COLORS.brass;
+            ctx.font = 'bold 12px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x, y);
+        }
+        
+        function drawOutput(x, y, label, value) {
+            ctx.beginPath();
+            ctx.roundRect(x - 35, y - 25, 70, 50, 8);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fill();
+            ctx.strokeStyle = COLORS.brass;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.fillStyle = COLORS.brass;
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            const lines = label.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, x, y - 8 + i * 14);
+            });
+            
+            ctx.fillStyle = '#48bb78';
+            ctx.font = 'bold 14px monospace';
+            ctx.fillText(value.toFixed(1) + '°', x, y + 18);
+        }
+        
+        function drawConnection(from, to) {
+            const c1 = components[from];
+            const c2 = components[to];
+            if (!c1 || !c2) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(c1.x + 25, c1.y);
+            ctx.lineTo(c2.x - 25, c2.y);
+            ctx.strokeStyle = COLORS.connection;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw connections first
+            connections.forEach(([from, to]) => {
+                drawConnection(from, to);
+            });
+            
+            // Draw components
+            for (const [id, comp] of Object.entries(components)) {
+                switch (comp.type) {
+                    case 'differential':
+                        drawDifferential(comp.x, comp.y, comp.rotation, comp.label);
+                        break;
+                    case 'integrator':
+                        drawIntegrator(comp.x, comp.y, comp.discRotation || 0, 
+                                      Math.sin(time * 2) * 0.5, comp.label);
+                        break;
+                    case 'resolver':
+                        drawResolver(comp.x, comp.y, comp.rotation, comp.label);
+                        break;
+                    case 'cam':
+                        drawCam(comp.x, comp.y, comp.rotation, comp.label);
+                        break;
+                    case 'input':
+                        drawInput(comp.x, comp.y, comp.label);
+                        break;
+                    case 'output':
+                        drawOutput(comp.x, comp.y, comp.label, computed.gyroAngle);
+                        break;
+                }
+            }
+            
+            // Title
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '12px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('POSITION KEEPER', 150, 30);
+            ctx.fillText('ANGLE SOLVER', 700, 30);
+            
+            // Dividing line
+            ctx.beginPath();
+            ctx.moveTo(660, 50);
+            ctx.lineTo(660, canvas.height - 20);
+            ctx.strokeStyle = COLORS.steel;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        function updateAnimation(dt) {
+            time += dt * simSpeed;
+            
+            // Animate components based on computed values
+            components['diff_7'].rotation += computed.relBearing * dt * 0.5;
+            components['diff_33'].rotation += computed.targetAngle * dt * 0.5;
+            components['resolver_13'].rotation = computed.relBearing;
+            components['resolver_34'].rotation = computed.targetAngle;
+            
+            components['int_20'].discRotation += inputs.ownSpeed * dt * 10;
+            components['int_25'].discRotation += inputs.targetSpeed * dt * 10;
+            components['int_14'].discRotation += inputs.ownSpeed * Math.sin(computed.relBearing * Math.PI / 180) * dt * 10;
+            components['int_15'].discRotation += inputs.ownSpeed * Math.cos(computed.relBearing * Math.PI / 180) * dt * 10;
+            
+            components['diff_28'].rotation += (components['int_14'].discRotation + components['int_35'].discRotation) * dt * 0.1;
+            components['diff_29'].rotation += (components['int_15'].discRotation + components['int_36'].discRotation) * dt * 0.1;
+            
+            components['resolver_2FA'].rotation = computed.gyroAngle - computed.relBearing;
+            components['cam_M'].rotation += computed.gyroAngle * dt * 0.5;
+            components['cam_J'].rotation += computed.gyroAngle * dt * 0.3;
+            
+            components['diff_22FA'].rotation = computed.gyroAngle;
+        }
+        
+        let lastTime = 0;
+        function animate(currentTime) {
+            const dt = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            if (isRunning && dt < 0.1) {
+                updateAnimation(dt);
+            }
+            
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            isRunning = !isRunning;
+            document.getElementById('startBtn').textContent = isRunning ? '⏸ PAUSE' : '▶ START';
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            isRunning = false;
+            time = 0;
+            document.getElementById('startBtn').textContent = '▶ START';
+            
+            // Reset component rotations
+            for (const comp of Object.values(components)) {
+                comp.rotation = 0;
+                if (comp.discRotation !== undefined) comp.discRotation = 0;
+            }
+        });
+        
+        document.getElementById('simSpeed').addEventListener('input', (e) => {
+            simSpeed = parseFloat(e.target.value);
+            document.getElementById('speedLabel').textContent = simSpeed.toFixed(1) + 'x';
+        });
+        
+        // Input change handlers
+        ['ownCourse', 'ownSpeed', 'targetBearing', 'targetRange', 'targetCourse', 'targetSpeed'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                inputs[id] = parseFloat(e.target.value) || 0;
+                computeTDC();
+                updateOutputDisplay();
+            });
+        });
+        
+        // Initialize
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        computeTDC();
+        updateOutputDisplay();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
+
