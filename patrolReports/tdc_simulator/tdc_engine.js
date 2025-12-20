@@ -486,18 +486,22 @@ class TDCMarkIII {
         // When XVIII > 0: torpedo aims too far right, need less gyro angle
         // When XVIII < 0: torpedo aims too far left, need more gyro angle
         
-        // Error threshold with hysteresis to prevent flickering
-        const solveThreshold = Math.max(5, R * 0.002); // Threshold to declare solved
-        const unsolvThreshold = solveThreshold * 3;    // Must exceed this to go back to unsolved
+        // Error threshold with strong hysteresis for stable solution light
+        // In real TDC, solution light stayed on steadily once found
+        const solveThreshold = Math.max(10, R * 0.005); // Threshold to declare solved
+        const unsolvThreshold = solveThreshold * 10;    // Very large - only lose solution on major error
         
         const isLateralSolved = Math.abs(errorXVIII) < solveThreshold;
         
-        // Hysteresis: once solved, stay solved unless error gets much worse
+        // Hysteresis: once solved, stay solved unless error gets MUCH worse
+        // Real TDC solution light was stable during normal tracking
         if (this.outputs.isSolved) {
-            // Already solved - only go back to hunting if error gets large
+            // Already solved - only go back to hunting if error gets very large
             if (Math.abs(errorXVIII) > unsolvThreshold) {
                 this.outputs.isSolved = false;
             }
+            // Continue gentle tracking adjustments while solved
+            // (servo still runs, just more gently)
         } else {
             // Not yet solved - check if we've reached the solution
             if (isLateralSolved) {
@@ -505,7 +509,10 @@ class TDCMarkIII {
             }
         }
         
-        if (!this.outputs.isSolved) {
+        // Servo always runs, but speed depends on solved state
+        const servoSpeedMultiplier = this.outputs.isSolved ? 0.3 : 1.0;
+        
+        if (!this.outputs.isSolved || Math.abs(errorXVIII) > solveThreshold * 0.5) {
             // === REALISTIC MECHANICAL SERVO SIMULATION ===
             // The servo motor responds to error XVIII with physical inertia
             
@@ -521,7 +528,7 @@ class TDCMarkIII {
                 // Newton-Raphson tells us the ideal step
                 const idealStep = -errorXVIII / dErrXVIII_dG;
                 // But servo has limited speed - just go in that direction
-                targetVelocity = Math.sign(idealStep) * this.gyroServoRate;
+                targetVelocity = Math.sign(idealStep) * this.gyroServoRate * servoSpeedMultiplier;
                 
                 // Reduce speed as we get close to solution (proportional control)
                 const errorMag = Math.abs(errorXVIII);
@@ -530,7 +537,7 @@ class TDCMarkIII {
                 }
             } else {
                 // Gradient too small - use proportional control on error
-                targetVelocity = -Math.sign(errorXVIII) * this.gyroServoRate * 0.5;
+                targetVelocity = -Math.sign(errorXVIII) * this.gyroServoRate * 0.3 * servoSpeedMultiplier;
             }
             
             // Apply inertia: servo can't instantly change velocity
