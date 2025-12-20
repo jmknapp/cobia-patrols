@@ -419,30 +419,37 @@ class TDCMarkIII {
         this.outputs.solverError = Math.abs(errorXVII) + Math.abs(errorXVIII);
         
         // Servo adjusts gyro angle to minimize error
-        // This is the key feedback mechanism
-        // Use a threshold relative to range (about 0.1% of range)
+        // This is the key feedback mechanism - TRUE MECHANICAL FEEDBACK
+        // The error terms drive the servo directly, not a computed "ideal" value
         const errorThreshold = Math.max(5, R * 0.001);
         
         // Debug: log error values periodically
         if (Math.random() < 0.01) {
-            console.log('Solver: error=', this.outputs.solverError, 'threshold=', errorThreshold, 'isSolved=', this.outputs.solverError <= errorThreshold);
+            console.log('Solver: errorXVII=', errorXVII.toFixed(1), 'errorXVIII=', errorXVIII.toFixed(1), 
+                        'total=', this.outputs.solverError.toFixed(1), 'threshold=', errorThreshold.toFixed(1));
         }
         
         if (this.outputs.solverError > errorThreshold) {
-            // Use a simplified gradient descent
-            // In reality, the mechanical feedback does this automatically
-            const targetGyro = this.computeIdealGyro();
-            const gyroError = this.normalizeAngle(targetGyro - this.gyroAngle);
+            // TRUE MECHANICAL FEEDBACK:
+            // Error XVIII is the lateral error - it tells us if we're aiming left or right of intercept
+            // Positive error XVIII means we need to increase gyro angle (turn torpedo more right)
+            // Negative means decrease gyro angle
             
-            // Servo response - moves toward target
+            // The mechanical linkage creates proportional control
+            // Scale factor determines servo responsiveness (smaller = slower but more stable)
+            const scaleFactor = 0.05; // degrees of gyro change per yard of error
+            const gyroCorrection = errorXVIII * scaleFactor;
+            
+            // Rate limit the servo (can't spin infinitely fast)
             const maxStep = this.gyroServoRate * dt;
-            const step = Math.sign(gyroError) * Math.min(Math.abs(gyroError), maxStep);
+            const step = Math.max(-maxStep, Math.min(maxStep, gyroCorrection));
             this.gyroAngle += step;
             this.gyroAngle = this.normalizeAngle(this.gyroAngle);
             
             // Debug
             if (Math.random() < 0.02) {
-                console.log('Servo: targetGyro=', targetGyro, 'gyroError=', gyroError, 'step=', step, 'newGyro=', this.gyroAngle);
+                console.log('Servo: errXVIII=', errorXVIII.toFixed(1), 'correction=', gyroCorrection.toFixed(2), 
+                            'step=', step.toFixed(3), 'newGyro=', this.gyroAngle.toFixed(2));
             }
             
             // Differential 22FA shows the adjusting gyro
