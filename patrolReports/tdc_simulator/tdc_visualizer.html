@@ -334,6 +334,52 @@
         .indicator-label.solved {
             color: #22c55e;
         }
+        
+        .tube-selector {
+            margin-bottom: 1rem;
+        }
+        
+        .tube-selector label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .tube-toggle {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--steel);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .tube-btn {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--bg-dark);
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tube-btn:first-child {
+            border-right: 1px solid var(--steel);
+        }
+        
+        .tube-btn:hover {
+            background: var(--steel);
+        }
+        
+        .tube-btn.active {
+            background: var(--brass);
+            color: var(--bg-dark);
+        }
     </style>
 </head>
 <body>
@@ -375,6 +421,14 @@
             <div class="input-group">
                 <label>Target Speed (knots)</label>
                 <input type="number" id="targetSpeed" value="8" min="0" max="30">
+            </div>
+            
+            <div class="tube-selector">
+                <label>Torpedo Tubes</label>
+                <div class="tube-toggle">
+                    <button class="tube-btn active" id="bowTubesBtn" data-tubes="bow">BOW</button>
+                    <button class="tube-btn" id="sternTubesBtn" data-tubes="stern">STERN</button>
+                </div>
             </div>
             
             <div class="controls">
@@ -620,6 +674,27 @@
             mechPanY = 0;
         });
         
+        // Tube selector event listeners
+        document.getElementById('bowTubesBtn').addEventListener('click', () => {
+            inputs.selectedTubes = 'bow';
+            document.getElementById('bowTubesBtn').classList.add('active');
+            document.getElementById('sternTubesBtn').classList.remove('active');
+            // Update TDC engine with new tube base line
+            if (tdc) {
+                tdc.TUBE_BASE_LINE = BOW_TUBE_BASE_LINE;
+            }
+        });
+        
+        document.getElementById('sternTubesBtn').addEventListener('click', () => {
+            inputs.selectedTubes = 'stern';
+            document.getElementById('sternTubesBtn').classList.add('active');
+            document.getElementById('bowTubesBtn').classList.remove('active');
+            // Update TDC engine with new tube base line
+            if (tdc) {
+                tdc.TUBE_BASE_LINE = STERN_TUBE_BASE_LINE;
+            }
+        });
+        
         // Component colors
         const COLORS = {
             differential: '#c9a227',
@@ -727,7 +802,10 @@
         const HIT_RADIUS = 30; // yards - how close torpedo needs to be to target
         
         // Torpedo trajectory parameters (from O.P. 1056) - must match TDC engine!
-        const TUBE_BASE_LINE = 50;     // P - distance from conning tower to tubes (yards)
+        // TUBE_BASE_LINE is now dynamic based on selected tubes (see getTubeBaseLine())
+        function getTubeBaseLine() {
+            return inputs.selectedTubes === 'stern' ? STERN_TUBE_BASE_LINE : BOW_TUBE_BASE_LINE;
+        }
         const REACH_DISTANCE = 75;      // M - straight run before gyro engages (yards)
         const TORPEDO_TURN_RADIUS = 130; // Z - turning radius (yards)
         // Turn rate = speed / radius
@@ -739,20 +817,24 @@
         function capturePredictedTrack() {
             // Capture the current predicted track in world coordinates
             // This freezes the track at the moment of firing
-            const ownHeadingRad = inputs.ownCourse * Math.PI / 180;
-            const bowX = state.ownX + Math.sin(ownHeadingRad) * TUBE_BASE_LINE;
-            const bowY = state.ownY + Math.cos(ownHeadingRad) * TUBE_BASE_LINE;
+            const tubeBaseLine = getTubeBaseLine();
+            const isSternTubes = inputs.selectedTubes === 'stern';
+            // For stern tubes, initial heading is aft (180° from own course)
+            const launchHeading = isSternTubes ? (inputs.ownCourse + 180) % 360 : inputs.ownCourse;
+            const ownHeadingRad = launchHeading * Math.PI / 180;
+            const tubeX = state.ownX + Math.sin(inputs.ownCourse * Math.PI / 180) * tubeBaseLine;
+            const tubeY = state.ownY + Math.cos(inputs.ownCourse * Math.PI / 180) * tubeBaseLine;
             
             const gyroAngle = computed.gyroAngle;
             const torpedoRun = computed.torpedoRun;
             
             // Build path points in world coordinates
             const pathPoints = [];
-            pathPoints.push({x: bowX, y: bowY});
+            pathPoints.push({x: tubeX, y: tubeY});
             
-            // Phase 1: Reach M (straight run before turn)
-            const reachEndX = bowX + Math.sin(ownHeadingRad) * REACH_DISTANCE;
-            const reachEndY = bowY + Math.cos(ownHeadingRad) * REACH_DISTANCE;
+            // Phase 1: Reach M (straight run before turn) - along launch heading
+            const reachEndX = tubeX + Math.sin(ownHeadingRad) * REACH_DISTANCE;
+            const reachEndY = tubeY + Math.cos(ownHeadingRad) * REACH_DISTANCE;
             pathPoints.push({x: reachEndX, y: reachEndY});
             
             // Phase 2: Arc turn
@@ -761,7 +843,7 @@
                 const angleStep = gyroAngle / steps;
                 const arcLengthPerStep = (Math.abs(gyroAngle) * Math.PI / 180) * TORPEDO_TURN_RADIUS / steps;
                 
-                let currentAngle = inputs.ownCourse;
+                let currentAngle = launchHeading;
                 let arcX = reachEndX;
                 let arcY = reachEndY;
                 
@@ -774,7 +856,7 @@
                 }
                 
                 // Phase 3: Final straight run
-                const torpedoHeading = inputs.ownCourse + gyroAngle;
+                const torpedoHeading = launchHeading + gyroAngle;
                 const torpedoHeadingRad = torpedoHeading * Math.PI / 180;
                 const remainingDist = torpedoRun - REACH_DISTANCE - 
                     Math.abs(gyroAngle) * Math.PI / 180 * TORPEDO_TURN_RADIUS;
@@ -786,10 +868,9 @@
                 }
             } else {
                 // No significant turn, straight line
-                const torpedoHeadingRad = inputs.ownCourse * Math.PI / 180;
                 pathPoints.push({
-                    x: bowX + Math.sin(torpedoHeadingRad) * torpedoRun,
-                    y: bowY + Math.cos(torpedoHeadingRad) * torpedoRun
+                    x: tubeX + Math.sin(ownHeadingRad) * torpedoRun,
+                    y: tubeY + Math.cos(ownHeadingRad) * torpedoRun
                 });
             }
             
@@ -803,18 +884,23 @@
             const firedTrack = capturePredictedTrack();
             firedTracks.push(firedTrack);
             
-            // Torpedo starts from bow (P yards ahead of conning tower/center)
-            // TDC equations account for this via the Tube Base Line P
+            // Torpedo starts from tube position (P yards from conning tower)
+            // For bow tubes: ahead of conning tower, initially heading forward
+            // For stern tubes: behind conning tower, initially heading aft
+            const tubeBaseLine = getTubeBaseLine();
+            const isSternTubes = inputs.selectedTubes === 'stern';
+            const launchHeading = isSternTubes ? (inputs.ownCourse + 180) % 360 : inputs.ownCourse;
+            
             const ownHeadingRad = inputs.ownCourse * Math.PI / 180;
-            const startX = state.ownX + Math.sin(ownHeadingRad) * TUBE_BASE_LINE;
-            const startY = state.ownY + Math.cos(ownHeadingRad) * TUBE_BASE_LINE;
+            const startX = state.ownX + Math.sin(ownHeadingRad) * tubeBaseLine;
+            const startY = state.ownY + Math.cos(ownHeadingRad) * tubeBaseLine;
             
             const torpedo = {
                 x: startX,
                 y: startY,
-                heading: inputs.ownCourse, // Start heading along sub's course
-                initialHeading: inputs.ownCourse,
-                targetHeading: inputs.ownCourse + gyroAngle, // Final heading after turn
+                heading: launchHeading, // Start heading (forward for bow, aft for stern)
+                initialHeading: launchHeading,
+                targetHeading: launchHeading + gyroAngle, // Final heading after turn
                 gyroAngle: gyroAngle,
                 trail: [{x: startX, y: startY}],
                 active: true,
@@ -922,8 +1008,13 @@
             targetBearing: 291,
             targetRange: 900,
             targetCourse: 115,
-            targetSpeed: 8
+            targetSpeed: 8,
+            selectedTubes: 'bow'  // 'bow' or 'stern'
         };
+        
+        // Tube base line distances (P) - distance from conning tower to tubes
+        const BOW_TUBE_BASE_LINE = 50;    // ~50 yards forward of conning tower
+        const STERN_TUBE_BASE_LINE = -100; // ~100 yards aft of conning tower (negative)
         
         // Position state (own ship at origin, target relative)
         // Units: yards, with Y = North, X = East
@@ -1247,29 +1338,32 @@
             });
             
             // --- Draw live torpedo solution path (reach + turn + final run) ---
-            // Path starts from BOW (P yards ahead of center), same as actual torpedo
+            // Path starts from tube position, heading depends on bow/stern selection
             // This is the "ready for next shot" track that moves with Cobia
-            const ownHeadingDeg = inputs.ownCourse;
-            const ownHeadingRadTorp = ownHeadingDeg * Math.PI / 180;
-            const torpedoHeading = inputs.ownCourse + computed.gyroAngle;
+            const tubeBaseLineDraw = getTubeBaseLine();
+            const isSternTubesDraw = inputs.selectedTubes === 'stern';
+            const launchHeadingDeg = isSternTubesDraw ? (inputs.ownCourse + 180) % 360 : inputs.ownCourse;
+            const launchHeadingRad = launchHeadingDeg * Math.PI / 180;
+            const torpedoHeading = launchHeadingDeg + computed.gyroAngle;
             const torpedoHeadingRad = torpedoHeading * Math.PI / 180;
             
-            // Calculate bow position (P yards ahead of center)
-            const bowOffsetX = Math.sin(ownHeadingRadTorp) * TUBE_BASE_LINE * scale;
-            const bowOffsetY = -Math.cos(ownHeadingRadTorp) * TUBE_BASE_LINE * scale;
-            const bowScreenX = ownScreen.x + bowOffsetX;
-            const bowScreenY = ownScreen.y + bowOffsetY;
+            // Calculate tube position (P yards from center, along sub's heading)
+            const ownHeadingRadTorp = inputs.ownCourse * Math.PI / 180;
+            const tubeOffsetX = Math.sin(ownHeadingRadTorp) * tubeBaseLineDraw * scale;
+            const tubeOffsetY = -Math.cos(ownHeadingRadTorp) * tubeBaseLineDraw * scale;
+            const tubeScreenX = ownScreen.x + tubeOffsetX;
+            const tubeScreenY = ownScreen.y + tubeOffsetY;
             
             tacticalCtx.strokeStyle = '#c9a227'; // Yellow/gold for live track
             tacticalCtx.lineWidth = 2;
             tacticalCtx.setLineDash([3, 3]);
             tacticalCtx.beginPath();
-            tacticalCtx.moveTo(bowScreenX, bowScreenY);  // Start from bow
+            tacticalCtx.moveTo(tubeScreenX, tubeScreenY);  // Start from tube
             
-            // Phase 1: Reach M (straight run from bow before turn)
+            // Phase 1: Reach M (straight run before turn) - along launch heading
             const reachDist = REACH_DISTANCE * scale;
-            const reachEndX = bowScreenX + Math.sin(ownHeadingRadTorp) * reachDist;
-            const reachEndY = bowScreenY - Math.cos(ownHeadingRadTorp) * reachDist;
+            const reachEndX = tubeScreenX + Math.sin(launchHeadingRad) * reachDist;
+            const reachEndY = tubeScreenY - Math.cos(launchHeadingRad) * reachDist;
             tacticalCtx.lineTo(reachEndX, reachEndY);
             
             // Phase 2: Arc turn (approximate with line segments)
@@ -1280,7 +1374,7 @@
                 const steps = 12;
                 const angleStep = gyroAngleDeg / steps;
                 
-                let currentAngle = ownHeadingDeg;
+                let currentAngle = launchHeadingDeg;
                 let arcX = reachEndX;
                 let arcY = reachEndY;
                 
@@ -1296,7 +1390,6 @@
                 }
                 
                 // Phase 3: Continue straight on final heading
-                // torpedoRun is from submarine center, we started from bow, so subtract only M and arc
                 const remainingDist = (computed.torpedoRun - REACH_DISTANCE - 
                     Math.abs(gyroAngleDeg) * Math.PI / 180 * TORPEDO_TURN_RADIUS) * scale;
                 if (remainingDist > 0) {
@@ -1309,8 +1402,8 @@
                 // No significant turn, straight line
                 const torpLineLen = computed.torpedoRun * scale;
                 tacticalCtx.lineTo(
-                    ownScreen.x + Math.sin(torpedoHeadingRad) * torpLineLen,
-                    ownScreen.y - Math.cos(torpedoHeadingRad) * torpLineLen
+                    tubeScreenX + Math.sin(launchHeadingRad) * torpLineLen,
+                    tubeScreenY - Math.cos(launchHeadingRad) * torpLineLen
                 );
             }
             
@@ -2240,6 +2333,22 @@
             mechPanX = 0;
             mechPanY = 0;
             
+            // Auto-select tubes based on target bearing
+            // If target is in forward arc (within ±90° of bow), use bow tubes
+            // If target is in aft arc, use stern tubes
+            const targetRelBearing = normalizeAngle(inputs.targetBearing - inputs.ownCourse);
+            if (Math.abs(targetRelBearing) <= 90) {
+                inputs.selectedTubes = 'bow';
+                document.getElementById('bowTubesBtn').classList.add('active');
+                document.getElementById('sternTubesBtn').classList.remove('active');
+                tdc.TUBE_BASE_LINE = BOW_TUBE_BASE_LINE;
+            } else {
+                inputs.selectedTubes = 'stern';
+                document.getElementById('sternTubesBtn').classList.add('active');
+                document.getElementById('bowTubesBtn').classList.remove('active');
+                tdc.TUBE_BASE_LINE = STERN_TUBE_BASE_LINE;
+            }
+            
             // Reset TDC solving state - gyro starts at 0, not solved
             tdcState.displayGyro = 0;
             tdcState.targetGyro = 0;
@@ -2248,7 +2357,7 @@
             computed.gyroAngle = 0;
             
             // Reset the TDC engine's gyro angle toward target (prevents wrong-side solutions)
-            const relBearing = normalizeAngle(inputs.targetBearing - inputs.ownCourse);
+            const relBearing = targetRelBearing;
             tdc.gyroAngle = Math.max(-90, Math.min(90, relBearing * 0.8));
             tdc.servoVelocity = 0;
             tdc.outputs.gyroAngle = tdc.gyroAngle;

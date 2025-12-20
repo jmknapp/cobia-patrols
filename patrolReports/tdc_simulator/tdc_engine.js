@@ -217,12 +217,14 @@ class TDCMarkIII {
         // Us = Semi-pseudo run (extra path length from curved trajectory)
         // Z = Turning Radius
         
-        // Combined offset: P + M = total straight distance before turn starts
-        this.TOTAL_STRAIGHT_RUN = this.TUBE_BASE_LINE + this.REACH; // 50 + 75 = 125 yards
+        // Combined offset: |P| + M = total straight distance before turn starts
+        // Uses absolute value of TUBE_BASE_LINE because TDC equations use distances
+        // The directional logic (bow vs stern) is handled in the visualization
+        this.getTotalStraightRun = () => Math.abs(this.TUBE_BASE_LINE) + this.REACH;
         
         this.camP = new Cam('cam_P', 'Cam P+M (Tube+Reach)', (g) => {
-            // Total straight run before turn: P (tube base line) + M (reach)
-            return this.TOTAL_STRAIGHT_RUN;
+            // Total straight run before turn: |P| (tube base line) + M (reach)
+            return this.getTotalStraightRun();
         });
         
         this.camJ = new Cam('cam_J', 'Cam J (Advance)', (g) => {
@@ -420,7 +422,7 @@ class TDCMarkIII {
             const cos_G_minus_Br = Math.cos(G_minus_Br_rad);
             
             // Torpedo characteristics
-            const PM = this.TOTAL_STRAIGHT_RUN; // P + M = 125 yards
+            const PM = this.getTotalStraightRun(); // |P| + M
             const Z = this.TURN_RADIUS; // 130 yards
             
             // Target travel during torpedo run
