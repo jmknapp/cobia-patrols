@@ -430,25 +430,46 @@ class TDCMarkIII {
         }
         
         if (this.outputs.solverError > errorThreshold) {
-            // TRUE MECHANICAL FEEDBACK:
-            // Error XVIII is the lateral error - it tells us if we're aiming left or right of intercept
-            // Positive error XVIII means we need to increase gyro angle (turn torpedo more right)
-            // Negative means decrease gyro angle
+            // TRUE MECHANICAL FEEDBACK using BOTH error terms:
+            // Error XVII (range component) - negative means torpedo won't reach, positive means overshoot
+            // Error XVIII (lateral component) - tells us if aiming left or right of intercept
             
-            // The mechanical linkage creates proportional control
-            // Scale factor determines servo responsiveness (smaller = slower but more stable)
-            const scaleFactor = 0.05; // degrees of gyro change per yard of error
-            const gyroCorrection = errorXVIII * scaleFactor;
+            // The key insight: use Error XVIII primarily, but add Error XVII influence
+            // to avoid spurious solutions where sin(G-Br) = 0
             
-            // Rate limit the servo (can't spin infinitely fast)
+            // Also: keep gyro in reasonable range (-90 to +90 degrees)
+            // Values outside this are torpedo pointing backwards, which is invalid
+            
+            // If we're at an extreme angle and Error XVIII is small but Error XVII is large,
+            // we're at a spurious solution - need to push back toward center
+            let gyroCorrection = 0;
+            
+            if (Math.abs(this.gyroAngle) > 120) {
+                // Spurious solution detected - push back toward 0
+                gyroCorrection = -Math.sign(this.gyroAngle) * 10;
+            } else {
+                // Normal operation: Error XVIII drives the servo
+                // But also add a small component from Error XVII to help stability
+                const scaleFactor = 0.03;
+                gyroCorrection = errorXVIII * scaleFactor;
+                
+                // If Error XVIII is very small but Error XVII is large, use XVII to adjust
+                if (Math.abs(errorXVIII) < 10 && Math.abs(errorXVII) > 50) {
+                    gyroCorrection += Math.sign(errorXVII) * 0.5;
+                }
+            }
+            
+            // Rate limit the servo
             const maxStep = this.gyroServoRate * dt;
             const step = Math.max(-maxStep, Math.min(maxStep, gyroCorrection));
             this.gyroAngle += step;
-            this.gyroAngle = this.normalizeAngle(this.gyroAngle);
+            
+            // Hard clamp to valid range
+            this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle));
             
             // Debug
             if (Math.random() < 0.02) {
-                console.log('Servo: errXVIII=', errorXVIII.toFixed(1), 'correction=', gyroCorrection.toFixed(2), 
+                console.log('Servo: errXVII=', errorXVII.toFixed(1), 'errXVIII=', errorXVIII.toFixed(1),
                             'step=', step.toFixed(3), 'newGyro=', this.gyroAngle.toFixed(2));
             }
             
