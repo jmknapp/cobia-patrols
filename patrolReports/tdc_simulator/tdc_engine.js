@@ -373,6 +373,11 @@ class TDCMarkIII {
         const S = this.inputs.targetSpeed * this.KNOTS_TO_YPS;
         const torpedoSpeedYps = this.TORPEDO_SPEED * this.KNOTS_TO_YPS;
         
+        // Debug: log key values periodically
+        if (Math.random() < 0.01) {
+            console.log('AngleSolver: R=', R, 'Br=', Br, 'gyro=', this.gyroAngle, 'dt=', dt);
+        }
+        
         // The Angle Solver implements equations XVII, XVIII, XIX
         // It adjusts G until the error is zero
         
@@ -417,6 +422,12 @@ class TDCMarkIII {
         // This is the key feedback mechanism
         // Use a threshold relative to range (about 0.1% of range)
         const errorThreshold = Math.max(5, R * 0.001);
+        
+        // Debug: log error values periodically
+        if (Math.random() < 0.01) {
+            console.log('Solver: error=', this.outputs.solverError, 'threshold=', errorThreshold, 'isSolved=', this.outputs.solverError <= errorThreshold);
+        }
+        
         if (this.outputs.solverError > errorThreshold) {
             // Use a simplified gradient descent
             // In reality, the mechanical feedback does this automatically
@@ -428,6 +439,11 @@ class TDCMarkIII {
             const step = Math.sign(gyroError) * Math.min(Math.abs(gyroError), maxStep);
             this.gyroAngle += step;
             this.gyroAngle = this.normalizeAngle(this.gyroAngle);
+            
+            // Debug
+            if (Math.random() < 0.02) {
+                console.log('Servo: targetGyro=', targetGyro, 'gyroError=', gyroError, 'step=', step, 'newGyro=', this.gyroAngle);
+            }
             
             // Differential 22FA shows the adjusting gyro
             this.diff22FA.update(this.gyroAngle, 0);
