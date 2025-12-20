@@ -419,12 +419,15 @@ class TDCMarkIII {
             const sin_G_minus_Br = Math.sin(G_minus_Br_rad);
             const cos_G_minus_Br = Math.cos(G_minus_Br_rad);
             
+            // Torpedo characteristics
+            const PM = this.TOTAL_STRAIGHT_RUN; // P + M = 125 yards
+            const Z = this.TURN_RADIUS; // 130 yards
+            
             // Target travel during torpedo run
             // Compute ACTUAL torpedo path length to match what torpedo simulation does:
             // 1. Straight run: P + M (tube base line + reach) = 125 yards
             // 2. Arc of turn: Z × |G| (in radians)
             // 3. Final straight run to intercept
-            const PM = this.TOTAL_STRAIGHT_RUN; // 125 yards
             const arcLength = Z * Math.abs(G_rad);
             // Final run: from end of turn to intercept point
             // Approximate: total range minus the straight portions covered
@@ -442,15 +445,7 @@ class TDCMarkIII {
             const cosI = Math.cos(I_rad);
             
             // Torpedo characteristics (from O.P. 1056):
-            // P = Tube Base Line (50 yards from conning tower to tubes)
-            // M = Reach (75 yards straight before gyro engages)
-            // P+M = Total straight run before turn (125 yards)
-            // J = Torpedo Advance (lateral offset during turn)
-            // Us = Semi-pseudo run (extra path from curved trajectory)
-            // Z = Turning Radius (130 yards)
-            
-            const PM = this.TOTAL_STRAIGHT_RUN; // P + M = 125 yards
-            const Z = this.TURN_RADIUS; // 130 yards
+            // PM, Z, arcLength already defined above for path calculation
             
             // J (Torpedo Advance) = lateral offset from turn
             // J = Z × (1 - cos(G))
@@ -458,7 +453,6 @@ class TDCMarkIII {
             
             // Us (Semi-pseudo run) = extra path length from curved vs straight
             // Arc length - chord length
-            const arcLength = Z * Math.abs(G_rad);
             const chordLength = 2 * Z * Math.sin(Math.abs(G_rad) / 2);
             const Us = arcLength - chordLength;
             
