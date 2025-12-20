@@ -116,7 +116,27 @@
             font-weight: bold;
         }
         
+        .center-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .tactical-view {
+            flex: 0 0 280px;
+            position: relative;
+        }
+        
+        #tacticalCanvas {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, #0a1628 0%, #050a14 100%);
+            border-radius: 8px;
+            border: 1px solid var(--steel);
+        }
+        
         .mechanism-view {
+            flex: 1;
             position: relative;
             overflow: hidden;
         }
@@ -240,9 +260,17 @@
             </div>
         </div>
         
-        <!-- Mechanism Visualization -->
-        <div class="panel mechanism-view">
-            <canvas id="mechanismCanvas"></canvas>
+        <!-- Center Column: Tactical Map + Mechanism -->
+        <div class="center-column">
+            <!-- Tactical Map -->
+            <div class="panel tactical-view">
+                <canvas id="tacticalCanvas"></canvas>
+            </div>
+            
+            <!-- Mechanism Visualization -->
+            <div class="panel mechanism-view">
+                <canvas id="mechanismCanvas"></canvas>
+            </div>
         </div>
         
         <!-- Output Panel -->
@@ -327,6 +355,10 @@
         
         const canvas = document.getElementById('mechanismCanvas');
         const ctx = canvas.getContext('2d');
+        
+        // Tactical map canvas
+        const tacticalCanvas = document.getElementById('tacticalCanvas');
+        const tacticalCtx = tacticalCanvas.getContext('2d');
         
         // Component colors
         const COLORS = {
@@ -477,6 +509,231 @@
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width - 32;
             canvas.height = rect.height - 32;
+            
+            // Resize tactical canvas
+            const tacticalRect = tacticalCanvas.parentElement.getBoundingClientRect();
+            tacticalCanvas.width = tacticalRect.width - 32;
+            tacticalCanvas.height = tacticalRect.height - 32;
+        }
+        
+        function drawTactical() {
+            const w = tacticalCanvas.width;
+            const h = tacticalCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // Clear
+            tacticalCtx.fillStyle = '#050a14';
+            tacticalCtx.fillRect(0, 0, w, h);
+            
+            // Draw grid
+            tacticalCtx.strokeStyle = '#1a2a3a';
+            tacticalCtx.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = 0; x < w; x += gridSize) {
+                tacticalCtx.beginPath();
+                tacticalCtx.moveTo(x, 0);
+                tacticalCtx.lineTo(x, h);
+                tacticalCtx.stroke();
+            }
+            for (let y = 0; y < h; y += gridSize) {
+                tacticalCtx.beginPath();
+                tacticalCtx.moveTo(0, y);
+                tacticalCtx.lineTo(w, y);
+                tacticalCtx.stroke();
+            }
+            
+            // Calculate scale: fit the scenario in the view
+            const maxRange = Math.max(computed.presentRange, inputs.targetRange) * 1.5;
+            const scale = Math.min(w, h) / (maxRange * 2) * 0.8;
+            
+            // Convert world coords (yards, Y=North, X=East) to screen coords
+            function toScreen(worldX, worldY) {
+                // Center on midpoint between own ship and target
+                const midX = (state.ownX + state.targetX) / 2;
+                const midY = (state.ownY + state.targetY) / 2;
+                return {
+                    x: cx + (worldX - midX) * scale,
+                    y: cy - (worldY - midY) * scale  // Y is flipped (screen Y down, world Y up/north)
+                };
+            }
+            
+            // Draw compass rose
+            tacticalCtx.save();
+            tacticalCtx.translate(w - 40, 40);
+            tacticalCtx.strokeStyle = '#4a5568';
+            tacticalCtx.lineWidth = 1;
+            tacticalCtx.beginPath();
+            tacticalCtx.arc(0, 0, 25, 0, Math.PI * 2);
+            tacticalCtx.stroke();
+            tacticalCtx.fillStyle = '#c9a227';
+            tacticalCtx.font = '10px monospace';
+            tacticalCtx.textAlign = 'center';
+            tacticalCtx.fillText('N', 0, -30);
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(0, -25);
+            tacticalCtx.lineTo(0, -15);
+            tacticalCtx.strokeStyle = '#c9a227';
+            tacticalCtx.lineWidth = 2;
+            tacticalCtx.stroke();
+            tacticalCtx.restore();
+            
+            // Draw scale bar
+            const scaleBarYards = Math.round(maxRange / 4 / 100) * 100;
+            const scaleBarPx = scaleBarYards * scale;
+            tacticalCtx.strokeStyle = '#4a5568';
+            tacticalCtx.lineWidth = 2;
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(20, h - 20);
+            tacticalCtx.lineTo(20 + scaleBarPx, h - 20);
+            tacticalCtx.stroke();
+            tacticalCtx.fillStyle = '#a0aec0';
+            tacticalCtx.font = '10px monospace';
+            tacticalCtx.textAlign = 'left';
+            tacticalCtx.fillText(scaleBarYards + ' yds', 20, h - 25);
+            
+            // --- Draw bearing line from own ship to target ---
+            const ownScreen = toScreen(state.ownX, state.ownY);
+            const targetScreen = toScreen(state.targetX, state.targetY);
+            
+            tacticalCtx.strokeStyle = '#48bb78';
+            tacticalCtx.lineWidth = 1;
+            tacticalCtx.setLineDash([5, 5]);
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(ownScreen.x, ownScreen.y);
+            tacticalCtx.lineTo(targetScreen.x, targetScreen.y);
+            tacticalCtx.stroke();
+            tacticalCtx.setLineDash([]);
+            
+            // --- Draw own ship heading line ---
+            const headingLen = 80;
+            const ownHeadingRad = inputs.ownCourse * Math.PI / 180;
+            tacticalCtx.strokeStyle = '#3b82f6';
+            tacticalCtx.lineWidth = 2;
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(ownScreen.x, ownScreen.y);
+            tacticalCtx.lineTo(
+                ownScreen.x + Math.sin(ownHeadingRad) * headingLen,
+                ownScreen.y - Math.cos(ownHeadingRad) * headingLen
+            );
+            tacticalCtx.stroke();
+            // Arrow head
+            tacticalCtx.save();
+            tacticalCtx.translate(
+                ownScreen.x + Math.sin(ownHeadingRad) * headingLen,
+                ownScreen.y - Math.cos(ownHeadingRad) * headingLen
+            );
+            tacticalCtx.rotate(ownHeadingRad);
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(0, 0);
+            tacticalCtx.lineTo(-5, 10);
+            tacticalCtx.lineTo(5, 10);
+            tacticalCtx.closePath();
+            tacticalCtx.fillStyle = '#3b82f6';
+            tacticalCtx.fill();
+            tacticalCtx.restore();
+            
+            // --- Draw target heading line ---
+            const targetHeadingRad = inputs.targetCourse * Math.PI / 180;
+            tacticalCtx.strokeStyle = '#ef4444';
+            tacticalCtx.lineWidth = 2;
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(targetScreen.x, targetScreen.y);
+            tacticalCtx.lineTo(
+                targetScreen.x + Math.sin(targetHeadingRad) * headingLen,
+                targetScreen.y - Math.cos(targetHeadingRad) * headingLen
+            );
+            tacticalCtx.stroke();
+            // Arrow head
+            tacticalCtx.save();
+            tacticalCtx.translate(
+                targetScreen.x + Math.sin(targetHeadingRad) * headingLen,
+                targetScreen.y - Math.cos(targetHeadingRad) * headingLen
+            );
+            tacticalCtx.rotate(targetHeadingRad);
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(0, 0);
+            tacticalCtx.lineTo(-5, 10);
+            tacticalCtx.lineTo(5, 10);
+            tacticalCtx.closePath();
+            tacticalCtx.fillStyle = '#ef4444';
+            tacticalCtx.fill();
+            tacticalCtx.restore();
+            
+            // --- Draw torpedo solution line (intercept bearing) ---
+            const torpedoHeading = inputs.ownCourse + computed.gyroAngle;
+            const torpedoHeadingRad = torpedoHeading * Math.PI / 180;
+            tacticalCtx.strokeStyle = '#c9a227';
+            tacticalCtx.lineWidth = 2;
+            tacticalCtx.setLineDash([3, 3]);
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(ownScreen.x, ownScreen.y);
+            const torpLineLen = computed.torpedoRun * scale;
+            tacticalCtx.lineTo(
+                ownScreen.x + Math.sin(torpedoHeadingRad) * torpLineLen,
+                ownScreen.y - Math.cos(torpedoHeadingRad) * torpLineLen
+            );
+            tacticalCtx.stroke();
+            tacticalCtx.setLineDash([]);
+            
+            // --- Draw own ship (submarine icon) ---
+            tacticalCtx.save();
+            tacticalCtx.translate(ownScreen.x, ownScreen.y);
+            tacticalCtx.rotate(ownHeadingRad);
+            // Submarine shape
+            tacticalCtx.fillStyle = '#3b82f6';
+            tacticalCtx.beginPath();
+            tacticalCtx.ellipse(0, 0, 6, 15, 0, 0, Math.PI * 2);
+            tacticalCtx.fill();
+            tacticalCtx.strokeStyle = '#1e40af';
+            tacticalCtx.lineWidth = 1;
+            tacticalCtx.stroke();
+            // Conning tower
+            tacticalCtx.fillRect(-3, -5, 6, 6);
+            tacticalCtx.restore();
+            
+            // --- Draw target ship ---
+            tacticalCtx.save();
+            tacticalCtx.translate(targetScreen.x, targetScreen.y);
+            tacticalCtx.rotate(targetHeadingRad);
+            // Ship shape
+            tacticalCtx.fillStyle = '#ef4444';
+            tacticalCtx.beginPath();
+            tacticalCtx.moveTo(0, -18);
+            tacticalCtx.lineTo(8, 10);
+            tacticalCtx.lineTo(8, 18);
+            tacticalCtx.lineTo(-8, 18);
+            tacticalCtx.lineTo(-8, 10);
+            tacticalCtx.closePath();
+            tacticalCtx.fill();
+            tacticalCtx.strokeStyle = '#991b1b';
+            tacticalCtx.lineWidth = 1;
+            tacticalCtx.stroke();
+            tacticalCtx.restore();
+            
+            // --- Labels ---
+            tacticalCtx.font = 'bold 11px monospace';
+            tacticalCtx.fillStyle = '#3b82f6';
+            tacticalCtx.textAlign = 'left';
+            tacticalCtx.fillText('COBIA', ownScreen.x + 15, ownScreen.y + 5);
+            tacticalCtx.fillStyle = '#ef4444';
+            tacticalCtx.fillText('TARGET', targetScreen.x + 15, targetScreen.y + 5);
+            
+            // --- Legend ---
+            tacticalCtx.font = '9px monospace';
+            tacticalCtx.textAlign = 'left';
+            let legendY = 15;
+            tacticalCtx.fillStyle = '#3b82f6';
+            tacticalCtx.fillText('▬ Own Course: ' + inputs.ownCourse + '°', 10, legendY);
+            legendY += 12;
+            tacticalCtx.fillStyle = '#ef4444';
+            tacticalCtx.fillText('▬ Target Course: ' + inputs.targetCourse + '°', 10, legendY);
+            legendY += 12;
+            tacticalCtx.fillStyle = '#48bb78';
+            tacticalCtx.fillText('┈ Bearing: ' + computed.presentBearing.toFixed(1) + '°', 10, legendY);
+            legendY += 12;
+            tacticalCtx.fillStyle = '#c9a227';
+            tacticalCtx.fillText('┈ Torp Heading: ' + (inputs.ownCourse + computed.gyroAngle).toFixed(1) + '°', 10, legendY);
         }
         
         function normalizeAngle(angle) {
@@ -941,6 +1198,7 @@
             }
             
             draw();
+            drawTactical();
             requestAnimationFrame(animate);
         }
         
