@@ -823,9 +823,33 @@
             ctx.setLineDash([]);
         }
         
+        // Track previous values to calculate rates of change
+        let prevComputed = {
+            relBearing: 0,
+            targetAngle: 0,
+            presentBearing: 0,
+            gyroAngle: 0
+        };
+        
+        // Accumulated values for integrators (representing ∫ over time)
+        let integrated = {
+            ownDistance: 0,      // ∫So·dT - own ship travel
+            targetDistance: 0,  // ∫S·dT - target travel
+            dB_sin: 0,          // ∫So·sin(Br)·dT
+            dB_cos: 0,          // ∫So·cos(Br)·dT
+            dA_sin: 0,          // ∫S·sin(A)·dT
+            dA_cos: 0           // ∫S·cos(A)·dT
+        };
+        
         function updateAnimation(dt) {
             const scaledDt = dt * simSpeed;
             time += scaledDt;
+            
+            // Store previous values before update
+            prevComputed.relBearing = computed.relBearing;
+            prevComputed.targetAngle = computed.targetAngle;
+            prevComputed.presentBearing = computed.presentBearing;
+            prevComputed.gyroAngle = computed.gyroAngle;
             
             // Update actual positions (Position Keeper tracking)
             updatePositions(scaledDt);
@@ -834,41 +858,77 @@
             computeTDC();
             updateOutputDisplay();
             
-            // Calculate rate of change for differential spinning
-            // Differentials spin based on the RATE of change of their outputs
-            const spinRate = 50; // Degrees per second base rate for visual effect
+            // === REALISTIC MECHANICAL ANIMATION ===
+            // Components move based on their actual mechanical function
             
-            // Position Keeper differentials - spin based on movement
-            // Diff 7 combines B (bearing) and Co (own course) to produce Br
-            // It spins when bearing changes
-            components['diff_7'].rotation += spinRate * scaledDt;
+            // --- RESOLVERS: Position to show their input angle ---
+            // Resolver 13: Shows relative bearing (Br)
+            components['resolver_13'].rotation = computed.relBearing;
+            // Resolver 34: Shows target angle (A)
+            components['resolver_34'].rotation = computed.targetAngle;
+            // Resolver 2FA: Shows (G - Br) for angle solver
+            components['resolver_2FA'].rotation = computed.gyroAngle - computed.relBearing;
             
-            // Diff 33 combines B+180 and C to produce A
-            components['diff_33'].rotation += spinRate * scaledDt * 0.8;
+            // --- DIFFERENTIALS: Rotate based on rate of change of their output ---
+            // Scale factor to make small angular changes visible
+            const diffScale = 10;
             
-            // Resolvers rotate to show their input angle
-            components['resolver_13'].rotation += spinRate * scaledDt * 1.2;
-            components['resolver_34'].rotation += spinRate * scaledDt * 0.9;
+            // Diff 7: Br = B - Co (output is relative bearing)
+            const dBr = computed.relBearing - prevComputed.relBearing;
+            components['diff_7'].rotation += dBr * diffScale;
             
-            // Integrators - disc rotation proportional to speed input
-            components['int_20'].discRotation += inputs.ownSpeed * scaledDt * 15;
-            components['int_25'].discRotation += inputs.targetSpeed * scaledDt * 15;
-            components['int_14'].discRotation += inputs.ownSpeed * Math.abs(Math.sin(computed.relBearing * Math.PI / 180)) * scaledDt * 20;
-            components['int_15'].discRotation += inputs.ownSpeed * Math.abs(Math.cos(computed.relBearing * Math.PI / 180)) * scaledDt * 20;
-            components['int_35'].discRotation = (components['int_35'].discRotation || 0) + inputs.targetSpeed * scaledDt * 15;
-            components['int_36'].discRotation = (components['int_36'].discRotation || 0) + inputs.targetSpeed * scaledDt * 15;
+            // Diff 33: A = B + 180 - C (output is target angle)
+            const dA = computed.targetAngle - prevComputed.targetAngle;
+            components['diff_33'].rotation += dA * diffScale;
             
-            // Output differentials
-            components['diff_28'].rotation += spinRate * scaledDt * 0.6;
-            components['diff_29'].rotation += spinRate * scaledDt * 0.7;
+            // --- INTEGRATORS: Disc rotation represents accumulated integration ---
+            const ownSpeedYps = inputs.ownSpeed * KNOTS_TO_YPS;
+            const targetSpeedYps = inputs.targetSpeed * KNOTS_TO_YPS;
             
-            // Angle Solver components
-            components['resolver_2FA'].rotation += spinRate * scaledDt * 1.1;
-            components['cam_M'].rotation += Math.abs(computed.gyroAngle) * scaledDt * 2;
-            components['cam_J'].rotation += Math.abs(computed.gyroAngle) * scaledDt * 1.5;
+            // Int 20: ∫So·dT (own ship travel)
+            integrated.ownDistance += ownSpeedYps * scaledDt;
+            components['int_20'].discRotation = integrated.ownDistance * 0.1; // Scale for visibility
             
-            // Output differential shows gyro angle calculation
-            components['diff_22FA'].rotation += spinRate * scaledDt * 0.5;
+            // Int 25: ∫S·dT (target travel)
+            integrated.targetDistance += targetSpeedYps * scaledDt;
+            components['int_25'].discRotation = integrated.targetDistance * 0.1;
+            
+            // Int 14: ∫So·sin(Br)·dT (lateral component of own travel)
+            const sinBr = Math.sin(computed.relBearing * Math.PI / 180);
+            integrated.dB_sin += ownSpeedYps * sinBr * scaledDt;
+            components['int_14'].discRotation = integrated.dB_sin * 0.2;
+            
+            // Int 15: ∫So·cos(Br)·dT (along-LOS component of own travel)
+            const cosBr = Math.cos(computed.relBearing * Math.PI / 180);
+            integrated.dB_cos += ownSpeedYps * cosBr * scaledDt;
+            components['int_15'].discRotation = integrated.dB_cos * 0.2;
+            
+            // Int 35: ∫S·sin(A)·dT
+            const sinA = Math.sin(computed.targetAngle * Math.PI / 180);
+            integrated.dA_sin += targetSpeedYps * sinA * scaledDt;
+            components['int_35'].discRotation = (components['int_35'].discRotation || 0) + targetSpeedYps * sinA * scaledDt * 0.2;
+            
+            // Int 36: ∫S·cos(A)·dT
+            const cosA = Math.cos(computed.targetAngle * Math.PI / 180);
+            integrated.dA_cos += targetSpeedYps * cosA * scaledDt;
+            components['int_36'].discRotation = (components['int_36'].discRotation || 0) + targetSpeedYps * cosA * scaledDt * 0.2;
+            
+            // --- OUTPUT DIFFERENTIALS: Combine integrator outputs ---
+            // Diff 28: ΔB = sum of lateral components
+            components['diff_28'].rotation = (integrated.dB_sin + integrated.dA_sin) * 0.1;
+            
+            // Diff 29: ΔR = sum of along-LOS components  
+            components['diff_29'].rotation = (integrated.dB_cos + integrated.dA_cos) * 0.1;
+            
+            // --- CAMS: Position based on gyro angle ---
+            // Cams convert gyro angle to reach (P) and transfer (J) values
+            components['cam_M'].rotation = computed.gyroAngle;
+            components['cam_J'].rotation = computed.gyroAngle;
+            
+            // --- ANGLE SOLVER OUTPUT DIFFERENTIAL ---
+            // Diff 22FA: Output is the computed gyro angle
+            const dG = computed.gyroAngle - prevComputed.gyroAngle;
+            components['diff_22FA'].rotation += dG * diffScale;
         }
         
         let lastTime = 0;
@@ -899,6 +959,20 @@
             initializeState();
             computeTDC();
             updateOutputDisplay();
+            
+            // Reset integrated values
+            integrated.ownDistance = 0;
+            integrated.targetDistance = 0;
+            integrated.dB_sin = 0;
+            integrated.dB_cos = 0;
+            integrated.dA_sin = 0;
+            integrated.dA_cos = 0;
+            
+            // Reset previous computed values
+            prevComputed.relBearing = computed.relBearing;
+            prevComputed.targetAngle = computed.targetAngle;
+            prevComputed.presentBearing = computed.presentBearing;
+            prevComputed.gyroAngle = computed.gyroAngle;
             
             // Reset component rotations
             for (const comp of Object.values(components)) {
