@@ -365,100 +365,116 @@ class TDCMarkIII {
     
     /**
      * Run the Angle Solver mechanism
-     * Implements the actual TDC mechanical equations XVII and XVIII
-     * The servo adjusts G until errors are zero - this is how the real TDC works
+     * Uses direct geometric computation of intercept to find gyro angle
      */
     runAngleSolver(dt) {
-        const R = this.outputs.presentRange;
-        const Br = this.outputs.relativeBearing;
-        const S = this.inputs.targetSpeed * this.KNOTS_TO_YPS;
         const torpedoSpeedYps = this.TORPEDO_SPEED * this.KNOTS_TO_YPS;
+        const targetSpeedYps = this.inputs.targetSpeed * this.KNOTS_TO_YPS;
         
-        // === MECHANICAL COMPUTATION ===
+        // Current relative position (target relative to own ship)
+        const dx = this.state.targetX - this.state.ownX;
+        const dy = this.state.targetY - this.state.ownY;
+        const range = Math.sqrt(dx * dx + dy * dy);
         
-        // Resolver 2FA: Computes sin(G-Br) and cos(G-Br)
-        const G_minus_Br = this.gyroAngle - Br;
-        const res2FA = this.resolver2FA.update(G_minus_Br);
-        
-        // Estimate torpedo run time (simplified - real TDC iterates)
-        const estRunTime = R / torpedoSpeedYps;
-        
-        // H = target travel during torpedo run
-        const H = S * estRunTime;
-        
-        // Impact angle I = A + (G - Br), where A is target angle
-        const I = this.outputs.targetAngle + G_minus_Br;
-        const I_rad = I * Math.PI / 180;
-        const sinI = Math.sin(I_rad);
-        const cosI = Math.cos(I_rad);
-        
-        // Torpedo characteristics (simplified)
-        const P = this.TORPEDO_INITIAL_RUN; // Reach - initial straight run
-        const G_rad = this.gyroAngle * Math.PI / 180;
-        const P_cosG = P * Math.cos(G_rad);
-        const P_sinG = P * Math.sin(G_rad);
-        const Us = 0; // Pseudo-run (simplified)
-        const J = 0;  // Transfer (simplified)
-        
-        // Update cams for visualization
+        // Update visualization components
+        const G_minus_Br = this.gyroAngle - this.outputs.relativeBearing;
+        this.resolver2FA.update(G_minus_Br);
         this.camP.update(this.gyroAngle);
         this.camJ.update(this.gyroAngle);
         
-        // === ERROR EQUATIONS (from OP 1631) ===
-        // Equation XVII (range/LOS component):
-        //   R·cos(G-Br) = H·cos(I) + Us + P·cos(G)
-        // Equation XVIII (lateral component):
-        //   R·sin(G-Br) = H·sin(I) + J + P·sin(G)
+        // === COMPUTE INTERCEPT ERROR ===
+        // For a given gyro angle, compute where torpedo and target paths cross
+        // and whether they arrive at the same time
         
-        const errorXVII = R * res2FA.cos - H * cosI - Us - P_cosG;
-        const errorXVIII = R * res2FA.sin - H * sinI - J - P_sinG;
+        const computeMissDistance = (testGyro) => {
+            // Torpedo heading (true)
+            const torpHeading = this.inputs.ownCourse + testGyro;
+            const torpHeadingRad = torpHeading * Math.PI / 180;
+            
+            // Torpedo velocity vector
+            const torpVx = Math.sin(torpHeadingRad) * torpedoSpeedYps;
+            const torpVy = Math.cos(torpHeadingRad) * torpedoSpeedYps;
+            
+            // Target velocity vector
+            const targetCourseRad = this.inputs.targetCourse * Math.PI / 180;
+            const targetVx = Math.sin(targetCourseRad) * targetSpeedYps;
+            const targetVy = Math.cos(targetCourseRad) * targetSpeedYps;
+            
+            // Relative velocity (torpedo relative to target)
+            const relVx = torpVx - targetVx;
+            const relVy = torpVy - targetVy;
+            const relSpeed = Math.sqrt(relVx * relVx + relVy * relVy);
+            
+            if (relSpeed < 0.1) return 10000; // No closing, no solution
+            
+            // Time for torpedo to reach target (using closest approach)
+            // Project relative position onto relative velocity
+            const dot = dx * relVx + dy * relVy;
+            const interceptTime = dot / (relSpeed * relSpeed);
+            
+            if (interceptTime < 0) return 10000; // Target behind torpedo path
+            
+            // Positions at intercept time
+            const torpX = torpVx * interceptTime;
+            const torpY = torpVy * interceptTime;
+            const targetX = dx + targetVx * interceptTime;
+            const targetY = dy + targetVy * interceptTime;
+            
+            // Miss distance (lateral error)
+            const missX = targetX - torpX;
+            const missY = targetY - torpY;
+            const missDist = Math.sqrt(missX * missX + missY * missY);
+            
+            // Determine sign: positive if torpedo passes in front, negative if behind
+            // Use cross product to determine which side
+            const cross = torpVx * (targetY - torpY) - torpVy * (targetX - torpX);
+            return Math.sign(cross) * missDist;
+        };
         
-        // Total error magnitude
-        this.outputs.solverError = Math.abs(errorXVII) + Math.abs(errorXVIII);
-        const errorThreshold = Math.max(5, R * 0.002);
+        // Compute current miss distance
+        const missDistance = computeMissDistance(this.gyroAngle);
+        this.outputs.solverError = Math.abs(missDistance);
+        
+        const errorThreshold = 5; // yards
         
         // Debug
         if (Math.random() < 0.01) {
-            console.log('Solver: G=', this.gyroAngle.toFixed(1), 'errXVII=', errorXVII.toFixed(1), 
-                        'errXVIII=', errorXVIII.toFixed(1), 'total=', this.outputs.solverError.toFixed(1));
+            console.log('Solver: G=', this.gyroAngle.toFixed(1), 'miss=', missDistance.toFixed(1), 'yds');
         }
         
         if (this.outputs.solverError > errorThreshold) {
-            // === MECHANICAL FEEDBACK ===
-            // The TDC servo adjusts G based on Error XVIII (lateral balance)
-            // Error XVIII tells us the lateral miss distance:
-            //   Negative errorXVIII: torpedo trailing → need MORE lead → INCREASE G
-            //   Positive errorXVIII: torpedo leading too much → DECREASE G
-            // So feedback is: ΔG ∝ -errorXVIII
+            // === SERVO FEEDBACK ===
+            // Use numerical gradient to find which direction reduces error
+            const delta = 0.5;
+            const missPlus = computeMissDistance(this.gyroAngle + delta);
+            const missMinus = computeMissDistance(this.gyroAngle - delta);
             
-            // Use proportional control with damping to prevent oscillation
-            const Kp = 0.015; // Proportional gain (degrees per yard of error)
-            let gyroCorrection = -errorXVIII * Kp;
+            // Gradient: how does miss distance change with gyro?
+            const gradient = (missPlus - missMinus) / (2 * delta);
             
-            // Add damping based on rate of change (derivative term)
-            // This helps prevent overshoot
-            if (!this._lastErrorXVIII) this._lastErrorXVIII = errorXVIII;
-            const errorRate = (errorXVIII - this._lastErrorXVIII) / dt;
-            const Kd = 0.001; // Derivative gain
-            gyroCorrection -= errorRate * Kd;
-            this._lastErrorXVIII = errorXVIII;
+            // Newton-Raphson step: move opposite to gradient
+            let step = 0;
+            if (Math.abs(gradient) > 0.01) {
+                step = -missDistance / gradient;
+            } else {
+                // Gradient too small, use proportional
+                step = -missDistance * 0.01;
+            }
             
-            // Rate limit the servo motor
+            // Rate limit
             const maxStep = this.gyroServoRate * dt;
-            const step = Math.max(-maxStep, Math.min(maxStep, gyroCorrection));
+            step = Math.max(-maxStep, Math.min(maxStep, step));
             
             this.gyroAngle += step;
             this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle));
             
             // Debug
             if (Math.random() < 0.02) {
-                console.log('Servo: errXVIII=', errorXVIII.toFixed(1), 'correction=', gyroCorrection.toFixed(2), 
+                console.log('Servo: miss=', missDistance.toFixed(1), 'grad=', gradient.toFixed(3), 
                             'step=', step.toFixed(2), 'newG=', this.gyroAngle.toFixed(1));
             }
             
-            // Update differential for visualization
             this.diff22FA.update(this.gyroAngle, 0);
-            
             this.outputs.isSolved = false;
         } else {
             this.outputs.isSolved = true;
