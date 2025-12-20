@@ -205,6 +205,31 @@
         .speed-control input[type="range"] {
             width: 100%;
         }
+        
+        .fire-btn {
+            width: 100%;
+            margin-top: 1rem;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            border: 2px solid #ef4444;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .fire-btn:hover {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        
+        .fire-btn:disabled {
+            background: #4a5568;
+            border-color: #718096;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
@@ -252,6 +277,8 @@
                 <button class="btn primary" id="startBtn">▶ START</button>
                 <button class="btn" id="resetBtn">↺ RESET</button>
             </div>
+            
+            <button class="btn fire-btn" id="fireBtn">🔥 FIRE TORPEDO</button>
             
             <div class="speed-control">
                 <label>Simulation Speed</label>
@@ -444,6 +471,61 @@
         let isRunning = false;
         let simSpeed = 1.0;
         let time = 0;
+        
+        // Torpedo state
+        const TORPEDO_SPEED_KNOTS = 46;
+        const TORPEDO_SPEED_YPS = TORPEDO_SPEED_KNOTS * 2025.4 / 3600;
+        const HIT_RADIUS = 30; // yards - how close torpedo needs to be to target
+        
+        let torpedoes = []; // Array of active torpedoes
+        
+        function fireTorpedo() {
+            const torpedo = {
+                x: state.ownX,
+                y: state.ownY,
+                heading: inputs.ownCourse + computed.gyroAngle,
+                trail: [{x: state.ownX, y: state.ownY}],
+                active: true,
+                result: null, // 'hit' or 'miss'
+                distanceTraveled: 0,
+                maxRange: computed.torpedoRun * 1.5 // Allow some extra range before declaring miss
+            };
+            torpedoes.push(torpedo);
+        }
+        
+        function updateTorpedoes(dt) {
+            torpedoes.forEach(torpedo => {
+                if (!torpedo.active) return;
+                
+                // Move torpedo
+                const headingRad = torpedo.heading * Math.PI / 180;
+                const dx = TORPEDO_SPEED_YPS * Math.sin(headingRad) * dt;
+                const dy = TORPEDO_SPEED_YPS * Math.cos(headingRad) * dt;
+                torpedo.x += dx;
+                torpedo.y += dy;
+                torpedo.distanceTraveled += Math.sqrt(dx * dx + dy * dy);
+                
+                // Record trail
+                torpedo.trail.push({x: torpedo.x, y: torpedo.y});
+                if (torpedo.trail.length > 500) torpedo.trail.shift();
+                
+                // Check for hit
+                const distToTarget = Math.sqrt(
+                    Math.pow(torpedo.x - state.targetX, 2) + 
+                    Math.pow(torpedo.y - state.targetY, 2)
+                );
+                
+                if (distToTarget < HIT_RADIUS) {
+                    torpedo.active = false;
+                    torpedo.result = 'hit';
+                }
+                // Check for miss (exceeded max range)
+                else if (torpedo.distanceTraveled > torpedo.maxRange) {
+                    torpedo.active = false;
+                    torpedo.result = 'miss';
+                }
+            });
+        }
         
         // Input values
         let inputs = {
@@ -779,6 +861,66 @@
             tacticalCtx.lineWidth = 1;
             tacticalCtx.stroke();
             tacticalCtx.restore();
+            
+            // --- Draw torpedoes ---
+            torpedoes.forEach((torpedo, idx) => {
+                // Draw torpedo trail
+                if (torpedo.trail.length > 1) {
+                    tacticalCtx.strokeStyle = torpedo.result === 'hit' ? 'rgba(34, 197, 94, 0.7)' : 
+                                              torpedo.result === 'miss' ? 'rgba(156, 163, 175, 0.5)' :
+                                              'rgba(201, 162, 39, 0.7)';
+                    tacticalCtx.lineWidth = 2;
+                    tacticalCtx.beginPath();
+                    const firstPt = toScreen(torpedo.trail[0].x, torpedo.trail[0].y);
+                    tacticalCtx.moveTo(firstPt.x, firstPt.y);
+                    for (let i = 1; i < torpedo.trail.length; i++) {
+                        const pt = toScreen(torpedo.trail[i].x, torpedo.trail[i].y);
+                        tacticalCtx.lineTo(pt.x, pt.y);
+                    }
+                    tacticalCtx.stroke();
+                }
+                
+                // Draw torpedo
+                const torpScreen = toScreen(torpedo.x, torpedo.y);
+                tacticalCtx.save();
+                tacticalCtx.translate(torpScreen.x, torpScreen.y);
+                tacticalCtx.rotate(torpedo.heading * Math.PI / 180);
+                
+                // Torpedo shape
+                if (torpedo.active) {
+                    tacticalCtx.fillStyle = '#c9a227';
+                } else if (torpedo.result === 'hit') {
+                    tacticalCtx.fillStyle = '#22c55e';
+                } else {
+                    tacticalCtx.fillStyle = '#6b7280';
+                }
+                
+                tacticalCtx.beginPath();
+                tacticalCtx.ellipse(0, 0, 3, 8, 0, 0, Math.PI * 2);
+                tacticalCtx.fill();
+                // Nose
+                tacticalCtx.beginPath();
+                tacticalCtx.moveTo(-3, -8);
+                tacticalCtx.lineTo(0, -12);
+                tacticalCtx.lineTo(3, -8);
+                tacticalCtx.closePath();
+                tacticalCtx.fill();
+                
+                tacticalCtx.restore();
+                
+                // Draw hit/miss indicator
+                if (torpedo.result === 'hit') {
+                    tacticalCtx.fillStyle = '#22c55e';
+                    tacticalCtx.font = 'bold 14px monospace';
+                    tacticalCtx.textAlign = 'center';
+                    tacticalCtx.fillText('💥 HIT!', torpScreen.x, torpScreen.y - 20);
+                } else if (torpedo.result === 'miss') {
+                    tacticalCtx.fillStyle = '#6b7280';
+                    tacticalCtx.font = '10px monospace';
+                    tacticalCtx.textAlign = 'center';
+                    tacticalCtx.fillText('MISS', torpScreen.x, torpScreen.y - 15);
+                }
+            });
             
             // --- Labels ---
             tacticalCtx.font = 'bold 11px monospace';
@@ -1180,6 +1322,9 @@
             // Update actual positions (Position Keeper tracking)
             updatePositions(scaledDt);
             
+            // Update torpedoes
+            updateTorpedoes(scaledDt);
+            
             // Recompute TDC solution based on new positions
             computeTDC();
             updateOutputDisplay();
@@ -1277,10 +1422,22 @@
             document.getElementById('startBtn').textContent = isRunning ? '⏸ PAUSE' : '▶ START';
         });
         
+        document.getElementById('fireBtn').addEventListener('click', () => {
+            // Start simulation if not running
+            if (!isRunning) {
+                isRunning = true;
+                document.getElementById('startBtn').textContent = '⏸ PAUSE';
+            }
+            fireTorpedo();
+        });
+        
         document.getElementById('resetBtn').addEventListener('click', () => {
             isRunning = false;
             time = 0;
             document.getElementById('startBtn').textContent = '▶ START';
+            
+            // Clear torpedoes
+            torpedoes = [];
             
             // Reset positions to initial state
             initializeState();
