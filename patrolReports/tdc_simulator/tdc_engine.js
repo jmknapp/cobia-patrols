@@ -134,7 +134,11 @@ class TDCMarkIII {
         // Physical constants
         this.KNOTS_TO_YPS = 2025.4 / 3600; // Yards per second per knot
         this.TORPEDO_SPEED = 46; // knots (Mark 14 high speed)
-        this.TORPEDO_INITIAL_RUN = 75; // yards before gyro engages
+        
+        // Torpedo geometry (from O.P. 1056 Fig. 4)
+        this.TUBE_BASE_LINE = 50;  // P - distance from conning tower to forward tubes (yards)
+        this.REACH = 75;           // M - straight run before gyro engages (yards)
+        this.TURN_RADIUS = 130;    // Z - torpedo turning radius (yards)
         
         // === INPUTS (set by operator) ===
         this.inputs = {
@@ -206,20 +210,23 @@ class TDCMarkIII {
         this.resolver2FA = new Resolver('resolver_2FA', 'Resolver 2FA (G - Br)');
         
         // Cams for torpedo characteristics
-        // P = Reach (initial straight run before gyro engages, 75 yards)
-        // J = Transfer (lateral displacement during turn)
-        // Us = Pseudo-run (extra path length from curved trajectory)
+        // Torpedo path components (from O.P. 1056):
+        // P = Tube Base Line (distance from conning tower to tubes)
+        // M = Reach (straight run before gyro engages)
+        // J = Torpedo Advance (lateral offset during turn)
+        // Us = Semi-pseudo run (extra path length from curved trajectory)
+        // Z = Turning Radius
         
-        // Turn radius for Mark 14 at high speed ≈ 130 yards
-        this.TURN_RADIUS = 130;
+        // Combined offset: P + M = total straight distance before turn starts
+        this.TOTAL_STRAIGHT_RUN = this.TUBE_BASE_LINE + this.REACH; // 50 + 75 = 125 yards
         
-        this.camP = new Cam('cam_P', 'Cam P (Reach)', (g) => {
-            // Reach is constant 75 yards, but P·cos(G) and P·sin(G) are used in equations
-            return this.TORPEDO_INITIAL_RUN;
+        this.camP = new Cam('cam_P', 'Cam P+M (Tube+Reach)', (g) => {
+            // Total straight run before turn: P (tube base line) + M (reach)
+            return this.TOTAL_STRAIGHT_RUN;
         });
         
-        this.camJ = new Cam('cam_J', 'Cam J (Transfer)', (g) => {
-            // Transfer = turn_radius × (1 - cos(G))
+        this.camJ = new Cam('cam_J', 'Cam J (Advance)', (g) => {
+            // Torpedo Advance = turn_radius × (1 - cos(G))
             const g_rad = g * Math.PI / 180;
             return this.TURN_RADIUS * (1 - Math.cos(g_rad));
         });
@@ -421,35 +428,34 @@ class TDCMarkIII {
             const sinI = Math.sin(I_rad);
             const cosI = Math.cos(I_rad);
             
-            // Torpedo characteristics with proper cam corrections:
-            // P = reach = initial straight run before gyro engages (75 yards)
-            // J = transfer = lateral displacement during the turn
-            // Us = pseudo-run = correction for curved path vs straight line
-            const P = this.TORPEDO_INITIAL_RUN; // 75 yards
+            // Torpedo characteristics (from O.P. 1056):
+            // P = Tube Base Line (50 yards from conning tower to tubes)
+            // M = Reach (75 yards straight before gyro engages)
+            // P+M = Total straight run before turn (125 yards)
+            // J = Torpedo Advance (lateral offset during turn)
+            // Us = Semi-pseudo run (extra path from curved trajectory)
+            // Z = Turning Radius (130 yards)
             
-            // Turn radius for Mark 14 at high speed ≈ 130 yards
-            const turnRadius = 130;
+            const PM = this.TOTAL_STRAIGHT_RUN; // P + M = 125 yards
+            const Z = this.TURN_RADIUS; // 130 yards
             
-            // J (transfer) = lateral offset from turn
-            // For gyro angle G, the torpedo turns through angle G
-            // Transfer = R_turn × (1 - cos(G))
-            const J = turnRadius * (1 - Math.cos(G_rad));
+            // J (Torpedo Advance) = lateral offset from turn
+            // J = Z × (1 - cos(G))
+            const J = Z * (1 - Math.cos(G_rad));
             
-            // Us (pseudo-run) = additional path length from curved trajectory
-            // Arc length through angle G at radius R_turn = R_turn × |G| (in radians)
-            // Minus the chord length ≈ R_turn × 2 × sin(G/2)
-            // Simplified: Us ≈ extra distance from turn
-            const arcLength = turnRadius * Math.abs(G_rad);
-            const chordLength = 2 * turnRadius * Math.sin(Math.abs(G_rad) / 2);
+            // Us (Semi-pseudo run) = extra path length from curved vs straight
+            // Arc length - chord length
+            const arcLength = Z * Math.abs(G_rad);
+            const chordLength = 2 * Z * Math.sin(Math.abs(G_rad) / 2);
             const Us = arcLength - chordLength;
             
             // Equation XVII (Range component):
-            // R·cos(G-Br) = H·cos(I) + Us + P·cos(G)
-            const errorXVII = R * cos_G_minus_Br - H * cosI - Us - P * Math.cos(G_rad);
+            // R·cos(G-Br) = H·cos(I) + Us + (P+M)·cos(G)
+            const errorXVII = R * cos_G_minus_Br - H * cosI - Us - PM * Math.cos(G_rad);
             
             // Equation XVIII (Lateral component):
-            // R·sin(G-Br) = H·sin(I) + J + P·sin(G)
-            const errorXVIII = R * sin_G_minus_Br - H * sinI - J - P * Math.sin(G_rad);
+            // R·sin(G-Br) = H·sin(I) + J + (P+M)·sin(G)
+            const errorXVIII = R * sin_G_minus_Br - H * sinI - J - PM * Math.sin(G_rad);
             
             return { errorXVII, errorXVIII, H, I, J, Us };
         };

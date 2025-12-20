@@ -631,11 +631,11 @@
         const TORPEDO_SPEED_YPS = TORPEDO_SPEED_KNOTS * 2025.4 / 3600; // ~25.9 yps
         const HIT_RADIUS = 30; // yards - how close torpedo needs to be to target
         
-        // Realistic torpedo trajectory parameters
-        const INITIAL_RUN_DISTANCE = 75; // yards straight ahead before gyro engages
-        // Mark 14 torpedo turn radius ≈ 130 yards at high speed (historical)
-        const TORPEDO_TURN_RADIUS = 130; // yards - must match TDC engine!
-        // Turn rate = speed / radius = 25.9 / 130 ≈ 0.199 rad/s ≈ 11.4 deg/s
+        // Torpedo trajectory parameters (from O.P. 1056) - must match TDC engine!
+        const TUBE_BASE_LINE = 50;     // P - distance from conning tower to tubes (yards)
+        const REACH_DISTANCE = 75;      // M - straight run before gyro engages (yards)
+        const TORPEDO_TURN_RADIUS = 130; // Z - turning radius (yards)
+        // Turn rate = speed / radius
         const TORPEDO_TURN_RATE_DPS = (TORPEDO_SPEED_YPS / TORPEDO_TURN_RADIUS) * (180 / Math.PI);
         
         let torpedoes = []; // Array of active torpedoes
@@ -643,10 +643,11 @@
         function fireTorpedo() {
             const gyroAngle = computed.gyroAngle;
             
-            // Torpedo starts from submarine's position (TDC computes solution from here)
-            // The 75-yard "reach" in the TDC equations accounts for the initial straight run
-            const startX = state.ownX;
-            const startY = state.ownY;
+            // Torpedo starts from bow (P yards ahead of conning tower/center)
+            // TDC equations account for this via the Tube Base Line P
+            const ownHeadingRad = inputs.ownCourse * Math.PI / 180;
+            const startX = state.ownX + Math.sin(ownHeadingRad) * TUBE_BASE_LINE;
+            const startY = state.ownY + Math.cos(ownHeadingRad) * TUBE_BASE_LINE;
             
             const torpedo = {
                 x: startX,
@@ -683,8 +684,8 @@
                     dist = Math.sqrt(dx * dx + dy * dy);
                     torpedo.distanceTraveled += dist;
                     
-                    // Check if initial run complete
-                    if (torpedo.distanceTraveled >= INITIAL_RUN_DISTANCE) {
+                    // Check if reach (M) complete - gyro engages after M yards
+                    if (torpedo.distanceTraveled >= REACH_DISTANCE) {
                         torpedo.phase = 'turning';
                         torpedo.turnProgress = 0;
                     }
@@ -1073,10 +1074,10 @@
             tacticalCtx.beginPath();
             tacticalCtx.moveTo(ownScreen.x, ownScreen.y);
             
-            // Phase 1: Initial straight run (75 yard reach along own course)
-            const reachDist = INITIAL_RUN_DISTANCE * scale;
-            const reachEndX = ownScreen.x + Math.sin(ownHeadingRadTorp) * reachDist;
-            const reachEndY = ownScreen.y - Math.cos(ownHeadingRadTorp) * reachDist;
+            // Phase 1: Tube Base Line P + Reach M (total straight run before turn)
+            const totalStraight = (TUBE_BASE_LINE + REACH_DISTANCE) * scale;
+            const reachEndX = ownScreen.x + Math.sin(ownHeadingRadTorp) * totalStraight;
+            const reachEndY = ownScreen.y - Math.cos(ownHeadingRadTorp) * totalStraight;
             tacticalCtx.lineTo(reachEndX, reachEndY);
             
             // Phase 2: Arc turn (approximate with line segments)
@@ -1103,7 +1104,7 @@
                 }
                 
                 // Phase 3: Continue straight on final heading
-                const remainingDist = (computed.torpedoRun - INITIAL_RUN_DISTANCE - 
+                const remainingDist = (computed.torpedoRun - TUBE_BASE_LINE - REACH_DISTANCE - 
                     Math.abs(gyroAngleDeg) * Math.PI / 180 * TORPEDO_TURN_RADIUS) * scale;
                 if (remainingDist > 0) {
                     tacticalCtx.lineTo(
