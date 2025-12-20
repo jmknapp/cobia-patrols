@@ -1991,6 +1991,22 @@
                 isRunning = true;
                 document.getElementById('startBtn').textContent = '⏸ PAUSE';
             }
+            
+            // Compute fresh solution at exact moment of firing
+            // This ensures torpedo uses current geometry, not stale tracking solution
+            tdc.calculatePresentGeometry();
+            tdc.runPositionKeeper(0);
+            
+            // Run angle solver multiple iterations to converge on best solution
+            for (let i = 0; i < 100; i++) {
+                tdc.runAngleSolver(0.016); // ~60fps timestep
+            }
+            
+            // Update computed values from fresh solution
+            computed.gyroAngle = tdc.outputs.gyroAngle;
+            computed.trackAngle = tdc.outputs.trackAngle;
+            computed.torpedoRun = tdc.outputs.torpedoRun;
+            
             fireTorpedo();
         });
         
