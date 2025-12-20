@@ -420,8 +420,17 @@ class TDCMarkIII {
             const cos_G_minus_Br = Math.cos(G_minus_Br_rad);
             
             // Target travel during torpedo run
-            // More accurate: use actual torpedo path length, not just R
-            const torpedoPath = R / Math.max(0.5, Math.cos(G_minus_Br_rad)); // Path to intercept
+            // Compute ACTUAL torpedo path length to match what torpedo simulation does:
+            // 1. Straight run: P + M (tube base line + reach) = 125 yards
+            // 2. Arc of turn: Z × |G| (in radians)
+            // 3. Final straight run to intercept
+            const PM = this.TOTAL_STRAIGHT_RUN; // 125 yards
+            const arcLength = Z * Math.abs(G_rad);
+            // Final run: from end of turn to intercept point
+            // Approximate: total range minus the straight portions covered
+            const straightPortionCovered = PM * Math.cos(G_rad) + Z * Math.sin(Math.abs(G_rad));
+            const finalRun = Math.max(0, R - straightPortionCovered);
+            const torpedoPath = PM + arcLength + finalRun;
             const estRunTime = torpedoPath / torpedoSpeedYps;
             const H = S * estRunTime;
             
