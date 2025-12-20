@@ -247,6 +247,60 @@
             cursor: not-allowed;
             opacity: 0.6;
         }
+        
+        .solution-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+            border: 2px solid #2d2d44;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .indicator-light {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #2d2d44;
+            border: 2px solid #4a4a6a;
+            transition: all 0.3s;
+        }
+        
+        .indicator-light.solving {
+            background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706);
+            box-shadow: 0 0 15px #f59e0b, 0 0 30px rgba(245, 158, 11, 0.5);
+            animation: pulse-amber 0.5s ease-in-out infinite;
+        }
+        
+        .indicator-light.solved {
+            background: radial-gradient(circle at 30% 30%, #4ade80, #16a34a);
+            box-shadow: 0 0 20px #22c55e, 0 0 40px rgba(34, 197, 94, 0.6);
+            animation: none;
+        }
+        
+        @keyframes pulse-amber {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.95); }
+        }
+        
+        .indicator-label {
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #6b7280;
+            transition: color 0.3s;
+        }
+        
+        .indicator-label.solving {
+            color: #f59e0b;
+        }
+        
+        .indicator-label.solved {
+            color: #22c55e;
+        }
     </style>
 </head>
 <body>
@@ -321,6 +375,12 @@
         
         <!-- Output Panel -->
         <div class="panel">
+            <!-- Solution Indicator -->
+            <div class="solution-indicator" id="solutionIndicator">
+                <div class="indicator-light" id="solutionLight"></div>
+                <span class="indicator-label" id="solutionLabel">STANDBY</span>
+            </div>
+            
             <h2>📤 OUTPUTS</h2>
             
             <div class="output-value">
@@ -657,9 +717,11 @@
             displayGyro: 0,      // The gyro angle currently shown (converging to actual)
             targetGyro: 0,       // The mathematically correct gyro angle
             isSolving: false,    // Whether actively converging
-            solveRate: 30,       // Degrees per second convergence rate
+            solveRate: 15,       // Degrees per second base convergence rate (slower for drama)
             solved: false,       // Whether solution has been found
-            solutionLocked: false // Whether operator has "matched dials"
+            solutionLocked: false, // Whether operator has "matched dials"
+            huntAmplitude: 0,    // Oscillation amplitude during solving (simulates hunting)
+            huntPhase: 0         // Phase of oscillation
         };
         
         const KNOTS_TO_YPS = 2025.4 / 3600; // yards per second per knot
@@ -1106,6 +1168,8 @@
         
         function updateTDCSolving(dt) {
             // Simulate the mechanical Angle Solver converging to the solution
+            // This mimics the hunting/damping behavior of real servo systems
+            
             const error = tdcState.targetGyro - tdcState.displayGyro;
             
             // Normalize error to -180 to +180
@@ -1115,20 +1179,40 @@
             
             const errorMagnitude = Math.abs(normalizedError);
             
-            // Convergence speed depends on error magnitude (faster when far from solution)
-            // This simulates the servo response
-            const convergenceRate = Math.min(tdcState.solveRate, errorMagnitude * 2 + 5);
+            // Update hunt oscillation (simulates servo hunting)
+            tdcState.huntPhase += dt * 8; // Oscillation frequency
             
-            if (errorMagnitude > 0.1) {
-                // Move toward target
-                const step = Math.sign(normalizedError) * Math.min(convergenceRate * dt, errorMagnitude);
+            if (errorMagnitude > 0.5) {
+                // Still converging - add hunting oscillation that decreases as we get closer
+                tdcState.huntAmplitude = Math.min(errorMagnitude * 0.15, 3);
+                
+                // Base convergence rate - slower when close (damped response)
+                const convergenceRate = tdcState.solveRate * (0.3 + errorMagnitude / 50);
+                
+                // Move toward target with hunting oscillation
+                const huntOffset = Math.sin(tdcState.huntPhase) * tdcState.huntAmplitude;
+                const step = Math.sign(normalizedError) * Math.min(convergenceRate * dt, errorMagnitude * 0.8);
+                
+                tdcState.displayGyro += step;
+                
+                // Add hunt oscillation to displayed value (visual only, doesn't affect convergence)
+                const displayWithHunt = tdcState.displayGyro + huntOffset;
+                
+                tdcState.displayGyro = normalizeAngle(tdcState.displayGyro);
+                tdcState.isSolving = true;
+                tdcState.solved = false;
+            } else if (errorMagnitude > 0.1) {
+                // Fine adjustment phase - minimal hunting
+                tdcState.huntAmplitude *= 0.9; // Dampen hunt
+                const step = Math.sign(normalizedError) * errorMagnitude * 0.5 * dt * 10;
                 tdcState.displayGyro += step;
                 tdcState.displayGyro = normalizeAngle(tdcState.displayGyro);
                 tdcState.isSolving = true;
                 tdcState.solved = false;
             } else {
-                // Close enough - snap to solution
+                // Close enough - solution locked
                 tdcState.displayGyro = tdcState.targetGyro;
+                tdcState.huntAmplitude = 0;
                 tdcState.isSolving = false;
                 tdcState.solved = true;
             }
@@ -1171,6 +1255,24 @@
             } else {
                 fireBtn.disabled = false; // Allow firing even while solving (for testing)
                 fireBtn.textContent = tdcState.isSolving ? '⟳ SOLVING...' : '🔥 FIRE TORPEDO';
+            }
+            
+            // Update solution indicator light
+            const light = document.getElementById('solutionLight');
+            const label = document.getElementById('solutionLabel');
+            
+            if (tdcState.solved) {
+                light.className = 'indicator-light solved';
+                label.className = 'indicator-label solved';
+                label.textContent = 'SOLUTION';
+            } else if (tdcState.isSolving) {
+                light.className = 'indicator-light solving';
+                label.className = 'indicator-label solving';
+                label.textContent = 'COMPUTING';
+            } else {
+                light.className = 'indicator-light';
+                label.className = 'indicator-label';
+                label.textContent = 'STANDBY';
             }
         }
         
