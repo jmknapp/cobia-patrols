@@ -221,6 +221,18 @@ def analytics():
                          now=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
+@app.route('/tdc')
+def tdc_simulator():
+    """Serve the TDC Mark III mechanical simulator (hidden)."""
+    return send_from_directory('tdc_simulator', 'tdc_visualizer.html')
+
+
+@app.route('/tdc/<path:filename>')
+def tdc_files(filename):
+    """Serve TDC simulator assets."""
+    return send_from_directory('tdc_simulator', filename)
+
+
 @app.route('/torpedo_attacks')
 def torpedo_attacks():
     """Serve the torpedo attacks visualization page (hidden)."""

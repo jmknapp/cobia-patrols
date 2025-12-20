@@ -40,6 +40,10 @@ for pdf in "$SOURCE_DIR"/*.pdf; do
     [ -f "$pdf" ] && cp -f "$pdf" "$APP_DIR/" && echo "  Copied: $(basename $pdf)"
 done
 
+# Copy TDC simulator
+echo "Copying TDC simulator..."
+cp -r "$SOURCE_DIR/tdc_simulator" "$APP_DIR/"
+
 # Restore .env
 if [ -f /tmp/$APP_NAME.env.bak ]; then
     cp /tmp/$APP_NAME.env.bak "$APP_DIR/.env"
