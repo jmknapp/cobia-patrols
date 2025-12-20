@@ -1146,12 +1146,12 @@
                 
                 // Convert world coords to screen coords
                 const firstPt = trackPoints[0];
-                const firstScreen = worldToScreen(firstPt.x, firstPt.y);
+                const firstScreen = toScreen(firstPt.x, firstPt.y);
                 tacticalCtx.moveTo(firstScreen.x, firstScreen.y);
                 
                 for (let i = 1; i < trackPoints.length; i++) {
                     const pt = trackPoints[i];
-                    const ptScreen = worldToScreen(pt.x, pt.y);
+                    const ptScreen = toScreen(pt.x, pt.y);
                     tacticalCtx.lineTo(ptScreen.x, ptScreen.y);
                 }
                 
