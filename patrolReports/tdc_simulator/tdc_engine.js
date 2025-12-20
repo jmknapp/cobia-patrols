@@ -365,117 +365,94 @@ class TDCMarkIII {
     
     /**
      * Run the Angle Solver mechanism
-     * Uses direct geometric intercept calculation with iterative refinement
+     * Implements the actual TDC mechanical equations XVII and XVIII
+     * The servo adjusts G until errors are zero - this is how the real TDC works
      */
     runAngleSolver(dt) {
+        const R = this.outputs.presentRange;
+        const Br = this.outputs.relativeBearing;
+        const S = this.inputs.targetSpeed * this.KNOTS_TO_YPS;
         const torpedoSpeedYps = this.TORPEDO_SPEED * this.KNOTS_TO_YPS;
-        const targetSpeedYps = this.inputs.targetSpeed * this.KNOTS_TO_YPS;
         
-        // Current geometry
-        const dx = this.state.targetX - this.state.ownX;
-        const dy = this.state.targetY - this.state.ownY;
-        const range = Math.sqrt(dx * dx + dy * dy);
+        // === MECHANICAL COMPUTATION ===
         
-        // Target heading vector
-        const targetCourseRad = this.inputs.targetCourse * Math.PI / 180;
-        const targetVx = Math.sin(targetCourseRad);
-        const targetVy = Math.cos(targetCourseRad);
+        // Resolver 2FA: Computes sin(G-Br) and cos(G-Br)
+        const G_minus_Br = this.gyroAngle - Br;
+        const res2FA = this.resolver2FA.update(G_minus_Br);
         
-        // Compute intercept solution using iteration
-        // For a given gyro angle, compute where torpedo goes and if it hits
+        // Estimate torpedo run time (simplified - real TDC iterates)
+        const estRunTime = R / torpedoSpeedYps;
         
-        const computeInterceptError = (gyroAngle) => {
-            // Torpedo heading
-            const torpedoHeading = this.inputs.ownCourse + gyroAngle;
-            const torpedoHeadingRad = torpedoHeading * Math.PI / 180;
-            const torpVx = Math.sin(torpedoHeadingRad);
-            const torpVy = Math.cos(torpedoHeadingRad);
-            
-            // Solve for intercept time using relative velocity
-            // Target position at time t: (targetX + targetVx*S*t, targetY + targetVy*S*t)
-            // Torpedo position at time t: (ownX + torpVx*Vt*t, ownY + torpVy*Vt*t)
-            // Set equal and solve for t
-            
-            // Relative velocity approach: 
-            // (dx + targetVx*S*t) = torpVx*Vt*t
-            // (dy + targetVy*S*t) = torpVy*Vt*t
-            
-            // This gives us: dx = (torpVx*Vt - targetVx*S)*t
-            //                dy = (torpVy*Vt - targetVy*S)*t
-            
-            const relVx = torpVx * torpedoSpeedYps - targetVx * targetSpeedYps;
-            const relVy = torpVy * torpedoSpeedYps - targetVy * targetSpeedYps;
-            
-            // Time to intercept from x component: t = dx / relVx
-            // Time to intercept from y component: t = dy / relVy
-            // For a valid solution, these should be equal
-            
-            let tx = (Math.abs(relVx) > 0.01) ? dx / relVx : Infinity;
-            let ty = (Math.abs(relVy) > 0.01) ? dy / relVy : Infinity;
-            
-            // If both times are negative or infinite, no solution
-            if (tx < 0) tx = Infinity;
-            if (ty < 0) ty = Infinity;
-            
-            // Error is the difference between the two time estimates
-            // When gyro is correct, tx ≈ ty
-            if (tx === Infinity && ty === Infinity) {
-                return 1000; // No solution possible
-            } else if (tx === Infinity) {
-                return ty * 10; // Use ty as proxy for error
-            } else if (ty === Infinity) {
-                return tx * 10;
-            } else {
-                return tx - ty; // Signed error - positive means need more lead
-            }
-        };
+        // H = target travel during torpedo run
+        const H = S * estRunTime;
         
-        // Compute current error
-        const currentError = computeInterceptError(this.gyroAngle);
-        this.outputs.solverError = Math.abs(currentError);
+        // Impact angle I = A + (G - Br), where A is target angle
+        const I = this.outputs.targetAngle + G_minus_Br;
+        const I_rad = I * Math.PI / 180;
+        const sinI = Math.sin(I_rad);
+        const cosI = Math.cos(I_rad);
         
-        const errorThreshold = 0.5; // seconds of timing error
+        // Torpedo characteristics (simplified)
+        const P = this.TORPEDO_INITIAL_RUN; // Reach - initial straight run
+        const G_rad = this.gyroAngle * Math.PI / 180;
+        const P_cosG = P * Math.cos(G_rad);
+        const P_sinG = P * Math.sin(G_rad);
+        const Us = 0; // Pseudo-run (simplified)
+        const J = 0;  // Transfer (simplified)
+        
+        // Update cams for visualization
+        this.camP.update(this.gyroAngle);
+        this.camJ.update(this.gyroAngle);
+        
+        // === ERROR EQUATIONS (from OP 1631) ===
+        // Equation XVII (range/LOS component):
+        //   R·cos(G-Br) = H·cos(I) + Us + P·cos(G)
+        // Equation XVIII (lateral component):
+        //   R·sin(G-Br) = H·sin(I) + J + P·sin(G)
+        
+        const errorXVII = R * res2FA.cos - H * cosI - Us - P_cosG;
+        const errorXVIII = R * res2FA.sin - H * sinI - J - P_sinG;
+        
+        // Total error magnitude
+        this.outputs.solverError = Math.abs(errorXVII) + Math.abs(errorXVIII);
+        const errorThreshold = Math.max(5, R * 0.002);
         
         // Debug
         if (Math.random() < 0.01) {
-            console.log('Solver: gyro=', this.gyroAngle.toFixed(1), 'error=', currentError.toFixed(2), 's');
+            console.log('Solver: G=', this.gyroAngle.toFixed(1), 'errXVII=', errorXVII.toFixed(1), 
+                        'errXVIII=', errorXVIII.toFixed(1), 'total=', this.outputs.solverError.toFixed(1));
         }
         
         if (this.outputs.solverError > errorThreshold) {
-            // Use gradient descent to find the correct gyro angle
-            // Compute error at slightly different gyro to get gradient
-            const delta = 0.1;
-            const errorPlus = computeInterceptError(this.gyroAngle + delta);
-            const errorMinus = computeInterceptError(this.gyroAngle - delta);
-            const gradient = (errorPlus - errorMinus) / (2 * delta);
+            // === MECHANICAL FEEDBACK ===
+            // The TDC servo adjusts G based on the error signals
+            // Key insight: Error XVIII tells us if we're leading too much or too little
+            //   Positive errorXVIII: R·sin(G-Br) > H·sin(I) → torpedo ahead of target → DECREASE G
+            //   Negative errorXVIII: R·sin(G-Br) < H·sin(I) → torpedo behind target → INCREASE G
+            // So feedback is: ΔG ∝ -errorXVIII
             
-            // Servo step - proportional to error, limited by servo rate
-            let step = 0;
-            if (Math.abs(gradient) > 0.001) {
-                // Newton-Raphson style: step = -error / gradient
-                step = -currentError / gradient;
-            } else {
-                // Gradient too small, use error sign directly
-                step = -Math.sign(currentError) * 2;
+            const scaleFactor = 0.02; // degrees per yard of error
+            let gyroCorrection = -errorXVIII * scaleFactor;
+            
+            // Also use errorXVII to help when errorXVIII is small
+            if (Math.abs(errorXVIII) < 20) {
+                gyroCorrection -= errorXVII * 0.005;
             }
             
-            // Rate limit
+            // Rate limit the servo motor
             const maxStep = this.gyroServoRate * dt;
-            step = Math.max(-maxStep, Math.min(maxStep, step));
+            const step = Math.max(-maxStep, Math.min(maxStep, gyroCorrection));
             
             this.gyroAngle += step;
-            
-            // Clamp to valid range
             this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle));
             
             // Debug
             if (Math.random() < 0.02) {
-                console.log('Servo: gradient=', gradient.toFixed(3), 'step=', step.toFixed(2), 
-                            'newGyro=', this.gyroAngle.toFixed(1));
+                console.log('Servo: correction=', gyroCorrection.toFixed(2), 'step=', step.toFixed(2), 
+                            'newG=', this.gyroAngle.toFixed(1));
             }
             
-            // Update resolver for visualization
-            this.resolver2FA.update(this.gyroAngle - this.outputs.relativeBearing);
+            // Update differential for visualization
             this.diff22FA.update(this.gyroAngle, 0);
             
             this.outputs.isSolved = false;
