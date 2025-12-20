@@ -626,6 +626,14 @@
             cobiaImgLoaded = true;
         };
         
+        // Load target ship (AK cargo) image
+        const targetImg = new Image();
+        targetImg.src = '/static/AKtop.png';
+        let targetImgLoaded = false;
+        targetImg.onload = () => {
+            targetImgLoaded = true;
+        };
+        
         // Torpedo state
         const TORPEDO_SPEED_KNOTS = 46;
         const TORPEDO_SPEED_YPS = TORPEDO_SPEED_KNOTS * 2025.4 / 3600; // ~25.9 yps
@@ -1167,17 +1175,30 @@
             tacticalCtx.save();
             tacticalCtx.translate(targetScreen.x, targetScreen.y);
             tacticalCtx.rotate(targetHeadingRad);
-            // Ship shape - triangle
-            tacticalCtx.fillStyle = '#ef4444';
-            tacticalCtx.beginPath();
-            tacticalCtx.moveTo(0, -targetLen/2);           // Bow
-            tacticalCtx.lineTo(targetLen/6, targetLen/3);  // Starboard
-            tacticalCtx.lineTo(-targetLen/6, targetLen/3); // Port
-            tacticalCtx.closePath();
-            tacticalCtx.fill();
-            tacticalCtx.strokeStyle = '#991b1b';
-            tacticalCtx.lineWidth = Math.max(1, scale * 2);
-            tacticalCtx.stroke();
+            
+            if (targetImgLoaded) {
+                // Use AK cargo ship image - scale with zoom
+                // Image is horizontal (bow pointing right), rotate -90° to point up
+                tacticalCtx.rotate(-Math.PI / 2);
+                const shipLengthYards = 150;  // Cargo ship ~450 feet ≈ 150 yards
+                const imgTargetLen = shipLengthYards * scale;
+                const imgScale = imgTargetLen / targetImg.width;
+                const imgW = targetImg.width * imgScale;
+                const imgH = targetImg.height * imgScale;
+                tacticalCtx.drawImage(targetImg, -imgW/2, -imgH/2, imgW, imgH);
+            } else {
+                // Fallback: triangle shape
+                tacticalCtx.fillStyle = '#ef4444';
+                tacticalCtx.beginPath();
+                tacticalCtx.moveTo(0, -targetLen/2);           // Bow
+                tacticalCtx.lineTo(targetLen/6, targetLen/3);  // Starboard
+                tacticalCtx.lineTo(-targetLen/6, targetLen/3); // Port
+                tacticalCtx.closePath();
+                tacticalCtx.fill();
+                tacticalCtx.strokeStyle = '#991b1b';
+                tacticalCtx.lineWidth = Math.max(1, scale * 2);
+                tacticalCtx.stroke();
+            }
             tacticalCtx.restore();
             
             // --- Draw torpedoes ---
