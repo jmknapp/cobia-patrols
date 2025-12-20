@@ -492,7 +492,7 @@
         tacticalCanvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-            tacticalZoom = Math.max(0.2, Math.min(5.0, tacticalZoom * zoomFactor));
+            tacticalZoom = Math.max(0.1, Math.min(50.0, tacticalZoom * zoomFactor));
         });
         
         tacticalCanvas.addEventListener('mousedown', (e) => {
