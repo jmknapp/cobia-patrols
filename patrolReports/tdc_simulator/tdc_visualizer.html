@@ -462,7 +462,15 @@
             ownY: 0,
             targetX: 0,
             targetY: 0,
-            elapsedTime: 0
+            elapsedTime: 0,
+            // Trail history for visualization
+            ownTrail: [],
+            targetTrail: [],
+            // Initial positions for fixed view center
+            initialOwnX: 0,
+            initialOwnY: 0,
+            initialTargetX: 0,
+            initialTargetY: 0
         };
         
         // Computed values
@@ -487,6 +495,16 @@
             state.targetX = inputs.targetRange * Math.sin(bearingRad);
             state.targetY = inputs.targetRange * Math.cos(bearingRad);
             state.elapsedTime = 0;
+            
+            // Store initial positions for fixed view center
+            state.initialOwnX = state.ownX;
+            state.initialOwnY = state.ownY;
+            state.initialTargetX = state.targetX;
+            state.initialTargetY = state.targetY;
+            
+            // Clear trails
+            state.ownTrail = [{x: state.ownX, y: state.ownY}];
+            state.targetTrail = [{x: state.targetX, y: state.targetY}];
         }
         
         function updatePositions(dt) {
@@ -503,6 +521,19 @@
             state.targetY += targetSpeedYps * Math.cos(targetCourseRad) * dt;
             
             state.elapsedTime += dt;
+            
+            // Record trail positions (every 0.5 seconds of simulation time)
+            const trailInterval = 0.5;
+            if (state.ownTrail.length === 0 || 
+                state.elapsedTime - (state.ownTrail.length - 1) * trailInterval >= trailInterval) {
+                state.ownTrail.push({x: state.ownX, y: state.ownY});
+                state.targetTrail.push({x: state.targetX, y: state.targetY});
+                // Limit trail length
+                if (state.ownTrail.length > 200) {
+                    state.ownTrail.shift();
+                    state.targetTrail.shift();
+                }
+            }
         }
         
         function resizeCanvas() {
@@ -543,19 +574,57 @@
                 tacticalCtx.stroke();
             }
             
-            // Calculate scale: fit the scenario in the view
-            const maxRange = Math.max(computed.presentRange, inputs.targetRange) * 1.5;
-            const scale = Math.min(w, h) / (maxRange * 2) * 0.8;
+            // Calculate scale: fit all positions (initial + current) in the view
+            const allX = [state.ownX, state.targetX, state.initialOwnX, state.initialTargetX];
+            const allY = [state.ownY, state.targetY, state.initialOwnY, state.initialTargetY];
+            const minX = Math.min(...allX);
+            const maxX = Math.max(...allX);
+            const minY = Math.min(...allY);
+            const maxY = Math.max(...allY);
+            const rangeX = Math.max(maxX - minX, 200);
+            const rangeY = Math.max(maxY - minY, 200);
+            const maxRange = Math.max(rangeX, rangeY) * 1.3;
+            const scale = Math.min(w, h) / maxRange * 0.8;
             
             // Convert world coords (yards, Y=North, X=East) to screen coords
+            // Center on initial midpoint (fixed view)
+            const viewCenterX = (state.initialOwnX + state.initialTargetX) / 2;
+            const viewCenterY = (state.initialOwnY + state.initialTargetY) / 2;
+            
             function toScreen(worldX, worldY) {
-                // Center on midpoint between own ship and target
-                const midX = (state.ownX + state.targetX) / 2;
-                const midY = (state.ownY + state.targetY) / 2;
                 return {
-                    x: cx + (worldX - midX) * scale,
-                    y: cy - (worldY - midY) * scale  // Y is flipped (screen Y down, world Y up/north)
+                    x: cx + (worldX - viewCenterX) * scale,
+                    y: cy - (worldY - viewCenterY) * scale  // Y is flipped (screen Y down, world Y up/north)
                 };
+            }
+            
+            // --- Draw trails ---
+            // Own ship trail
+            if (state.ownTrail.length > 1) {
+                tacticalCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+                tacticalCtx.lineWidth = 2;
+                tacticalCtx.beginPath();
+                const firstOwn = toScreen(state.ownTrail[0].x, state.ownTrail[0].y);
+                tacticalCtx.moveTo(firstOwn.x, firstOwn.y);
+                for (let i = 1; i < state.ownTrail.length; i++) {
+                    const pt = toScreen(state.ownTrail[i].x, state.ownTrail[i].y);
+                    tacticalCtx.lineTo(pt.x, pt.y);
+                }
+                tacticalCtx.stroke();
+            }
+            
+            // Target trail
+            if (state.targetTrail.length > 1) {
+                tacticalCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                tacticalCtx.lineWidth = 2;
+                tacticalCtx.beginPath();
+                const firstTarget = toScreen(state.targetTrail[0].x, state.targetTrail[0].y);
+                tacticalCtx.moveTo(firstTarget.x, firstTarget.y);
+                for (let i = 1; i < state.targetTrail.length; i++) {
+                    const pt = toScreen(state.targetTrail[i].x, state.targetTrail[i].y);
+                    tacticalCtx.lineTo(pt.x, pt.y);
+                }
+                tacticalCtx.stroke();
             }
             
             // Draw compass rose
