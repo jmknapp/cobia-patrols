@@ -198,7 +198,7 @@ class TDCMarkIII {
         
         // Current gyro angle being computed
         this.gyroAngle = 0;
-        this.gyroServoRate = 50; // degrees/second servo response
+        this.gyroServoRate = 200; // degrees/second servo response (fast for convergence)
         
         // Resolver 2FA: Resolves (G - Br)
         this.resolver2FA = new Resolver('resolver_2FA', 'Resolver 2FA (G - Br)');
@@ -410,11 +410,14 @@ class TDCMarkIII {
         const errorXVIII = term1_XVIII - term2_XVIII - J - P_sinG;
         
         // Total error (what the servo tries to minimize)
+        // Error is in yards (range-scaled), so threshold should be appropriate
         this.outputs.solverError = Math.abs(errorXVII) + Math.abs(errorXVIII);
         
         // Servo adjusts gyro angle to minimize error
         // This is the key feedback mechanism
-        if (this.outputs.solverError > 0.5) {
+        // Use a threshold relative to range (about 0.1% of range)
+        const errorThreshold = Math.max(5, R * 0.001);
+        if (this.outputs.solverError > errorThreshold) {
             // Use a simplified gradient descent
             // In reality, the mechanical feedback does this automatically
             const targetGyro = this.computeIdealGyro();

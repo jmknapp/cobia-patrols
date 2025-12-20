@@ -1686,13 +1686,65 @@
             const dt = (currentTime - lastTime) / 1000;
             lastTime = currentTime;
             
-            if (isRunning && dt < 0.1) {
-                updateAnimation(dt);
+            if (dt < 0.1) {
+                if (isRunning) {
+                    // Full simulation - ships move and TDC computes
+                    updateAnimation(dt);
+                } else {
+                    // Paused - ships don't move but TDC still computes/tracks
+                    // This allows the angle solver to find a solution
+                    runTDCOnly(dt);
+                }
             }
             
             draw();
             drawTactical();
             requestAnimationFrame(animate);
+        }
+        
+        function runTDCOnly(dt) {
+            // Run just the TDC angle solver without moving ships
+            // This allows convergence while paused
+            
+            // Sync inputs to engine
+            tdc.setInputs({
+                ownCourse: inputs.ownCourse,
+                ownSpeed: inputs.ownSpeed,
+                targetBearing: inputs.targetBearing,
+                targetRange: inputs.targetRange,
+                targetCourse: inputs.targetCourse,
+                targetSpeed: inputs.targetSpeed
+            });
+            
+            // Run angle solver only (positions stay fixed)
+            tdc.runAngleSolver(dt);
+            
+            // Get outputs
+            computed.gyroAngle = tdc.outputs.gyroAngle;
+            computed.trackAngle = tdc.outputs.trackAngle;
+            tdcState.isSolving = !tdc.outputs.isSolved;
+            tdcState.solved = tdc.outputs.isSolved;
+            tdcState.displayGyro = tdc.outputs.gyroAngle;
+            
+            // Update component animations
+            const engineComponents = tdc.components;
+            
+            // Resolvers
+            components['resolver_13'].rotation = engineComponents.resolver_13.rotation;
+            components['resolver_34'].rotation = engineComponents.resolver_34.rotation;
+            components['resolver_2FA'].rotation = engineComponents.resolver_2FA.rotation;
+            
+            // Differentials
+            components['diff_7'].rotation = engineComponents.diff_7.rotation;
+            components['diff_33'].rotation = engineComponents.diff_33.rotation;
+            components['diff_22FA'].rotation = engineComponents.diff_22FA.rotation;
+            
+            // Cams
+            components['cam_P'].rotation = engineComponents.cam_P.rotation;
+            components['cam_M'].rotation = engineComponents.cam_P.rotation;
+            components['cam_J'].rotation = engineComponents.cam_J.rotation;
+            
+            updateOutputDisplay();
         }
         
         // Event listeners
