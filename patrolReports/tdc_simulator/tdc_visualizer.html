@@ -1840,19 +1840,29 @@
             time = 0;
             document.getElementById('startBtn').textContent = '▶ START';
             
-            // Generate random tactical scenario
-            // Own course: any direction
-            inputs.ownCourse = Math.floor(Math.random() * 360);
-            // Own speed: 2-8 knots (typical approach speeds)
-            inputs.ownSpeed = Math.floor(Math.random() * 7) + 2;
+            // Generate random tactical scenario with realistic attack geometry
             // Target bearing: any direction
             inputs.targetBearing = Math.floor(Math.random() * 360);
-            // Target range: 800-3000 yards (typical attack ranges)
+            
+            // Target range: 800-3000 yards (typical attack ranges within Mark 14 torpedo range)
             inputs.targetRange = Math.floor(Math.random() * 2200) + 800;
-            // Target course: any direction
-            inputs.targetCourse = Math.floor(Math.random() * 360);
+            
             // Target speed: 6-14 knots (typical merchant/warship speeds)
             inputs.targetSpeed = Math.floor(Math.random() * 9) + 6;
+            
+            // Target course: constrained so Angle on Bow ≤ 90° either side
+            // AoB = angle between target heading and bearing TO submarine
+            // For AoB ≤ 90°, target course should be within ±90° of (bearing + 180)
+            // This ensures the target is presenting a beam shot or approaching, not running away
+            const reciprocalBearing = (inputs.targetBearing + 180) % 360;
+            const aobOffset = Math.floor(Math.random() * 181) - 90; // -90 to +90
+            inputs.targetCourse = (reciprocalBearing + aobOffset + 360) % 360;
+            
+            // Own course: any direction
+            inputs.ownCourse = Math.floor(Math.random() * 360);
+            
+            // Own speed: 2-8 knots (typical approach speeds)
+            inputs.ownSpeed = Math.floor(Math.random() * 7) + 2;
             
             // Update input fields
             document.getElementById('ownCourse').value = inputs.ownCourse;
