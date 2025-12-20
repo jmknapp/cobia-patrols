@@ -203,17 +203,31 @@ class TDCMarkIII {
         // Resolver 2FA: Resolves (G - Br)
         this.resolver2FA = new Resolver('resolver_2FA', 'Resolver 2FA (G - Br)');
         
-        // Cams for torpedo characteristics (simplified)
-        // P = Reach (initial straight run distance)
+        // Cams for torpedo characteristics
+        // P = Reach (initial straight run before gyro engages, 75 yards)
         // J = Transfer (lateral displacement during turn)
+        // Us = Pseudo-run (extra path length from curved trajectory)
+        
+        // Turn radius for Mark 14 at high speed ≈ 130 yards
+        this.TURN_RADIUS = 130;
+        
         this.camP = new Cam('cam_P', 'Cam P (Reach)', (g) => {
-            // Reach component depends on gyro angle
-            return this.TORPEDO_INITIAL_RUN * Math.cos(g * Math.PI / 180);
+            // Reach is constant 75 yards, but P·cos(G) and P·sin(G) are used in equations
+            return this.TORPEDO_INITIAL_RUN;
         });
         
         this.camJ = new Cam('cam_J', 'Cam J (Transfer)', (g) => {
-            // Transfer component depends on gyro angle
-            return this.TORPEDO_INITIAL_RUN * Math.sin(g * Math.PI / 180);
+            // Transfer = turn_radius × (1 - cos(G))
+            const g_rad = g * Math.PI / 180;
+            return this.TURN_RADIUS * (1 - Math.cos(g_rad));
+        });
+        
+        this.camUs = new Cam('cam_Us', 'Cam Us (Pseudo-run)', (g) => {
+            // Extra path length from curved trajectory
+            const g_rad = Math.abs(g) * Math.PI / 180;
+            const arcLength = this.TURN_RADIUS * g_rad;
+            const chordLength = 2 * this.TURN_RADIUS * Math.sin(g_rad / 2);
+            return arcLength - chordLength;
         });
         
         // Differential 22FA: Gyro angle output
@@ -250,6 +264,7 @@ class TDCMarkIII {
             resolver_2FA: this.resolver2FA,
             cam_P: this.camP,
             cam_J: this.camJ,
+            cam_Us: this.camUs,
             diff_22FA: this.diff22FA
         };
     }
@@ -365,8 +380,14 @@ class TDCMarkIII {
     
     /**
      * Run the Angle Solver mechanism
-     * Implements TDC mechanical equations XVII and XVIII with Newton-Raphson feedback
-     * The mechanical components compute the errors, and the servo uses gradient descent
+     * 
+     * The real TDC Mark III Angle Solver uses equations XVII and XVIII from OP 1631.
+     * These equations include correction terms (Us, J) computed by cams.
+     * 
+     * The key insight: the LATERAL equation (XVIII) is what drives the gyro servo,
+     * because it's most sensitive to gyro angle. The servo hunts until XVIII ≈ 0.
+     * 
+     * For the equations to balance, we must include proper torpedo path corrections.
      */
     runAngleSolver(dt) {
         const R = this.outputs.presentRange;
@@ -376,90 +397,129 @@ class TDCMarkIII {
         
         // === FUNCTION TO COMPUTE MECHANICAL ERROR FOR A GIVEN GYRO ANGLE ===
         const computeError = (testGyro) => {
-            // Resolver 2FA: sin(G-Br) and cos(G-Br)
+            const G_rad = testGyro * Math.PI / 180;
             const G_minus_Br = testGyro - Br;
             const G_minus_Br_rad = G_minus_Br * Math.PI / 180;
+            
+            // Resolver outputs
             const sin_G_minus_Br = Math.sin(G_minus_Br_rad);
             const cos_G_minus_Br = Math.cos(G_minus_Br_rad);
             
-            // Estimate torpedo run time
-            const estRunTime = R / torpedoSpeedYps;
-            
-            // H = target travel during torpedo run
+            // Target travel during torpedo run
+            // More accurate: use actual torpedo path length, not just R
+            const torpedoPath = R / Math.max(0.5, Math.cos(G_minus_Br_rad)); // Path to intercept
+            const estRunTime = torpedoPath / torpedoSpeedYps;
             const H = S * estRunTime;
             
             // Impact angle I = A + (G - Br)
-            const I = this.outputs.targetAngle + G_minus_Br;
+            const A = this.outputs.targetAngle;
+            const I = A + G_minus_Br;
             const I_rad = I * Math.PI / 180;
             const sinI = Math.sin(I_rad);
             const cosI = Math.cos(I_rad);
             
-            // Torpedo characteristics
-            const P = this.TORPEDO_INITIAL_RUN;
-            const G_rad = testGyro * Math.PI / 180;
-            const P_cosG = P * Math.cos(G_rad);
-            const P_sinG = P * Math.sin(G_rad);
+            // Torpedo characteristics with proper cam corrections:
+            // P = reach = initial straight run before gyro engages (75 yards)
+            // J = transfer = lateral displacement during the turn
+            // Us = pseudo-run = correction for curved path vs straight line
+            const P = this.TORPEDO_INITIAL_RUN; // 75 yards
             
-            // Error equations (from OP 1631)
-            const errorXVII = R * cos_G_minus_Br - H * cosI - P_cosG;
-            const errorXVIII = R * sin_G_minus_Br - H * sinI - P_sinG;
+            // Turn radius for Mark 14 at high speed ≈ 130 yards
+            const turnRadius = 130;
             
-            return { errorXVII, errorXVIII };
+            // J (transfer) = lateral offset from turn
+            // For gyro angle G, the torpedo turns through angle G
+            // Transfer = R_turn × (1 - cos(G))
+            const J = turnRadius * (1 - Math.cos(G_rad));
+            
+            // Us (pseudo-run) = additional path length from curved trajectory
+            // Arc length through angle G at radius R_turn = R_turn × |G| (in radians)
+            // Minus the chord length ≈ R_turn × 2 × sin(G/2)
+            // Simplified: Us ≈ extra distance from turn
+            const arcLength = turnRadius * Math.abs(G_rad);
+            const chordLength = 2 * turnRadius * Math.sin(Math.abs(G_rad) / 2);
+            const Us = arcLength - chordLength;
+            
+            // Equation XVII (Range component):
+            // R·cos(G-Br) = H·cos(I) + Us + P·cos(G)
+            const errorXVII = R * cos_G_minus_Br - H * cosI - Us - P * Math.cos(G_rad);
+            
+            // Equation XVIII (Lateral component):
+            // R·sin(G-Br) = H·sin(I) + J + P·sin(G)
+            const errorXVIII = R * sin_G_minus_Br - H * sinI - J - P * Math.sin(G_rad);
+            
+            return { errorXVII, errorXVIII, H, I, J, Us };
         };
         
         // === COMPUTE CURRENT ERRORS ===
-        const { errorXVII, errorXVIII } = computeError(this.gyroAngle);
+        const errors = computeError(this.gyroAngle);
+        const { errorXVII, errorXVIII, H, I, J, Us } = errors;
         
         // Update mechanical components for visualization
         const G_minus_Br = this.gyroAngle - Br;
         this.resolver2FA.update(G_minus_Br);
         this.camP.update(this.gyroAngle);
         this.camJ.update(this.gyroAngle);
+        this.camUs.update(this.gyroAngle);
         
-        // Total error (what we're minimizing)
+        // Error magnitude for display/threshold
         this.outputs.solverError = Math.sqrt(errorXVII * errorXVII + errorXVIII * errorXVIII);
-        const errorThreshold = Math.max(10, R * 0.005);
         
         // Debug
         if (Math.random() < 0.01) {
             console.log('Solver: G=', this.gyroAngle.toFixed(1), 
                         'errXVII=', errorXVII.toFixed(1), 'errXVIII=', errorXVIII.toFixed(1),
-                        'total=', this.outputs.solverError.toFixed(1));
+                        'H=', H.toFixed(1), 'I=', I.toFixed(1), 'J=', J.toFixed(1), 'Us=', Us.toFixed(1));
         }
         
-        if (this.outputs.solverError > errorThreshold) {
-            // === NEWTON-RAPHSON FEEDBACK ON MECHANICAL EQUATIONS ===
-            // Compute gradient: how do errors change with gyro angle?
-            const delta = 0.5; // degrees
+        // === MECHANICAL SERVO FEEDBACK ===
+        // The real TDC servo is driven by ERROR XVIII (lateral component)
+        // When XVIII > 0: torpedo aims too far right, need less gyro angle
+        // When XVIII < 0: torpedo aims too far left, need more gyro angle
+        
+        // Error threshold: solution is good enough when both errors are small
+        const threshold = Math.max(5, R * 0.002); // 0.2% of range or 5 yards
+        const isLateralSolved = Math.abs(errorXVIII) < threshold;
+        const isRangeSolved = Math.abs(errorXVII) < threshold * 2; // Range is less critical
+        
+        if (!isLateralSolved) {
+            // Proportional feedback on lateral error
+            // The servo responds to errorXVIII
+            const Kp = 0.002; // Proportional gain (degrees per yard of error)
+            const Kd = 0.05;  // Derivative damping
+            
+            // Compute derivative of errorXVIII with respect to G
+            const delta = 0.5;
             const errPlus = computeError(this.gyroAngle + delta);
             const errMinus = computeError(this.gyroAngle - delta);
+            const dErrXVIII_dG = (errPlus.errorXVIII - errMinus.errorXVIII) / (2 * delta);
             
-            // Gradient of error magnitude with respect to G
-            const errMagPlus = Math.sqrt(errPlus.errorXVII**2 + errPlus.errorXVIII**2);
-            const errMagMinus = Math.sqrt(errMinus.errorXVII**2 + errMinus.errorXVIII**2);
-            const gradient = (errMagPlus - errMagMinus) / (2 * delta);
-            
-            // Servo step: move in direction that reduces error
+            // Servo step: proportional to error, scaled by inverse of sensitivity
+            // This implements Newton-Raphson: step = -error / derivative
             let step = 0;
-            if (Math.abs(gradient) > 0.1) {
-                // Gradient descent with adaptive step
-                step = -Math.sign(gradient) * Math.min(Math.abs(this.outputs.solverError * 0.01), 5);
+            if (Math.abs(dErrXVIII_dG) > 0.1) {
+                // Newton-Raphson step
+                step = -errorXVIII / dErrXVIII_dG;
             } else {
-                // Near minimum, use small proportional step based on errorXVIII
-                step = -errorXVIII * 0.01;
+                // Fallback: proportional control
+                step = -errorXVIII * Kp;
             }
+            
+            // Damping to prevent overshoot
+            step *= (1 - Kd);
             
             // Rate limit the servo motor
             const maxStep = this.gyroServoRate * dt;
             step = Math.max(-maxStep, Math.min(maxStep, step));
             
+            // Apply step
             this.gyroAngle += step;
             this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle));
             
             // Debug
             if (Math.random() < 0.02) {
-                console.log('Servo: gradient=', gradient.toFixed(2), 'step=', step.toFixed(2), 
-                            'newG=', this.gyroAngle.toFixed(1));
+                console.log('Servo: dErr/dG=', dErrXVIII_dG.toFixed(2), 'step=', step.toFixed(3), 
+                            'newG=', this.gyroAngle.toFixed(2));
             }
             
             this.diff22FA.update(this.gyroAngle, 0);
@@ -476,9 +536,11 @@ class TDCMarkIII {
         if (trackAngle > 180) trackAngle = 360 - trackAngle;
         this.outputs.trackAngle = trackAngle;
         
-        // Torpedo run
-        this.outputs.torpedoRun = R; // Simplified
-        this.outputs.runTime = R / torpedoSpeedYps;
+        // Torpedo run (approximation including corrections)
+        const G_rad = this.gyroAngle * Math.PI / 180;
+        const G_minus_Br_rad = (this.gyroAngle - Br) * Math.PI / 180;
+        this.outputs.torpedoRun = R / Math.max(0.5, Math.cos(G_minus_Br_rad));
+        this.outputs.runTime = this.outputs.torpedoRun / torpedoSpeedYps;
     }
     
     /**
