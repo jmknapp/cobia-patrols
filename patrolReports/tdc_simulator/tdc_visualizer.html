@@ -206,9 +206,26 @@
             width: 100%;
         }
         
+        .random-btn {
+            width: 100%;
+            margin-top: 0.5rem;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: 2px solid #818cf8;
+            color: white;
+            font-weight: bold;
+            padding: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .random-btn:hover {
+            background: linear-gradient(135deg, #818cf8, #6366f1);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        }
+        
         .fire-btn {
             width: 100%;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
             background: linear-gradient(135deg, #dc2626, #991b1b);
             border: 2px solid #ef4444;
             color: white;
@@ -277,6 +294,8 @@
                 <button class="btn primary" id="startBtn">▶ START</button>
                 <button class="btn" id="resetBtn">↺ RESET</button>
             </div>
+            
+            <button class="btn random-btn" id="randomBtn">🎲 RANDOM SCENARIO</button>
             
             <button class="btn fire-btn" id="fireBtn">🔥 FIRE TORPEDO</button>
             
@@ -1568,6 +1587,70 @@
                 document.getElementById('startBtn').textContent = '⏸ PAUSE';
             }
             fireTorpedo();
+        });
+        
+        document.getElementById('randomBtn').addEventListener('click', () => {
+            // Stop simulation
+            isRunning = false;
+            time = 0;
+            document.getElementById('startBtn').textContent = '▶ START';
+            
+            // Generate random tactical scenario
+            // Own course: any direction
+            inputs.ownCourse = Math.floor(Math.random() * 360);
+            // Own speed: 2-8 knots (typical approach speeds)
+            inputs.ownSpeed = Math.floor(Math.random() * 7) + 2;
+            // Target bearing: any direction
+            inputs.targetBearing = Math.floor(Math.random() * 360);
+            // Target range: 800-3000 yards (typical attack ranges)
+            inputs.targetRange = Math.floor(Math.random() * 2200) + 800;
+            // Target course: any direction
+            inputs.targetCourse = Math.floor(Math.random() * 360);
+            // Target speed: 6-14 knots (typical merchant/warship speeds)
+            inputs.targetSpeed = Math.floor(Math.random() * 9) + 6;
+            
+            // Update input fields
+            document.getElementById('ownCourse').value = inputs.ownCourse;
+            document.getElementById('ownSpeed').value = inputs.ownSpeed;
+            document.getElementById('targetBearing').value = inputs.targetBearing;
+            document.getElementById('targetRange').value = inputs.targetRange;
+            document.getElementById('targetCourse').value = inputs.targetCourse;
+            document.getElementById('targetSpeed').value = inputs.targetSpeed;
+            
+            // Clear torpedoes
+            torpedoes = [];
+            
+            // Reset TDC solving state
+            tdcState.displayGyro = 0;
+            tdcState.targetGyro = 0;
+            tdcState.isSolving = false;
+            tdcState.solved = false;
+            
+            // Reset integrated values
+            integrated.ownDistance = 0;
+            integrated.targetDistance = 0;
+            integrated.dB_sin = 0;
+            integrated.dB_cos = 0;
+            integrated.dA_sin = 0;
+            integrated.dA_cos = 0;
+            
+            // Reset component rotations
+            for (const comp of Object.values(components)) {
+                comp.rotation = 0;
+                if (comp.discRotation !== undefined) comp.discRotation = 0;
+            }
+            
+            // Initialize with new scenario
+            initializeState();
+            computeTDC();
+            
+            // Reset previous computed values
+            prevComputed.relBearing = computed.relBearing;
+            prevComputed.targetAngle = computed.targetAngle;
+            prevComputed.presentBearing = computed.presentBearing;
+            prevComputed.gyroAngle = computed.gyroAngle;
+            
+            updateOutputDisplay();
         });
         
         document.getElementById('resetBtn').addEventListener('click', () => {
