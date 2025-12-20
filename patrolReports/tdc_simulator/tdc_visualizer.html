@@ -633,6 +633,16 @@
             presentBearing: 0    // B - current true bearing
         };
         
+        // TDC solving state - simulates the mechanical iteration
+        let tdcState = {
+            displayGyro: 0,      // The gyro angle currently shown (converging to actual)
+            targetGyro: 0,       // The mathematically correct gyro angle
+            isSolving: false,    // Whether actively converging
+            solveRate: 30,       // Degrees per second convergence rate
+            solved: false,       // Whether solution has been found
+            solutionLocked: false // Whether operator has "matched dials"
+        };
+        
         const KNOTS_TO_YPS = 2025.4 / 3600; // yards per second per knot
         
         function initializeState() {
@@ -1057,20 +1067,69 @@
             if (interceptBearing < 0) interceptBearing += 360;
             
             // Gyro angle = intercept bearing - own course
-            computed.gyroAngle = normalizeAngle(interceptBearing - inputs.ownCourse);
+            // This is the "true" solution - store it as target for the solving animation
+            tdcState.targetGyro = normalizeAngle(interceptBearing - inputs.ownCourse);
             
-            // Track angle
-            const torpedoHeading = inputs.ownCourse + computed.gyroAngle;
+            // The displayed gyro angle converges toward the target (simulating mechanical solving)
+            computed.gyroAngle = tdcState.displayGyro;
+            
+            // Track angle (use displayed gyro for consistency)
+            const torpedoHeading = inputs.ownCourse + tdcState.displayGyro;
             computed.trackAngle = Math.abs(normalizeAngle(torpedoHeading - inputs.targetCourse + 180));
             if (computed.trackAngle > 180) computed.trackAngle = 360 - computed.trackAngle;
             
-            // Torpedo run to intercept
+            // Torpedo run to intercept (use displayed gyro)
+            const displayHeadingRad = (inputs.ownCourse + tdcState.displayGyro) * Math.PI / 180;
+            // Recalculate intercept based on displayed gyro for consistency
             computed.torpedoRun = Math.sqrt(futureX * futureX + futureY * futureY);
             computed.runTime = computed.torpedoRun / torpedoSpeedYps;
         }
         
+        function updateTDCSolving(dt) {
+            // Simulate the mechanical Angle Solver converging to the solution
+            const error = tdcState.targetGyro - tdcState.displayGyro;
+            
+            // Normalize error to -180 to +180
+            let normalizedError = error;
+            while (normalizedError > 180) normalizedError -= 360;
+            while (normalizedError < -180) normalizedError += 360;
+            
+            const errorMagnitude = Math.abs(normalizedError);
+            
+            // Convergence speed depends on error magnitude (faster when far from solution)
+            // This simulates the servo response
+            const convergenceRate = Math.min(tdcState.solveRate, errorMagnitude * 2 + 5);
+            
+            if (errorMagnitude > 0.1) {
+                // Move toward target
+                const step = Math.sign(normalizedError) * Math.min(convergenceRate * dt, errorMagnitude);
+                tdcState.displayGyro += step;
+                tdcState.displayGyro = normalizeAngle(tdcState.displayGyro);
+                tdcState.isSolving = true;
+                tdcState.solved = false;
+            } else {
+                // Close enough - snap to solution
+                tdcState.displayGyro = tdcState.targetGyro;
+                tdcState.isSolving = false;
+                tdcState.solved = true;
+            }
+        }
+        
         function updateOutputDisplay() {
-            document.getElementById('gyroAngle').textContent = computed.gyroAngle.toFixed(1) + '°';
+            const gyroEl = document.getElementById('gyroAngle');
+            
+            // Show gyro angle with solving indicator
+            if (tdcState.isSolving) {
+                gyroEl.textContent = computed.gyroAngle.toFixed(1) + '° ⟳';
+                gyroEl.style.color = '#f59e0b'; // Amber while solving
+            } else if (tdcState.solved) {
+                gyroEl.textContent = computed.gyroAngle.toFixed(1) + '° ✓';
+                gyroEl.style.color = '#22c55e'; // Green when solved
+            } else {
+                gyroEl.textContent = computed.gyroAngle.toFixed(1) + '°';
+                gyroEl.style.color = ''; // Default
+            }
+            
             document.getElementById('relBearing').textContent = computed.relBearing.toFixed(1) + '°';
             document.getElementById('targetAngle').textContent = computed.targetAngle.toFixed(1) + '°';
             document.getElementById('trackAngle').textContent = computed.trackAngle.toFixed(1) + '°';
@@ -1084,6 +1143,16 @@
             if (bearingEl) bearingEl.textContent = computed.presentBearing.toFixed(1) + '°';
             if (rangeEl) rangeEl.textContent = computed.presentRange.toFixed(0) + ' yds';
             if (timeEl) timeEl.textContent = state.elapsedTime.toFixed(1) + ' sec';
+            
+            // Update fire button state
+            const fireBtn = document.getElementById('fireBtn');
+            if (tdcState.solved) {
+                fireBtn.disabled = false;
+                fireBtn.textContent = '🔥 FIRE TORPEDO';
+            } else {
+                fireBtn.disabled = false; // Allow firing even while solving (for testing)
+                fireBtn.textContent = tdcState.isSolving ? '⟳ SOLVING...' : '🔥 FIRE TORPEDO';
+            }
         }
         
         function drawGear(x, y, radius, teeth, rotation, color) {
@@ -1393,6 +1462,10 @@
             
             // Recompute TDC solution based on new positions
             computeTDC();
+            
+            // Update the TDC solving animation (converge to solution)
+            updateTDCSolving(scaledDt);
+            
             updateOutputDisplay();
             
             // === REALISTIC MECHANICAL ANIMATION ===
@@ -1504,6 +1577,12 @@
             
             // Clear torpedoes
             torpedoes = [];
+            
+            // Reset TDC solving state - start from zero, needs to find solution
+            tdcState.displayGyro = 0;
+            tdcState.targetGyro = 0;
+            tdcState.isSolving = false;
+            tdcState.solved = false;
             
             // Reset positions to initial state
             initializeState();
