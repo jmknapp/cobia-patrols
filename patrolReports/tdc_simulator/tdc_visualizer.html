@@ -1703,9 +1703,9 @@
                     // Full simulation - ships move and TDC computes
                     updateAnimation(dt);
                 } else {
-                    // Paused - ships don't move but TDC still computes/tracks
-                    // This allows the angle solver to find a solution
-                    runTDCOnly(dt);
+                    // Paused - only update geometry display, don't run angle solver
+                    // TDC will start hunting when Start is pressed
+                    updateGeometryOnly();
                 }
             }
             
@@ -1714,9 +1714,55 @@
             requestAnimationFrame(animate);
         }
         
-        function runTDCOnly(dt) {
-            // Run just the TDC angle solver without moving ships
-            // This allows convergence while paused
+        function updateGeometryOnly() {
+            // Update geometry display without running angle solver
+            // Called when paused - TDC won't hunt until Start is pressed
+            
+            // Guard: make sure engine components exist
+            if (!tdc.components || !tdc.components.resolver_13) {
+                return;
+            }
+            
+            // Sync inputs to engine
+            tdc.setInputs({
+                ownCourse: inputs.ownCourse,
+                ownSpeed: inputs.ownSpeed,
+                targetBearing: inputs.targetBearing,
+                targetRange: inputs.targetRange,
+                targetCourse: inputs.targetCourse,
+                targetSpeed: inputs.targetSpeed
+            });
+            
+            // Calculate geometry from positions
+            tdc.calculatePresentGeometry();
+            
+            // Run position keeper for relative bearing and target angle display
+            tdc.runPositionKeeper(0); // dt=0 since ships aren't moving
+            
+            // Update geometry outputs only (not gyro - that waits for Start)
+            computed.relBearing = tdc.outputs.relativeBearing;
+            computed.targetAngle = tdc.outputs.targetAngle;
+            computed.presentRange = tdc.outputs.presentRange;
+            computed.presentBearing = tdc.outputs.presentBearing;
+            
+            // TDC is not solving yet
+            tdcState.isSolving = false;
+            tdcState.solved = false;
+            
+            // Show gyro at current position (starts at 0)
+            computed.gyroAngle = tdc.gyroAngle;
+            tdcState.displayGyro = tdc.gyroAngle;
+            
+            // Update resolver rotations for static display
+            const engineComponents = tdc.components;
+            if (engineComponents.resolver_13) components['resolver_13'].rotation = engineComponents.resolver_13.rotation;
+            if (engineComponents.resolver_34) components['resolver_34'].rotation = engineComponents.resolver_34.rotation;
+            
+            updateOutputDisplay();
+        }
+        
+        function runTDCWithSolver(dt) {
+            // Run full TDC including angle solver - called when simulation is running
             
             // Guard: make sure engine components exist
             if (!tdc.components || !tdc.components.resolver_13) {
@@ -1737,9 +1783,9 @@
             tdc.calculatePresentGeometry();
             
             // Run position keeper for relative bearing and target angle
-            tdc.runPositionKeeper(0); // dt=0 since ships aren't moving
+            tdc.runPositionKeeper(dt);
             
-            // Run angle solver
+            // Run angle solver - this is where the hunting happens
             tdc.runAngleSolver(dt);
             
             // Get outputs
@@ -1819,11 +1865,18 @@
             // Clear torpedoes
             torpedoes = [];
             
-            // Reset TDC solving state
+            // Reset TDC solving state - gyro starts at 0, not solved
             tdcState.displayGyro = 0;
             tdcState.targetGyro = 0;
             tdcState.isSolving = false;
             tdcState.solved = false;
+            computed.gyroAngle = 0;
+            
+            // Reset the TDC engine's gyro angle to 0
+            tdc.gyroAngle = 0;
+            tdc.servoVelocity = 0;
+            tdc.outputs.gyroAngle = 0;
+            tdc.outputs.isSolved = false;
             
             // Reset integrated values
             integrated.ownDistance = 0;
@@ -1839,15 +1892,23 @@
                 if (comp.discRotation !== undefined) comp.discRotation = 0;
             }
             
-            // Initialize with new scenario
+            // Initialize ship positions with new scenario
             initializeState();
-            computeTDC();
+            
+            // Compute geometry only (not gyro angle - that waits for Start)
+            const dx = state.targetX - state.ownX;
+            const dy = state.targetY - state.ownY;
+            computed.presentRange = Math.sqrt(dx * dx + dy * dy);
+            computed.presentBearing = Math.atan2(dx, dy) * 180 / Math.PI;
+            if (computed.presentBearing < 0) computed.presentBearing += 360;
+            computed.relBearing = normalizeAngle(computed.presentBearing - inputs.ownCourse);
+            computed.targetAngle = normalizeAngle(computed.presentBearing + 180 - inputs.targetCourse);
             
             // Reset previous computed values
             prevComputed.relBearing = computed.relBearing;
             prevComputed.targetAngle = computed.targetAngle;
             prevComputed.presentBearing = computed.presentBearing;
-            prevComputed.gyroAngle = computed.gyroAngle;
+            prevComputed.gyroAngle = 0;
             
             updateOutputDisplay();
         });
@@ -1860,15 +1921,31 @@
             // Clear torpedoes
             torpedoes = [];
             
-            // Reset TDC solving state - start from zero, needs to find solution
+            // Reset TDC solving state - gyro starts at 0, not solved
             tdcState.displayGyro = 0;
             tdcState.targetGyro = 0;
             tdcState.isSolving = false;
             tdcState.solved = false;
+            computed.gyroAngle = 0;
+            
+            // Reset the TDC engine's gyro angle to 0
+            tdc.gyroAngle = 0;
+            tdc.servoVelocity = 0;
+            tdc.outputs.gyroAngle = 0;
+            tdc.outputs.isSolved = false;
             
             // Reset positions to initial state
             initializeState();
-            computeTDC();
+            
+            // Compute geometry only (not gyro angle - that waits for Start)
+            const dx = state.targetX - state.ownX;
+            const dy = state.targetY - state.ownY;
+            computed.presentRange = Math.sqrt(dx * dx + dy * dy);
+            computed.presentBearing = Math.atan2(dx, dy) * 180 / Math.PI;
+            if (computed.presentBearing < 0) computed.presentBearing += 360;
+            computed.relBearing = normalizeAngle(computed.presentBearing - inputs.ownCourse);
+            computed.targetAngle = normalizeAngle(computed.presentBearing + 180 - inputs.targetCourse);
+            
             updateOutputDisplay();
             
             // Reset integrated values
@@ -1904,8 +1981,20 @@
                 // Re-initialize positions when bearing or range changes (defines initial geometry)
                 if (id === 'targetBearing' || id === 'targetRange') {
                     initializeState();
+                    // Reset gyro - it will need to find solution again when started
+                    tdc.gyroAngle = 0;
+                    tdc.servoVelocity = 0;
+                    computed.gyroAngle = 0;
+                    tdcState.solved = false;
                 }
-                computeTDC();
+                // Update geometry display only (gyro waits for Start)
+                const dx = state.targetX - state.ownX;
+                const dy = state.targetY - state.ownY;
+                computed.presentRange = Math.sqrt(dx * dx + dy * dy);
+                computed.presentBearing = Math.atan2(dx, dy) * 180 / Math.PI;
+                if (computed.presentBearing < 0) computed.presentBearing += 360;
+                computed.relBearing = normalizeAngle(computed.presentBearing - inputs.ownCourse);
+                computed.targetAngle = normalizeAngle(computed.presentBearing + 180 - inputs.targetCourse);
                 updateOutputDisplay();
             });
         });
@@ -1914,7 +2003,17 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
         initializeState();
-        computeTDC();
+        
+        // Initial geometry display (gyro starts at 0, waits for Start to begin hunting)
+        const dx = state.targetX - state.ownX;
+        const dy = state.targetY - state.ownY;
+        computed.presentRange = Math.sqrt(dx * dx + dy * dy);
+        computed.presentBearing = Math.atan2(dx, dy) * 180 / Math.PI;
+        if (computed.presentBearing < 0) computed.presentBearing += 360;
+        computed.relBearing = normalizeAngle(computed.presentBearing - inputs.ownCourse);
+        computed.targetAngle = normalizeAngle(computed.presentBearing + 180 - inputs.targetCourse);
+        computed.gyroAngle = 0;
+        
         updateOutputDisplay();
         requestAnimationFrame(animate);
     </script>
