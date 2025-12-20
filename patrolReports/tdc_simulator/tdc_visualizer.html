@@ -834,25 +834,41 @@
             computeTDC();
             updateOutputDisplay();
             
-            // Animate components based on computed values
-            components['diff_7'].rotation = computed.relBearing;  // Directly show current Br
-            components['diff_33'].rotation = computed.targetAngle; // Directly show current A
-            components['resolver_13'].rotation = computed.relBearing;
-            components['resolver_34'].rotation = computed.targetAngle;
+            // Calculate rate of change for differential spinning
+            // Differentials spin based on the RATE of change of their outputs
+            const spinRate = 50; // Degrees per second base rate for visual effect
             
-            components['int_20'].discRotation += inputs.ownSpeed * dt * 10;
-            components['int_25'].discRotation += inputs.targetSpeed * dt * 10;
-            components['int_14'].discRotation += inputs.ownSpeed * Math.sin(computed.relBearing * Math.PI / 180) * dt * 10;
-            components['int_15'].discRotation += inputs.ownSpeed * Math.cos(computed.relBearing * Math.PI / 180) * dt * 10;
+            // Position Keeper differentials - spin based on movement
+            // Diff 7 combines B (bearing) and Co (own course) to produce Br
+            // It spins when bearing changes
+            components['diff_7'].rotation += spinRate * scaledDt;
             
-            components['diff_28'].rotation += (components['int_14'].discRotation + components['int_35'].discRotation) * dt * 0.1;
-            components['diff_29'].rotation += (components['int_15'].discRotation + components['int_36'].discRotation) * dt * 0.1;
+            // Diff 33 combines B+180 and C to produce A
+            components['diff_33'].rotation += spinRate * scaledDt * 0.8;
             
-            components['resolver_2FA'].rotation = computed.gyroAngle - computed.relBearing;
-            components['cam_M'].rotation += computed.gyroAngle * dt * 0.5;
-            components['cam_J'].rotation += computed.gyroAngle * dt * 0.3;
+            // Resolvers rotate to show their input angle
+            components['resolver_13'].rotation += spinRate * scaledDt * 1.2;
+            components['resolver_34'].rotation += spinRate * scaledDt * 0.9;
             
-            components['diff_22FA'].rotation = computed.gyroAngle;
+            // Integrators - disc rotation proportional to speed input
+            components['int_20'].discRotation += inputs.ownSpeed * scaledDt * 15;
+            components['int_25'].discRotation += inputs.targetSpeed * scaledDt * 15;
+            components['int_14'].discRotation += inputs.ownSpeed * Math.abs(Math.sin(computed.relBearing * Math.PI / 180)) * scaledDt * 20;
+            components['int_15'].discRotation += inputs.ownSpeed * Math.abs(Math.cos(computed.relBearing * Math.PI / 180)) * scaledDt * 20;
+            components['int_35'].discRotation = (components['int_35'].discRotation || 0) + inputs.targetSpeed * scaledDt * 15;
+            components['int_36'].discRotation = (components['int_36'].discRotation || 0) + inputs.targetSpeed * scaledDt * 15;
+            
+            // Output differentials
+            components['diff_28'].rotation += spinRate * scaledDt * 0.6;
+            components['diff_29'].rotation += spinRate * scaledDt * 0.7;
+            
+            // Angle Solver components
+            components['resolver_2FA'].rotation += spinRate * scaledDt * 1.1;
+            components['cam_M'].rotation += Math.abs(computed.gyroAngle) * scaledDt * 2;
+            components['cam_J'].rotation += Math.abs(computed.gyroAngle) * scaledDt * 1.5;
+            
+            // Output differential shows gyro angle calculation
+            components['diff_22FA'].rotation += spinRate * scaledDt * 0.5;
         }
         
         let lastTime = 0;
