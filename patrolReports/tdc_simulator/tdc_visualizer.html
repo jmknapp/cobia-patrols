@@ -563,6 +563,14 @@
         let simSpeed = 1.0;
         let time = 0;
         
+        // Load Cobia image for tactical display
+        const cobiaImg = new Image();
+        cobiaImg.src = '/static/cobiatop.png';
+        let cobiaImgLoaded = false;
+        cobiaImg.onload = () => {
+            cobiaImgLoaded = true;
+        };
+        
         // Torpedo state
         const TORPEDO_SPEED_KNOTS = 46;
         const TORPEDO_SPEED_YPS = TORPEDO_SPEED_KNOTS * 2025.4 / 3600; // ~25.9 yps
@@ -1064,16 +1072,27 @@
             tacticalCtx.save();
             tacticalCtx.translate(ownScreen.x, ownScreen.y);
             tacticalCtx.rotate(ownHeadingRad);
-            // Submarine shape
-            tacticalCtx.fillStyle = '#3b82f6';
-            tacticalCtx.beginPath();
-            tacticalCtx.ellipse(0, 0, 6, 15, 0, 0, Math.PI * 2);
-            tacticalCtx.fill();
-            tacticalCtx.strokeStyle = '#1e40af';
-            tacticalCtx.lineWidth = 1;
-            tacticalCtx.stroke();
-            // Conning tower
-            tacticalCtx.fillRect(-3, -5, 6, 6);
+            
+            if (cobiaImgLoaded) {
+                // Use Cobia image - scale to ~25 pixels for 100 yards
+                // Image is horizontal (bow pointing right), need to rotate -90° to point up
+                tacticalCtx.rotate(-Math.PI / 2);
+                const targetLength = 25;  // pixels for submarine length
+                const imgScale = targetLength / cobiaImg.width;
+                const imgW = cobiaImg.width * imgScale;
+                const imgH = cobiaImg.height * imgScale;
+                tacticalCtx.drawImage(cobiaImg, -imgW/2, -imgH/2, imgW, imgH);
+            } else {
+                // Fallback: simple ellipse
+                tacticalCtx.fillStyle = '#3b82f6';
+                tacticalCtx.beginPath();
+                tacticalCtx.ellipse(0, 0, 6, 15, 0, 0, Math.PI * 2);
+                tacticalCtx.fill();
+                tacticalCtx.strokeStyle = '#1e40af';
+                tacticalCtx.lineWidth = 1;
+                tacticalCtx.stroke();
+                tacticalCtx.fillRect(-3, -5, 6, 6);
+            }
             tacticalCtx.restore();
             
             // --- Draw target ship ---
