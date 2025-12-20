@@ -456,11 +456,16 @@
         </div>
     </div>
     
+    <script src="tdc_engine.js"></script>
     <script>
         // TDC Mark III Mechanical Simulator
+        // Now powered by true mechanical simulation engine
         
         const canvas = document.getElementById('mechanismCanvas');
         const ctx = canvas.getContext('2d');
+        
+        // Initialize the TDC simulation engine
+        const tdc = new TDCMarkIII();
         
         // Tactical map canvas
         const tacticalCanvas = document.getElementById('tacticalCanvas');
@@ -727,12 +732,22 @@
         const KNOTS_TO_YPS = 2025.4 / 3600; // yards per second per knot
         
         function initializeState() {
-            // Place target at initial bearing and range from own ship (at origin)
-            const bearingRad = inputs.targetBearing * Math.PI / 180;
-            state.ownX = 0;
-            state.ownY = 0;
-            state.targetX = inputs.targetRange * Math.sin(bearingRad);
-            state.targetY = inputs.targetRange * Math.cos(bearingRad);
+            // Initialize the TDC engine with current inputs
+            tdc.setInputs({
+                ownCourse: inputs.ownCourse,
+                ownSpeed: inputs.ownSpeed,
+                targetBearing: inputs.targetBearing,
+                targetRange: inputs.targetRange,
+                targetCourse: inputs.targetCourse,
+                targetSpeed: inputs.targetSpeed
+            });
+            tdc.initialize();
+            
+            // Sync local state from engine
+            state.ownX = tdc.state.ownX;
+            state.ownY = tdc.state.ownY;
+            state.targetX = tdc.state.targetX;
+            state.targetY = tdc.state.targetY;
             state.elapsedTime = 0;
             
             // Store initial positions for fixed view center
@@ -1569,114 +1584,94 @@
             const scaledDt = dt * simSpeed;
             time += scaledDt;
             
-            // Store previous values before update
-            prevComputed.relBearing = computed.relBearing;
-            prevComputed.targetAngle = computed.targetAngle;
-            prevComputed.presentBearing = computed.presentBearing;
-            prevComputed.gyroAngle = computed.gyroAngle;
+            // === RUN THE TDC ENGINE ===
+            // This is where the mechanical computer actually does its work
+            // The solution emerges from the component interactions
             
-            // Update actual positions (Position Keeper tracking)
-            updatePositions(scaledDt);
+            // Sync inputs to engine
+            tdc.setInputs({
+                ownCourse: inputs.ownCourse,
+                ownSpeed: inputs.ownSpeed,
+                targetBearing: inputs.targetBearing,
+                targetRange: inputs.targetRange,
+                targetCourse: inputs.targetCourse,
+                targetSpeed: inputs.targetSpeed
+            });
             
-            // Update torpedoes
+            // Step the mechanical simulation
+            tdc.step(scaledDt);
+            
+            // Update torpedoes (separate from TDC)
             updateTorpedoes(scaledDt);
             
-            // Recompute TDC solution based on new positions
-            computeTDC();
+            // === SYNC ENGINE STATE TO LOCAL VARIABLES ===
+            // These are now computed by the mechanism, not formulas
             
-            // Update the TDC solving animation (converge to solution)
-            updateTDCSolving(scaledDt);
+            // Position state from engine
+            state.ownX = tdc.state.ownX;
+            state.ownY = tdc.state.ownY;
+            state.targetX = tdc.state.targetX;
+            state.targetY = tdc.state.targetY;
+            state.elapsedTime = tdc.state.elapsedTime;
+            
+            // Record trail for tactical display
+            if (state.ownTrail.length === 0 || 
+                state.elapsedTime - (state.ownTrail.length - 1) * 0.5 >= 0.5) {
+                state.ownTrail.push({x: state.ownX, y: state.ownY});
+                state.targetTrail.push({x: state.targetX, y: state.targetY});
+                if (state.ownTrail.length > 200) {
+                    state.ownTrail.shift();
+                    state.targetTrail.shift();
+                }
+            }
+            
+            // Computed values from engine (emerged from mechanism!)
+            computed.gyroAngle = tdc.outputs.gyroAngle;
+            computed.relBearing = tdc.outputs.relativeBearing;
+            computed.targetAngle = tdc.outputs.targetAngle;
+            computed.trackAngle = tdc.outputs.trackAngle;
+            computed.torpedoRun = tdc.outputs.torpedoRun;
+            computed.runTime = tdc.outputs.runTime;
+            computed.presentRange = tdc.outputs.presentRange;
+            computed.presentBearing = tdc.outputs.presentBearing;
+            
+            // Solving state from engine
+            tdcState.isSolving = !tdc.outputs.isSolved;
+            tdcState.solved = tdc.outputs.isSolved;
+            tdcState.displayGyro = tdc.outputs.gyroAngle;
+            tdcState.targetGyro = tdc.outputs.gyroAngle; // Same since engine computes it
             
             updateOutputDisplay();
             
-            // === MECHANICAL ANIMATION ===
-            // Components move based on TDC activity - much more active when solving
+            // === VISUAL COMPONENT ANIMATION ===
+            // Now driven by ACTUAL component states from the engine!
             
-            // Calculate solving activity factor (1.0 = solved/idle, higher when solving)
-            const gyroError = Math.abs(tdcState.targetGyro - tdcState.displayGyro);
-            const solvingActivity = tdcState.isSolving ? Math.min(gyroError / 10 + 1, 5) : 0.2;
-            const huntOscillation = Math.sin(time * 12) * solvingActivity * 3;
+            // Get component states from engine
+            const engineComponents = tdc.components;
             
-            // Base spin rate - components spin faster when TDC is actively solving
-            const baseSpinRate = 60 * solvingActivity; // degrees per second
+            // --- RESOLVERS: Show actual computed angles ---
+            components['resolver_13'].rotation = engineComponents.resolver_13.rotation;
+            components['resolver_34'].rotation = engineComponents.resolver_34.rotation;
+            components['resolver_2FA'].rotation = engineComponents.resolver_2FA.rotation;
             
-            // --- RESOLVERS: Spin actively during solving, settle to angle when solved ---
-            if (tdcState.isSolving) {
-                // Active hunting motion during solving
-                components['resolver_13'].rotation += (baseSpinRate * 0.8 + huntOscillation * 10) * scaledDt;
-                components['resolver_34'].rotation += (baseSpinRate * 0.6 - huntOscillation * 8) * scaledDt;
-                components['resolver_2FA'].rotation += (baseSpinRate * 1.2 + huntOscillation * 15) * scaledDt;
-            } else {
-                // Settled - show actual angles
-                components['resolver_13'].rotation = computed.relBearing;
-                components['resolver_34'].rotation = computed.targetAngle;
-                components['resolver_2FA'].rotation = computed.gyroAngle - computed.relBearing;
-            }
+            // --- DIFFERENTIALS: Show actual rotation from computation ---
+            components['diff_7'].rotation = engineComponents.diff_7.rotation;
+            components['diff_33'].rotation = engineComponents.diff_33.rotation;
+            components['diff_28'].rotation = engineComponents.diff_28.rotation;
+            components['diff_29'].rotation = engineComponents.diff_29.rotation;
+            components['diff_22FA'].rotation = engineComponents.diff_22FA.rotation;
             
-            // --- DIFFERENTIALS: Spin during solving, based on rate of change when solved ---
-            const diffSpinRate = baseSpinRate * 1.5;
+            // --- INTEGRATORS: Show disc rotation from integration ---
+            components['int_20'].discRotation = engineComponents.int_20.discRotation;
+            components['int_25'].discRotation = engineComponents.int_25.discRotation;
+            components['int_14'].discRotation = engineComponents.int_14.discRotation;
+            components['int_15'].discRotation = engineComponents.int_15.discRotation;
+            components['int_35'].discRotation = engineComponents.int_35.discRotation || 0;
+            components['int_36'].discRotation = engineComponents.int_36.discRotation || 0;
             
-            if (tdcState.isSolving) {
-                // Active spinning during solving
-                components['diff_7'].rotation += (diffSpinRate + huntOscillation * 5) * scaledDt;
-                components['diff_33'].rotation += (diffSpinRate * 0.7 - huntOscillation * 4) * scaledDt;
-                components['diff_28'].rotation += (diffSpinRate * 0.9 + huntOscillation * 6) * scaledDt;
-                components['diff_29'].rotation += (diffSpinRate * 0.8 - huntOscillation * 5) * scaledDt;
-                components['diff_22FA'].rotation += (diffSpinRate * 1.3 + huntOscillation * 8) * scaledDt;
-            } else {
-                // Slow movement based on actual changes
-                const dBr = computed.relBearing - prevComputed.relBearing;
-                const dA = computed.targetAngle - prevComputed.targetAngle;
-                const dG = computed.gyroAngle - prevComputed.gyroAngle;
-                components['diff_7'].rotation += dBr * 10;
-                components['diff_33'].rotation += dA * 10;
-                components['diff_22FA'].rotation += dG * 10;
-            }
-            
-            // --- INTEGRATORS: Always spinning (driven by time motor) ---
-            const ownSpeedYps = inputs.ownSpeed * KNOTS_TO_YPS;
-            const targetSpeedYps = inputs.targetSpeed * KNOTS_TO_YPS;
-            
-            // Base integrator spin (time motor always runs)
-            const integratorSpinBoost = tdcState.isSolving ? 3 : 1;
-            
-            // Int 20: ∫So·dT (own ship travel)
-            integrated.ownDistance += ownSpeedYps * scaledDt;
-            components['int_20'].discRotation += (ownSpeedYps * 2 + 10) * integratorSpinBoost * scaledDt;
-            
-            // Int 25: ∫S·dT (target travel)
-            integrated.targetDistance += targetSpeedYps * scaledDt;
-            components['int_25'].discRotation += (targetSpeedYps * 2 + 10) * integratorSpinBoost * scaledDt;
-            
-            // Int 14: ∫So·sin(Br)·dT
-            const sinBr = Math.sin(computed.relBearing * Math.PI / 180);
-            integrated.dB_sin += ownSpeedYps * sinBr * scaledDt;
-            components['int_14'].discRotation += (Math.abs(sinBr) * 20 + 5) * integratorSpinBoost * scaledDt;
-            
-            // Int 15: ∫So·cos(Br)·dT
-            const cosBr = Math.cos(computed.relBearing * Math.PI / 180);
-            integrated.dB_cos += ownSpeedYps * cosBr * scaledDt;
-            components['int_15'].discRotation += (Math.abs(cosBr) * 20 + 5) * integratorSpinBoost * scaledDt;
-            
-            // Int 35: ∫S·sin(A)·dT
-            const sinA = Math.sin(computed.targetAngle * Math.PI / 180);
-            integrated.dA_sin += targetSpeedYps * sinA * scaledDt;
-            components['int_35'].discRotation = (components['int_35'].discRotation || 0) + (Math.abs(sinA) * 20 + 5) * integratorSpinBoost * scaledDt;
-            
-            // Int 36: ∫S·cos(A)·dT
-            const cosA = Math.cos(computed.targetAngle * Math.PI / 180);
-            integrated.dA_cos += targetSpeedYps * cosA * scaledDt;
-            components['int_36'].discRotation = (components['int_36'].discRotation || 0) + (Math.abs(cosA) * 20 + 5) * integratorSpinBoost * scaledDt;
-            
-            // --- CAMS: Rotate actively during solving ---
-            if (tdcState.isSolving) {
-                components['cam_M'].rotation += (baseSpinRate * 0.5 + huntOscillation * 3) * scaledDt;
-                components['cam_J'].rotation += (baseSpinRate * 0.4 - huntOscillation * 2) * scaledDt;
-            } else {
-                // Cams show gyro-related values when solved
-                components['cam_M'].rotation = computed.gyroAngle * 2;
-                components['cam_J'].rotation = computed.gyroAngle * 1.5;
-            }
+            // --- CAMS: Show actual position from engine ---
+            components['cam_M'].rotation = engineComponents.cam_P.rotation;
+            components['cam_J'].rotation = engineComponents.cam_J.rotation;
         }
         
         let lastTime = 0;
