@@ -480,12 +480,26 @@ class TDCMarkIII {
         // When XVIII > 0: torpedo aims too far right, need less gyro angle
         // When XVIII < 0: torpedo aims too far left, need more gyro angle
         
-        // Error threshold: solution is good enough when both errors are small
-        const threshold = Math.max(5, R * 0.002); // 0.2% of range or 5 yards
-        const isLateralSolved = Math.abs(errorXVIII) < threshold;
-        const isRangeSolved = Math.abs(errorXVII) < threshold * 2; // Range is less critical
+        // Error threshold with hysteresis to prevent flickering
+        const solveThreshold = Math.max(5, R * 0.002); // Threshold to declare solved
+        const unsolvThreshold = solveThreshold * 3;    // Must exceed this to go back to unsolved
         
-        if (!isLateralSolved) {
+        const isLateralSolved = Math.abs(errorXVIII) < solveThreshold;
+        
+        // Hysteresis: once solved, stay solved unless error gets much worse
+        if (this.outputs.isSolved) {
+            // Already solved - only go back to hunting if error gets large
+            if (Math.abs(errorXVIII) > unsolvThreshold) {
+                this.outputs.isSolved = false;
+            }
+        } else {
+            // Not yet solved - check if we've reached the solution
+            if (isLateralSolved) {
+                this.outputs.isSolved = true;
+            }
+        }
+        
+        if (!this.outputs.isSolved) {
             // === REALISTIC MECHANICAL SERVO SIMULATION ===
             // The servo motor responds to error XVIII with physical inertia
             
@@ -531,11 +545,10 @@ class TDCMarkIII {
             }
             
             this.diff22FA.update(this.gyroAngle, 0);
-            this.outputs.isSolved = false;
         } else {
-            // Solution found - servo stops but retains some residual motion
-            this.servoVelocity *= 0.9; // Gradually stop
-            this.outputs.isSolved = true;
+            // Solution found - servo stops smoothly
+            this.servoVelocity *= 0.8; // Gradually stop
+            this.diff22FA.update(this.gyroAngle, 0);
         }
         
         this.outputs.gyroAngle = this.gyroAngle;
