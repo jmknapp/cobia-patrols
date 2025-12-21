@@ -548,6 +548,15 @@ class TDCMarkIII {
             const errMinus = computeError(this.gyroAngle - delta);
             const dErrXVIII_dG = (errPlus.errorXVIII - errMinus.errorXVIII) / (2 * delta);
             
+            // Debug gradient calculation
+            if (Math.random() < 0.02) {
+                console.log('Gradient: G=', this.gyroAngle.toFixed(1),
+                            'err@G=', errorXVIII.toFixed(1),
+                            'err@G+0.5=', errPlus.errorXVIII.toFixed(1),
+                            'err@G-0.5=', errMinus.errorXVIII.toFixed(1),
+                            'dErr/dG=', dErrXVIII_dG.toFixed(2));
+            }
+            
             // Desired servo direction based on error gradient
             let targetVelocity = 0;
             if (Math.abs(dErrXVIII_dG) > 0.1) {
@@ -555,6 +564,13 @@ class TDCMarkIII {
                 const idealStep = -errorXVIII / dErrXVIII_dG;
                 // But servo has limited speed - just go in that direction
                 targetVelocity = Math.sign(idealStep) * this.gyroServoRate * servoSpeedMultiplier;
+                
+                // DEBUG: Check if we're going wrong way
+                if (Math.random() < 0.02) {
+                    console.log('Newton: idealStep=', idealStep.toFixed(1), 
+                                'targetVel=', targetVelocity.toFixed(2),
+                                'direction=', (idealStep > 0 ? 'make G more +' : 'make G more -'));
+                }
                 
                 // Reduce speed as we get close to solution (proportional control)
                 const errorMag = Math.abs(errorXVIII);
