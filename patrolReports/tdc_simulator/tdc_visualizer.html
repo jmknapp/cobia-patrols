@@ -738,45 +738,51 @@
         // Component definitions with positions
         const components = {
             // Position Keeper
+            // Inputs - left column (spread vertically)
             'So': { x: 50, y: 80, type: 'input', label: 'So', fullName: 'Own Speed', rotation: 0 },
-            'Co': { x: 50, y: 160, type: 'input', label: 'Co', fullName: 'Own Course', rotation: 0 },
-            'B': { x: 50, y: 240, type: 'input', label: 'B', fullName: 'Bearing', rotation: 0 },
-            'S': { x: 50, y: 320, type: 'input', label: 'S', fullName: 'Tgt Speed', rotation: 0 },
-            'C': { x: 50, y: 400, type: 'input', label: 'C', fullName: 'Tgt Course', rotation: 0 },
-            'R': { x: 50, y: 480, type: 'input', label: 'R', fullName: 'Range', rotation: 0 },
+            'Co': { x: 50, y: 180, type: 'input', label: 'Co', fullName: 'Own Course', rotation: 0 },
+            'B': { x: 50, y: 280, type: 'input', label: 'B', fullName: 'Bearing', rotation: 0 },
+            'S': { x: 50, y: 400, type: 'input', label: 'S', fullName: 'Tgt Speed', rotation: 0 },
+            'C': { x: 50, y: 500, type: 'input', label: 'C', fullName: 'Tgt Course', rotation: 0 },
+            'R': { x: 50, y: 620, type: 'input', label: 'R', fullName: 'Range', rotation: 0 },
             
-            'diff_7': { x: 180, y: 200, type: 'differential', label: 'Diff 7\nBr=B-Co', rotation: 0 },
-            'diff_33': { x: 180, y: 360, type: 'differential', label: 'Diff 33\nA', rotation: 0 },
+            // Position Keeper differentials
+            'diff_7': { x: 180, y: 230, type: 'differential', label: 'Diff 7\nBr=B-Co', rotation: 0 },
+            'diff_33': { x: 180, y: 450, type: 'differential', label: 'Diff 33\nA', rotation: 0 },
             
-            'resolver_13': { x: 320, y: 160, type: 'resolver', label: 'Res 13\nsin/cos Br', rotation: 0 },
-            'resolver_34': { x: 320, y: 400, type: 'resolver', label: 'Res 34\nsin/cos A', rotation: 0 },
+            // Resolvers for sin/cos
+            'resolver_13': { x: 320, y: 180, type: 'resolver', label: 'Res 13\nsin/cos Br', rotation: 0 },
+            'resolver_34': { x: 320, y: 500, type: 'resolver', label: 'Res 34\nsin/cos A', rotation: 0 },
             
+            // Speed integrators
             'int_20': { x: 180, y: 80, type: 'integrator', label: 'Int 20\n∫So·dT', rotation: 0, discRotation: 0 },
-            'int_25': { x: 180, y: 440, type: 'integrator', label: 'Int 25\n∫S·dT', rotation: 0, discRotation: 0 },
+            'int_25': { x: 180, y: 560, type: 'integrator', label: 'Int 25\n∫S·dT', rotation: 0, discRotation: 0 },
             
+            // Component integrators
             'int_14': { x: 460, y: 120, type: 'integrator', label: 'Int 14\n∫So·sinBr', rotation: 0, discRotation: 0 },
-            'int_15': { x: 460, y: 200, type: 'integrator', label: 'Int 15\n∫So·cosBr', rotation: 0, discRotation: 0 },
-            'int_35': { x: 460, y: 360, type: 'integrator', label: 'Int 35\n∫S·sinA', rotation: 0, discRotation: 0 },
-            'int_36': { x: 460, y: 440, type: 'integrator', label: 'Int 36\n∫S·cosA', rotation: 0, discRotation: 0 },
+            'int_15': { x: 460, y: 230, type: 'integrator', label: 'Int 15\n∫So·cosBr', rotation: 0, discRotation: 0 },
+            'int_35': { x: 460, y: 450, type: 'integrator', label: 'Int 35\n∫S·sinA', rotation: 0, discRotation: 0 },
+            'int_36': { x: 460, y: 560, type: 'integrator', label: 'Int 36\n∫S·cosA', rotation: 0, discRotation: 0 },
             
-            'diff_28': { x: 600, y: 240, type: 'differential', label: 'Diff 28\nR·dB', rotation: 0 },
-            'diff_29': { x: 600, y: 320, type: 'differential', label: 'Diff 29\ndR', rotation: 0 },
+            // Range/bearing differentials
+            'diff_28': { x: 600, y: 280, type: 'differential', label: 'Diff 28\nR·dB', rotation: 0 },
+            'diff_29': { x: 600, y: 400, type: 'differential', label: 'Diff 29\ndR', rotation: 0 },
             
             // Angle Solver
-            'resolver_2FA': { x: 740, y: 160, type: 'resolver', label: 'Res 2FA\nG-Br', rotation: 0 },
-            'cam_M': { x: 740, y: 280, type: 'cam', label: 'Cam M\nReach', rotation: 0 },
-            'cam_J': { x: 740, y: 360, type: 'cam', label: 'Cam J\nTransfer', rotation: 0 },
+            'resolver_2FA': { x: 740, y: 180, type: 'resolver', label: 'Res 2FA\nG-Br', rotation: 0 },
+            'cam_M': { x: 740, y: 320, type: 'cam', label: 'Cam M\nReach', rotation: 0 },
+            'cam_J': { x: 740, y: 420, type: 'cam', label: 'Cam J\nTransfer', rotation: 0 },
             
-            'diff_22FA': { x: 880, y: 220, type: 'differential', label: 'Diff 22FA\nGyro G', rotation: 0 },
+            'diff_22FA': { x: 880, y: 250, type: 'differential', label: 'Diff 22FA\nGyro G', rotation: 0 },
             
-            'G_out': { x: 1020, y: 240, type: 'output', label: 'GYRO\nANGLE', rotation: 0 },
+            'G_out': { x: 1020, y: 280, type: 'output', label: 'GYRO\nANGLE', rotation: 0 },
             
             // Error feedback terms (drive the servo)
-            'err_XVII': { x: 820, y: 380, type: 'error', label: 'Error XVII\n(Range)', errorType: 'XVII' },
-            'err_XVIII': { x: 820, y: 460, type: 'error', label: 'Error XVIII\n(Lateral)', errorType: 'XVIII' },
+            'err_XVII': { x: 820, y: 480, type: 'error', label: 'Error XVII\n(Range)', errorType: 'XVII' },
+            'err_XVIII': { x: 820, y: 580, type: 'error', label: 'Error XVIII\n(Lateral)', errorType: 'XVIII' },
             
             // Servo motor - driven by Error XVIII, outputs Gyro Angle
-            'servo': { x: 920, y: 460, type: 'servo', label: 'SERVO\nMOTOR' }
+            'servo': { x: 940, y: 580, type: 'servo', label: 'SERVO\nMOTOR' }
         };
         
         // Connections between components
@@ -2259,8 +2265,8 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Scale to fit canvas - design is for 1050px wide, 550px tall
-            const designWidth = 1050;
-            const designHeight = 550;
+            const designWidth = 1100;
+            const designHeight = 700;
             const scaleX = canvas.width / designWidth;
             const scaleY = canvas.height / designHeight;
             const baseScale = Math.min(scaleX, scaleY, 1.0); // Don't scale up beyond 1x
@@ -2327,7 +2333,7 @@
             // Dividing line
             ctx.beginPath();
             ctx.moveTo(660, 50);
-            ctx.lineTo(660, designHeight - 20);
+            ctx.lineTo(660, designHeight - 30);
             ctx.strokeStyle = COLORS.steel;
             ctx.lineWidth = 1;
             ctx.setLineDash([5, 5]);
