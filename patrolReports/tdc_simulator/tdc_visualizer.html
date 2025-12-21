@@ -2027,17 +2027,18 @@
         }
         
         function drawInput(x, y, label, fullName) {
+            // Larger circle for better visibility
             ctx.beginPath();
-            ctx.arc(x, y, 18, 0, Math.PI * 2);
-            ctx.fillStyle = '#2d3748';
+            ctx.arc(x, y, 22, 0, Math.PI * 2);
+            ctx.fillStyle = '#374151';
             ctx.fill();
             ctx.strokeStyle = COLORS.brass;
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Short label inside circle
-            ctx.fillStyle = COLORS.brass;
-            ctx.font = 'bold 12px monospace';
+            // Variable abbreviation inside circle - larger and bolder
+            ctx.fillStyle = '#fbbf24'; // Gold/yellow for visibility
+            ctx.font = 'bold 14px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(label, x, y);
@@ -2045,10 +2046,10 @@
             // Full name below circle
             if (fullName) {
                 ctx.fillStyle = '#9ca3af';
-                ctx.font = '9px sans-serif';
+                ctx.font = '10px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.fillText(fullName, x, y + 22);
+                ctx.fillText(fullName, x, y + 26);
             }
         }
         
