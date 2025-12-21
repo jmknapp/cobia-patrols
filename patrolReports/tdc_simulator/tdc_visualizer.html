@@ -931,12 +931,28 @@
             
             console.log('=== TORPEDO FIRED ===');
             console.log('Gyro Angle:', gyroAngle.toFixed(1) + '°');
-            console.log('Launch heading:', launchHeading.toFixed(1) + '°, Target heading after turn:', (launchHeading + gyroAngle).toFixed(1) + '°');
+            console.log('Launch heading:', launchHeading.toFixed(1) + '°, Final heading after turn:', (launchHeading + gyroAngle).toFixed(1) + '°');
             console.log('Torpedo start:', startX.toFixed(0), startY.toFixed(0));
             console.log('Target now:', state.targetX.toFixed(0), state.targetY.toFixed(0));
             console.log('Predicted torpedo run:', torpedoRun.toFixed(0), 'yds, time:', runTime.toFixed(1), 'sec');
             console.log('Predicted target at impact:', predictedTargetX.toFixed(0), predictedTargetY.toFixed(0));
             console.log('Target speed:', inputs.targetSpeed, 'kts, course:', inputs.targetCourse + '°');
+            
+            // Calculate expected trajectory geometry
+            const G_rad = gyroAngle * Math.PI / 180;
+            const launchRad = launchHeading * Math.PI / 180;
+            const finalHeadingRad = (launchHeading + gyroAngle) * Math.PI / 180;
+            
+            // After reach M
+            const reachEndX = startX + Math.sin(launchRad) * REACH_DISTANCE;
+            const reachEndY = startY + Math.cos(launchRad) * REACH_DISTANCE;
+            console.log('Expected after reach:', reachEndX.toFixed(0), reachEndY.toFixed(0));
+            
+            // Arc geometry
+            const arcLength = TORPEDO_TURN_RADIUS * Math.abs(G_rad);
+            const J = TORPEDO_TURN_RADIUS * (1 - Math.cos(G_rad)); // Lateral advance
+            const turnForward = TORPEDO_TURN_RADIUS * Math.sin(Math.abs(G_rad)); // Forward advance during turn
+            console.log('Arc length:', arcLength.toFixed(0), 'J (lateral):', J.toFixed(0), 'Forward in turn:', turnForward.toFixed(0));
             
             const torpedo = {
                 x: startX,
@@ -985,6 +1001,8 @@
                     if (torpedo.distanceTraveled >= REACH_DISTANCE) {
                         torpedo.phase = 'turning';
                         torpedo.turnProgress = 0;
+                        console.log('TORPEDO PHASE: Reach complete at', torpedo.x.toFixed(0), torpedo.y.toFixed(0), 
+                                    'dist:', torpedo.distanceTraveled.toFixed(0), 'heading:', torpedo.heading.toFixed(1));
                     }
                 }
                 else if (torpedo.phase === 'turning') {
@@ -1016,6 +1034,10 @@
                         if (torpedo.turnProgress >= turnAmount) {
                             torpedo.phase = 'final';
                             torpedo.heading = torpedo.targetHeading; // Snap to exact heading
+                            console.log('TORPEDO PHASE: Turn complete at', torpedo.x.toFixed(0), torpedo.y.toFixed(0),
+                                        'dist:', torpedo.distanceTraveled.toFixed(0), 
+                                        'final heading:', torpedo.heading.toFixed(1),
+                                        'turned:', torpedo.turnProgress.toFixed(1) + '°');
                         }
                     }
                 }
