@@ -620,10 +620,20 @@ class TDCMarkIII {
         if (trackAngle > 180) trackAngle = 360 - trackAngle;
         this.outputs.trackAngle = trackAngle;
         
-        // Torpedo run (approximation including corrections)
+        // Torpedo run - calculate actual path length matching torpedo simulation
+        // Path = PM (straight) + arc + final run
         const G_rad = this.gyroAngle * Math.PI / 180;
-        const G_minus_Br_rad = (this.gyroAngle - Br) * Math.PI / 180;
-        this.outputs.torpedoRun = R / Math.max(0.5, Math.cos(G_minus_Br_rad));
+        const PM = this.getTotalStraightRun(); // |P| + M = 125 yards
+        const Z = this.TURN_RADIUS; // 130 yards
+        const arcLength = Z * Math.abs(G_rad);
+        
+        // Final run: from end of turn arc to target
+        // The arc advances forward by Z*sin(|G|) and laterally by Z*(1-cos(G))
+        // We need to calculate remaining distance to intercept after the turn
+        const straightPortionCovered = PM * Math.cos(G_rad) + Z * Math.sin(Math.abs(G_rad));
+        const finalRun = Math.max(0, R - straightPortionCovered);
+        
+        this.outputs.torpedoRun = PM + arcLength + finalRun;
         this.outputs.runTime = this.outputs.torpedoRun / torpedoSpeedYps;
     }
     
