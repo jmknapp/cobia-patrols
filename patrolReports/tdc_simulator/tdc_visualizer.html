@@ -769,7 +769,7 @@
             
             'diff_22FA': { x: 880, y: 220, type: 'differential', label: 'Diff 22FA\nGyro G', rotation: 0 },
             
-            'G_out': { x: 1000, y: 220, type: 'output', label: 'GYRO\nANGLE', rotation: 0 }
+            'G_out': { x: 1020, y: 240, type: 'output', label: 'GYRO\nANGLE', rotation: 0 }
         };
         
         // Connections between components
@@ -2066,25 +2066,66 @@
         }
         
         function drawOutput(x, y, label, value) {
+            // Draw gyroscope symbol
+            const gyroRadius = 40;
+            
+            // Outer gimbal ring
             ctx.beginPath();
-            ctx.roundRect(x - 35, y - 25, 70, 50, 8);
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fill();
+            ctx.arc(x, y, gyroRadius, 0, Math.PI * 2);
             ctx.strokeStyle = COLORS.brass;
             ctx.lineWidth = 3;
             ctx.stroke();
             
+            // Middle gimbal ring (tilted based on gyro angle)
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(value * Math.PI / 180 * 0.3); // Subtle tilt effect
+            ctx.beginPath();
+            ctx.ellipse(0, 0, gyroRadius - 8, gyroRadius - 12, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = '#c9a227';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+            
+            // Inner spinning disc
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(value * Math.PI / 180); // Rotate with gyro angle
+            ctx.beginPath();
+            ctx.ellipse(0, 0, gyroRadius - 18, gyroRadius - 22, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#374151';
+            ctx.fill();
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Gyro axis indicator line
+            ctx.beginPath();
+            ctx.moveTo(0, -gyroRadius + 20);
+            ctx.lineTo(0, gyroRadius - 20);
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+            
+            // Center pivot point
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.brass;
+            ctx.fill();
+            
+            // Label above
             ctx.fillStyle = COLORS.brass;
             ctx.font = 'bold 10px monospace';
             ctx.textAlign = 'center';
-            const lines = label.split('\n');
-            lines.forEach((line, i) => {
-                ctx.fillText(line, x, y - 8 + i * 14);
-            });
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('GYRO ANGLE', x, y - gyroRadius - 5);
             
+            // Value below
             ctx.fillStyle = '#48bb78';
-            ctx.font = 'bold 14px monospace';
-            ctx.fillText(value.toFixed(1) + '°', x, y + 18);
+            ctx.font = 'bold 16px monospace';
+            ctx.textBaseline = 'top';
+            ctx.fillText(value.toFixed(1) + '°', x, y + gyroRadius + 5);
         }
         
         function drawConnection(from, to) {
