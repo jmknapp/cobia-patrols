@@ -2373,6 +2373,8 @@
         });
         
         document.getElementById('fireBtn').addEventListener('click', () => {
+            console.log('=== FIRE BUTTON CLICKED ===');
+            
             // Start simulation if not running
             if (!isRunning) {
                 isRunning = true;
@@ -2382,7 +2384,12 @@
             // Fire with current solution - the TDC is continuously tracking,
             // so the solution is always "live" just like the real mechanism
             // No recalculation needed - that's how the real TDC worked
-            fireTorpedo();
+            try {
+                fireTorpedo();
+            } catch (e) {
+                console.error('ERROR in fireTorpedo:', e);
+                alert('Error firing torpedo: ' + e.message);
+            }
         });
         
         document.getElementById('randomBtn').addEventListener('click', () => {
@@ -2618,6 +2625,7 @@
         computed.gyroAngle = 0;
         
         updateOutputDisplay();
+        console.log('TDC Simulator initialized. Fire button:', document.getElementById('fireBtn'));
         requestAnimationFrame(animate);
     </script>
 </body>
