@@ -35,8 +35,9 @@ class Differential {
         } else {
             this.output = input1 - input2;
         }
-        // Spider gear rotates at average of inputs
-        this.rotation += (input1 + input2) / 2;
+        // Visual rotation shows the output position (not accumulated!)
+        // Scale for visibility - output is in yards, we want degrees for display
+        this.rotation = this.output * 0.5; // Direct proportion to output
         return this.output;
     }
 }
