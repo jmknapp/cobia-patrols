@@ -82,6 +82,18 @@
             margin-bottom: 0.3rem;
         }
         
+        .var-abbrev {
+            display: inline-block;
+            background: #374151;
+            color: #fbbf24;
+            font-weight: bold;
+            font-family: monospace;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-right: 4px;
+            font-size: 0.75rem;
+        }
+        
         .input-group input {
             width: 100%;
             padding: 0.5rem;
@@ -410,32 +422,32 @@
             <h2>📥 INPUTS</h2>
             
             <div class="input-group">
-                <label>Own Course (°)</label>
+                <label><span class="var-abbrev">Co</span> Own Course (°)</label>
                 <input type="number" id="ownCourse" value="281" min="0" max="360">
             </div>
             
             <div class="input-group">
-                <label>Own Speed (knots)</label>
+                <label><span class="var-abbrev">So</span> Own Speed (knots)</label>
                 <input type="number" id="ownSpeed" value="3" min="0" max="25">
             </div>
             
             <div class="input-group">
-                <label>Target Bearing (°)</label>
+                <label><span class="var-abbrev">B</span> Target Bearing (°)</label>
                 <input type="number" id="targetBearing" value="291" min="0" max="360">
             </div>
             
             <div class="input-group">
-                <label>Target Range (yards)</label>
+                <label><span class="var-abbrev">R</span> Target Range (yards)</label>
                 <input type="number" id="targetRange" value="900" min="100" max="20000">
             </div>
             
             <div class="input-group">
-                <label>Target Course (°)</label>
+                <label><span class="var-abbrev">C</span> Target Course (°)</label>
                 <input type="number" id="targetCourse" value="115" min="0" max="360">
             </div>
             
             <div class="input-group">
-                <label>Target Speed (knots)</label>
+                <label><span class="var-abbrev">S</span> Target Speed (knots)</label>
                 <input type="number" id="targetSpeed" value="8" min="0" max="30">
             </div>
             
@@ -489,22 +501,22 @@
             <h2>📤 OUTPUTS</h2>
             
             <div class="output-value">
-                <span class="label">Gyro Angle</span>
+                <span class="label"><span class="var-abbrev">G</span> Gyro Angle</span>
                 <span class="value" id="gyroAngle">--°</span>
             </div>
             
             <div class="output-value">
-                <span class="label">Rel. Bearing (Br)</span>
+                <span class="label"><span class="var-abbrev">Br</span> Rel. Bearing</span>
                 <span class="value" id="relBearing">--°</span>
             </div>
             
             <div class="output-value">
-                <span class="label">Target Angle (A)</span>
+                <span class="label"><span class="var-abbrev">A</span> Target Angle</span>
                 <span class="value" id="targetAngle">--°</span>
             </div>
             
             <div class="output-value">
-                <span class="label">Track Angle</span>
+                <span class="label"><span class="var-abbrev">I</span> Track Angle</span>
                 <span class="value" id="trackAngle">--°</span>
             </div>
             
@@ -514,24 +526,24 @@
             </div>
             
             <div class="output-value">
-                <span class="label">Run Time</span>
+                <span class="label"><span class="var-abbrev">H</span> Run Time</span>
                 <span class="value" id="runTime">-- sec</span>
             </div>
             
             <h2 style="margin-top: 1.5rem;">📍 POSITION KEEPER</h2>
             
             <div class="output-value">
-                <span class="label">Present Bearing (B)</span>
+                <span class="label"><span class="var-abbrev">B</span> Present Bearing</span>
                 <span class="value" id="presentBearing">--°</span>
             </div>
             
             <div class="output-value">
-                <span class="label">Present Range (R)</span>
+                <span class="label"><span class="var-abbrev">R</span> Present Range</span>
                 <span class="value" id="presentRange">-- yds</span>
             </div>
             
             <div class="output-value">
-                <span class="label">Elapsed Time</span>
+                <span class="label"><span class="var-abbrev">T</span> Elapsed Time</span>
                 <span class="value" id="elapsedTime">-- sec</span>
             </div>
             
