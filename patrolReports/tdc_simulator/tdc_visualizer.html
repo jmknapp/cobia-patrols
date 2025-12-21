@@ -813,7 +813,9 @@
             ['resolver_2FA', 'err_XVIII'],
             // Servo feedback loop
             ['err_XVIII', 'servo'],      // Error XVIII drives servo motor
-            ['servo', 'G_out']           // Servo outputs gyro angle
+            ['servo', 'G_out'],          // Servo outputs gyro angle
+            // Critical feedback: G feeds back to resolver to compute (G - Br)
+            ['diff_22FA', 'resolver_2FA']  // Gyro angle G feeds back into resolver
         ];
         
         // Simulation state
