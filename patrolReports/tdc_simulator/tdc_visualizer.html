@@ -2253,12 +2253,38 @@
             const c2 = components[to];
             if (!c1 || !c2) return;
             
+            const x1 = c1.x + 25;
+            const y1 = c1.y;
+            const x2 = c2.x - 25;
+            const y2 = c2.y;
+            
+            // Draw the line
             ctx.beginPath();
-            ctx.moveTo(c1.x + 25, c1.y);
-            ctx.lineTo(c2.x - 25, c2.y);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
             ctx.strokeStyle = COLORS.connection;
             ctx.lineWidth = 2;
             ctx.stroke();
+            
+            // Draw arrowhead at midpoint
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowSize = 8;
+            
+            ctx.save();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(arrowSize, 0);
+            ctx.lineTo(-arrowSize * 0.5, -arrowSize * 0.6);
+            ctx.lineTo(-arrowSize * 0.5, arrowSize * 0.6);
+            ctx.closePath();
+            ctx.fillStyle = COLORS.connection;
+            ctx.fill();
+            
+            ctx.restore();
         }
         
         function draw() {
