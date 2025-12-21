@@ -500,11 +500,17 @@ class TDCMarkIII {
         // Error magnitude for display/threshold
         this.outputs.solverError = Math.sqrt(errorXVII * errorXVII + errorXVIII * errorXVIII);
         
-        // Debug
-        if (Math.random() < 0.01) {
+        // Detect NO SOLUTION condition (gyro at limit with large error)
+        const atGyroLimit = Math.abs(this.gyroAngle) >= 89.5;
+        const largeError = Math.abs(errorXVIII) > 50;
+        this.outputs.noSolution = atGyroLimit && largeError;
+        
+        // Debug (reduced frequency, but always log if at limit)
+        if (Math.random() < 0.005 || (atGyroLimit && Math.random() < 0.05)) {
             console.log('Solver: G=', this.gyroAngle.toFixed(1), 
                         'errXVII=', errorXVII.toFixed(1), 'errXVIII=', errorXVIII.toFixed(1),
-                        'H=', H.toFixed(1), 'I=', I.toFixed(1), 'J=', J.toFixed(1), 'Us=', Us.toFixed(1));
+                        'H=', H.toFixed(1), 'I=', I.toFixed(1), 'J=', J.toFixed(1), 'Us=', Us.toFixed(1),
+                        atGyroLimit ? '⚠️ AT LIMIT' : '');
         }
         
         // === MECHANICAL SERVO FEEDBACK ===
@@ -548,8 +554,8 @@ class TDCMarkIII {
             const errMinus = computeError(this.gyroAngle - delta);
             const dErrXVIII_dG = (errPlus.errorXVIII - errMinus.errorXVIII) / (2 * delta);
             
-            // Debug gradient calculation
-            if (Math.random() < 0.02) {
+            // Debug gradient calculation (very low frequency)
+            if (Math.random() < 0.002) {
                 console.log('Gradient: G=', this.gyroAngle.toFixed(1),
                             'err@G=', errorXVIII.toFixed(1),
                             'err@G+0.5=', errPlus.errorXVIII.toFixed(1),
@@ -565,8 +571,8 @@ class TDCMarkIII {
                 // But servo has limited speed - just go in that direction
                 targetVelocity = Math.sign(idealStep) * this.gyroServoRate * servoSpeedMultiplier;
                 
-                // DEBUG: Check if we're going wrong way
-                if (Math.random() < 0.02) {
+                // DEBUG: Check if we're going wrong way (very low frequency)
+                if (Math.random() < 0.002) {
                     console.log('Newton: idealStep=', idealStep.toFixed(1), 
                                 'targetVel=', targetVelocity.toFixed(2),
                                 'direction=', (idealStep > 0 ? 'make G more +' : 'make G more -'));
@@ -592,8 +598,8 @@ class TDCMarkIII {
             this.gyroAngle += step;
             this.gyroAngle = Math.max(-90, Math.min(90, this.gyroAngle));
             
-            // Debug
-            if (Math.random() < 0.02) {
+            // Debug (reduced frequency)
+            if (Math.random() < 0.005) {
                 console.log('Servo: err=', errorXVIII.toFixed(1), 
                             'vel=', this.servoVelocity.toFixed(2), 
                             'G=', this.gyroAngle.toFixed(2));
