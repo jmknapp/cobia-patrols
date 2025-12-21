@@ -894,11 +894,18 @@
         }
         
         function fireTorpedo() {
+            console.log('fireTorpedo() called'); // DEBUG
+            
             const gyroAngle = computed.gyroAngle;
             
             // Capture the predicted track at moment of firing (freezes in world coords)
-            const firedTrack = capturePredictedTrack();
-            firedTracks.push(firedTrack);
+            let firedTrack;
+            try {
+                firedTrack = capturePredictedTrack();
+                firedTracks.push(firedTrack);
+            } catch (e) {
+                console.error('Error in capturePredictedTrack:', e);
+            }
             
             // Torpedo starts from tube position (P yards from conning tower)
             // For bow tubes: ahead of conning tower, initially heading forward
