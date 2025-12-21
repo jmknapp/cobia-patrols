@@ -726,12 +726,12 @@
         // Component definitions with positions
         const components = {
             // Position Keeper
-            'So': { x: 50, y: 80, type: 'input', label: 'So', rotation: 0 },
-            'Co': { x: 50, y: 160, type: 'input', label: 'Co', rotation: 0 },
-            'B': { x: 50, y: 240, type: 'input', label: 'B', rotation: 0 },
-            'S': { x: 50, y: 320, type: 'input', label: 'S', rotation: 0 },
-            'C': { x: 50, y: 400, type: 'input', label: 'C', rotation: 0 },
-            'R': { x: 50, y: 480, type: 'input', label: 'R', rotation: 0 },
+            'So': { x: 50, y: 80, type: 'input', label: 'So', fullName: 'Own Speed', rotation: 0 },
+            'Co': { x: 50, y: 160, type: 'input', label: 'Co', fullName: 'Own Course', rotation: 0 },
+            'B': { x: 50, y: 240, type: 'input', label: 'B', fullName: 'Bearing', rotation: 0 },
+            'S': { x: 50, y: 320, type: 'input', label: 'S', fullName: 'Tgt Speed', rotation: 0 },
+            'C': { x: 50, y: 400, type: 'input', label: 'C', fullName: 'Tgt Course', rotation: 0 },
+            'R': { x: 50, y: 480, type: 'input', label: 'R', fullName: 'Range', rotation: 0 },
             
             'diff_7': { x: 180, y: 200, type: 'differential', label: 'Diff 7\nBr=B-Co', rotation: 0 },
             'diff_33': { x: 180, y: 360, type: 'differential', label: 'Diff 33\nA', rotation: 0 },
@@ -2026,7 +2026,7 @@
             });
         }
         
-        function drawInput(x, y, label) {
+        function drawInput(x, y, label, fullName) {
             ctx.beginPath();
             ctx.arc(x, y, 18, 0, Math.PI * 2);
             ctx.fillStyle = '#2d3748';
@@ -2035,11 +2035,21 @@
             ctx.lineWidth = 2;
             ctx.stroke();
             
+            // Short label inside circle
             ctx.fillStyle = COLORS.brass;
             ctx.font = 'bold 12px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(label, x, y);
+            
+            // Full name below circle
+            if (fullName) {
+                ctx.fillStyle = '#9ca3af';
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText(fullName, x, y + 22);
+            }
         }
         
         function drawOutput(x, y, label, value) {
@@ -2122,7 +2132,7 @@
                         drawCam(comp.x, comp.y, comp.rotation, comp.label);
                         break;
                     case 'input':
-                        drawInput(comp.x, comp.y, comp.label);
+                        drawInput(comp.x, comp.y, comp.label, comp.fullName);
                         break;
                     case 'output':
                         drawOutput(comp.x, comp.y, comp.label, computed.gyroAngle);
