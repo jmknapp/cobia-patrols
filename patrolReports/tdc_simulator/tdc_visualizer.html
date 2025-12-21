@@ -772,8 +772,11 @@
             'G_out': { x: 1020, y: 240, type: 'output', label: 'GYRO\nANGLE', rotation: 0 },
             
             // Error feedback terms (drive the servo)
-            'err_XVII': { x: 880, y: 380, type: 'error', label: 'Error XVII\n(Range)', errorType: 'XVII' },
-            'err_XVIII': { x: 880, y: 460, type: 'error', label: 'Error XVIII\n(Lateral)', errorType: 'XVIII' }
+            'err_XVII': { x: 820, y: 380, type: 'error', label: 'Error XVII\n(Range)', errorType: 'XVII' },
+            'err_XVIII': { x: 820, y: 460, type: 'error', label: 'Error XVIII\n(Lateral)', errorType: 'XVIII' },
+            
+            // Servo motor - driven by Error XVIII, outputs Gyro Angle
+            'servo': { x: 920, y: 460, type: 'servo', label: 'SERVO\nMOTOR' }
         };
         
         // Connections between components
@@ -805,10 +808,12 @@
             ['resolver_2FA', 'diff_22FA'],
             ['cam_M', 'diff_22FA'],
             ['diff_22FA', 'G_out'],
-            // Error feedback path
+            // Error computation (resolver outputs feed error calculation)
             ['resolver_2FA', 'err_XVII'],
             ['resolver_2FA', 'err_XVIII'],
-            ['err_XVIII', 'diff_22FA']  // Error XVIII drives gyro servo
+            // Servo feedback loop
+            ['err_XVIII', 'servo'],      // Error XVIII drives servo motor
+            ['servo', 'G_out']           // Servo outputs gyro angle
         ];
         
         // Simulation state
@@ -2184,6 +2189,57 @@
             ctx.fillRect(x - barWidth/2, barY, errorBar, barHeight);
         }
         
+        function drawServo(x, y, label, isActive) {
+            // Draw servo motor symbol (circle with M inside, plus motion indicator)
+            const radius = 22;
+            
+            // Motor housing
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#1f2937';
+            ctx.fill();
+            ctx.strokeStyle = isActive ? '#ef4444' : COLORS.brass;
+            ctx.lineWidth = isActive ? 3 : 2;
+            ctx.stroke();
+            
+            // Motor symbol (M)
+            ctx.fillStyle = isActive ? '#ef4444' : COLORS.brass;
+            ctx.font = 'bold 16px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('M', x, y);
+            
+            // Rotation indicator (spinning when active)
+            if (isActive) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(Date.now() / 200); // Spin animation
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius - 6, 0, Math.PI * 0.7);
+                ctx.stroke();
+                // Arrow head
+                ctx.beginPath();
+                ctx.moveTo(radius - 8, -4);
+                ctx.lineTo(radius - 6, 2);
+                ctx.lineTo(radius - 2, -2);
+                ctx.fillStyle = '#ef4444';
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // Label
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const lines = label.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, x, y + radius + 4 + i * 10);
+            });
+        }
+        
         function drawConnection(from, to) {
             const c1 = components[from];
             const c2 = components[to];
@@ -2250,6 +2306,11 @@
                     case 'error':
                         const errValue = comp.errorType === 'XVII' ? computed.errorXVII : computed.errorXVIII;
                         drawError(comp.x, comp.y, comp.label, errValue || 0, comp.errorType);
+                        break;
+                    case 'servo':
+                        // Servo is active when TDC is solving (error XVIII != 0)
+                        const servoActive = tdcState.isSolving && Math.abs(computed.errorXVIII || 0) > 5;
+                        drawServo(comp.x, comp.y, comp.label, servoActive);
                         break;
                 }
             }
