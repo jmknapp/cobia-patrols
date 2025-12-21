@@ -769,7 +769,11 @@
             
             'diff_22FA': { x: 880, y: 220, type: 'differential', label: 'Diff 22FA\nGyro G', rotation: 0 },
             
-            'G_out': { x: 1020, y: 240, type: 'output', label: 'GYRO\nANGLE', rotation: 0 }
+            'G_out': { x: 1020, y: 240, type: 'output', label: 'GYRO\nANGLE', rotation: 0 },
+            
+            // Error feedback terms (drive the servo)
+            'err_XVII': { x: 880, y: 380, type: 'error', label: 'Error XVII\n(Range)', errorType: 'XVII' },
+            'err_XVIII': { x: 880, y: 460, type: 'error', label: 'Error XVIII\n(Lateral)', errorType: 'XVIII' }
         };
         
         // Connections between components
@@ -800,7 +804,11 @@
             ['R', 'cam_J'],
             ['resolver_2FA', 'diff_22FA'],
             ['cam_M', 'diff_22FA'],
-            ['diff_22FA', 'G_out']
+            ['diff_22FA', 'G_out'],
+            // Error feedback path
+            ['resolver_2FA', 'err_XVII'],
+            ['resolver_2FA', 'err_XVIII'],
+            ['err_XVIII', 'diff_22FA']  // Error XVIII drives gyro servo
         ];
         
         // Simulation state
@@ -2128,6 +2136,54 @@
             ctx.fillText(value.toFixed(1) + '°', x, y + gyroRadius + 5);
         }
         
+        function drawError(x, y, label, errorValue, errorType) {
+            // Draw error feedback meter
+            const width = 90;
+            const height = 50;
+            
+            // Background
+            ctx.beginPath();
+            ctx.roundRect(x - width/2, y - height/2, width, height, 6);
+            ctx.fillStyle = '#1f2937';
+            ctx.fill();
+            ctx.strokeStyle = errorType === 'XVIII' ? '#ef4444' : '#f59e0b'; // Red for XVIII (servo driver), amber for XVII
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Label
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const lines = label.split('\n');
+            ctx.fillText(lines[0], x, y - height/2 + 4);
+            if (lines[1]) {
+                ctx.fillText(lines[1], x, y - height/2 + 14);
+            }
+            
+            // Error value
+            const absError = Math.abs(errorValue);
+            const isSmall = absError < 10;
+            ctx.fillStyle = isSmall ? '#48bb78' : (absError < 50 ? '#fbbf24' : '#ef4444'); // Green if small, yellow if medium, red if large
+            ctx.font = 'bold 14px monospace';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(errorValue.toFixed(1) + ' yds', x, y + height/2 - 4);
+            
+            // Small bar graph showing error magnitude
+            const barWidth = 70;
+            const barHeight = 6;
+            const barY = y + 5;
+            
+            // Bar background
+            ctx.fillStyle = '#374151';
+            ctx.fillRect(x - barWidth/2, barY, barWidth, barHeight);
+            
+            // Error bar (capped at bar width)
+            const errorBar = Math.min(absError / 100, 1) * barWidth; // Scale: 100 yds = full bar
+            ctx.fillStyle = isSmall ? '#48bb78' : (absError < 50 ? '#fbbf24' : '#ef4444');
+            ctx.fillRect(x - barWidth/2, barY, errorBar, barHeight);
+        }
+        
         function drawConnection(from, to) {
             const c1 = components[from];
             const c2 = components[to];
@@ -2190,6 +2246,10 @@
                         break;
                     case 'output':
                         drawOutput(comp.x, comp.y, comp.label, computed.gyroAngle);
+                        break;
+                    case 'error':
+                        const errValue = comp.errorType === 'XVII' ? computed.errorXVII : computed.errorXVIII;
+                        drawError(comp.x, comp.y, comp.label, errValue || 0, comp.errorType);
                         break;
                 }
             }
@@ -2286,6 +2346,8 @@
             computed.runTime = tdc.outputs.runTime;
             computed.presentRange = tdc.outputs.presentRange;
             computed.presentBearing = tdc.outputs.presentBearing;
+            computed.errorXVII = tdc.outputs.errorXVII;
+            computed.errorXVIII = tdc.outputs.errorXVIII;
             
             // Solving state from engine
             tdcState.isSolving = !tdc.outputs.isSolved;
@@ -2428,6 +2490,8 @@
             computed.targetAngle = tdc.outputs.targetAngle;
             computed.presentRange = tdc.outputs.presentRange;
             computed.presentBearing = tdc.outputs.presentBearing;
+            computed.errorXVII = tdc.outputs.errorXVII;
+            computed.errorXVIII = tdc.outputs.errorXVIII;
             tdcState.isSolving = !tdc.outputs.isSolved;
             tdcState.solved = tdc.outputs.isSolved;
             tdcState.displayGyro = tdc.outputs.gyroAngle;

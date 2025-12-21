@@ -266,7 +266,9 @@ class TDCMarkIII {
             runTime: 0,
             trackAngle: 0,
             isSolved: false,
-            solverError: 999
+            solverError: 999,
+            errorXVII: 0,      // Range component error
+            errorXVIII: 0      // Lateral component error (drives servo)
         };
         
         // Collection of all components for visualization
@@ -497,7 +499,9 @@ class TDCMarkIII {
         this.camJ.update(this.gyroAngle);
         this.camUs.update(this.gyroAngle);
         
-        // Error magnitude for display/threshold
+        // Store errors for display and threshold calculation
+        this.outputs.errorXVII = errorXVII;
+        this.outputs.errorXVIII = errorXVIII;
         this.outputs.solverError = Math.sqrt(errorXVII * errorXVII + errorXVIII * errorXVIII);
         
         // Detect NO SOLUTION condition (gyro at limit with large error)
