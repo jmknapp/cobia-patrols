@@ -361,3 +361,5 @@ def create_tdc_pdf(output_path):
 if __name__ == "__main__":
     create_tdc_pdf("TDC_Mark_III_Analysis.pdf")
 
+
+you're punting again on the mechanical simulation.

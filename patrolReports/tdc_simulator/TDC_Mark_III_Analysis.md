@@ -299,3 +299,5 @@ Projecting onto the line-of-sight (Br direction) and perpendicular gives Equatio
 *Document generated from USS Cobia Patrol Reports TDC Simulation*
 *https://cobiapatrols.com/tdc*
 
+
+

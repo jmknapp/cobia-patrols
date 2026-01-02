@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patrol Summaries - USS Cobia (SS-245) War Patrol Reports</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Detailed summaries of USS Cobia's six WWII war patrols (1944-1945). Combat actions, torpedo attacks, gun battles, and notable events from the Bonin Islands to the South China Sea.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cobiapatrols.com/patrolsummaries">
+    
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="USS Cobia (SS-245) Patrol Summaries">
+    <meta property="og:description" content="Detailed summaries of USS Cobia's six WWII war patrols including combat actions, torpedo attacks, and notable events.">
+    <meta property="og:image" content="https://cobiapatrols.com/static/cobia.png">
+    
+    <link rel="icon" type="image/png" href="/static/cobiaicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-dark: #0a1628;
+            --navy-mid: #1a2a44;
+            --navy-light: #2d4a6f;
+            --brass: #c9a227;
+            --brass-light: #e8c547;
+            --sea-foam: #7fcdcd;
+            --cream: #f5f0e1;
+            --text-light: #e8e4d9;
+            --text-muted: #8a9bb4;
+            --success: #4ade80;
+            --danger: #f87171;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--navy-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            line-height: 1.7;
+            background-image: 
+                radial-gradient(ellipse at 20% 80%, rgba(45, 74, 111, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(127, 205, 205, 0.1) 0%, transparent 40%),
+                linear-gradient(180deg, var(--navy-dark) 0%, #0d1f35 100%);
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            padding: 1.5rem 0 2rem;
+            border-bottom: 1px solid var(--navy-light);
+            margin-bottom: 2rem;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--brass);
+            text-decoration: none;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--cream);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+        
+        .toc {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .toc h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            color: var(--brass);
+            margin-bottom: 1rem;
+        }
+        
+        .toc-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            list-style: none;
+        }
+        
+        .toc-list a {
+            display: inline-block;
+            background: var(--navy-dark);
+            color: var(--sea-foam);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.95rem;
+            border: 1px solid var(--navy-light);
+            transition: all 0.2s;
+        }
+        
+        .toc-list a:hover {
+            border-color: var(--brass);
+            color: var(--brass-light);
+        }
+        
+        .patrol-section {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .patrol-header {
+            border-bottom: 2px solid var(--brass);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .patrol-number {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--cream);
+            margin-bottom: 0.25rem;
+        }
+        
+        .patrol-area {
+            color: var(--sea-foam);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .patrol-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        
+        .patrol-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            color: var(--brass-light);
+            margin: 1.5rem 0 0.75rem;
+        }
+        
+        h3:first-of-type {
+            margin-top: 0;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.95rem;
+        }
+        
+        .stats-table th,
+        .stats-table td {
+            padding: 0.6rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--navy-light);
+        }
+        
+        .stats-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            background: var(--navy-dark);
+        }
+        
+        .stats-table td {
+            color: var(--text-light);
+        }
+        
+        .stats-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .attack-card {
+            background: var(--navy-dark);
+            border-radius: 6px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            border-left: 3px solid var(--brass);
+        }
+        
+        .attack-title {
+            color: var(--cream);
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .attack-card p {
+            margin-bottom: 0.5rem;
+        }
+        
+        .attack-card p:last-child {
+            margin-bottom: 0;
+        }
+        
+        blockquote {
+            background: var(--navy-dark);
+            border-left: 3px solid var(--sea-foam);
+            padding: 1rem 1.25rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        
+        blockquote em {
+            color: var(--text-light);
+        }
+        
+        .vignette {
+            background: linear-gradient(135deg, var(--navy-dark) 0%, rgba(45, 74, 111, 0.3) 100%);
+            border-radius: 6px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .vignette-title {
+            color: var(--sea-foam);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sunk {
+            color: var(--success);
+        }
+        
+        .casualty {
+            color: var(--danger);
+        }
+        
+        ul {
+            margin: 0.75rem 0 0.75rem 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-stats {
+            background: var(--navy-mid);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--navy-light);
+        }
+        
+        .summary-stats h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--cream);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--brass);
+            padding-bottom: 0.5rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--navy-light);
+            margin-top: 2rem;
+        }
+        
+        footer a {
+            color: var(--brass);
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .patrol-section {
+                padding: 1.5rem;
+            }
+            
+            .patrol-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Back to Search</a>
+            <h1>USS Cobia War Patrol Summaries</h1>
+            <p class="subtitle">Six Combat Patrols in the Pacific, 1944–1945</p>
+        </header>
+        
+        <nav class="toc">
+            <h2>Jump to Patrol</h2>
+            <ul class="toc-list">
+                <li><a href="#patrol1">1st Patrol — Bonin Islands</a></li>
+                <li><a href="#patrol2">2nd Patrol — Luzon Strait</a></li>
+                <li><a href="#patrol3">3rd Patrol — South China Sea</a></li>
+                <li><a href="#patrol4">4th Patrol — Java Sea</a></li>
+                <li><a href="#patrol5">5th Patrol — Gulf of Siam</a></li>
+                <li><a href="#patrol6">6th Patrol — Java Coast</a></li>
+            </ul>
+        </nav>
+
+        <!-- 1st Patrol -->
+        <section class="patrol-section" id="patrol1">
+            <div class="patrol-header">
+                <h2 class="patrol-number">1st War Patrol</h2>
+                <div class="patrol-area">Bonin Islands (Iwo Jima, Chichi Jima, Haha Jima)</div>
+                <div class="patrol-meta">
+                    <span>📅 June 26 – August 14, 1944</span>
+                    <span>👤 CO: Cdr. A.L. Becker</span>
+                    <span>⏱️ 49 days</span>
+                </div>
+            </div>
+            
+            <h3>Overview</h3>
+            <p>Cobia departed Pearl Harbor on June 26, topped off fuel at Midway on June 30, and headed for the Bonin Islands. Her maiden combat patrol was a spectacular success, demonstrating aggressive tactics and skilled seamanship. This first patrol established the boat's fighting reputation.</p>
+            
+            <h3>Results</h3>
+            <table class="stats-table">
+                <tr><th>Category</th><th>Result</th></tr>
+                <tr><td>Ships Sunk</td><td class="sunk">8 vessels — 24,250 tons</td></tr>
+                <tr><td>Torpedoes Fired</td><td>20</td></tr>
+                <tr><td>Depth Charges Received</td><td>~140</td></tr>
+                <tr><td>Prisoner Taken</td><td>1 (Japanese Seabee)</td></tr>
+            </table>
+            
+            <h3>Significant Actions</h3>
+            
+            <div class="attack-card">
+                <div class="attack-title">Gun Attack #1 (July 6)</div>
+                <p>En route to station, Cobia spotted a 400-ton converted trawler/minesweeper in bright moonlight at 12,000 yards. After a surface gun battle, the target was left ablaze and exploded.</p>
+                <p><em>Expended: 54 rounds of 4", 1,320 rounds of 20mm, 260 rounds of .50 cal.</em></p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Torpedo Attack #1 (July 9) — Near Miss</div>
+                <p>Approached a minelayer escorted by a FUBUKI-class destroyer off Iwo Jima. Just as Becker raised the periscope for a firing bearing, a Kate floatplane dropped a bomb that blew fuses on the gyro transmitter, causing the TDC to "take off in a whirl of dials." The torpedo missed. Cobia endured 32 depth charges.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Torpedo Attack #2 (July 13) — HIJMS Noshima Sunk</div>
+                <p>Sank the naval auxiliary <strong>HIJMS Noshima</strong> (8,751 tons) with two hits from three torpedoes.</p>
+                <blockquote><em>"Heard prolonged breaking up noises for about four minutes through the hull... the loudest noises they had ever heard."</em></blockquote>
+                <p>Cobia weathered 45 depth charges by exploiting the ocean's thermal structure:</p>
+                <blockquote><em>"I decided temperature gradient aided evasion. We went to 300 feet and headed away on the normal escape course at 85 RPM in each case. After the attack of the thirteenth, escorts were banging away merrily and dropping aft when we attempted to come up to periscope depth, as we approached the gradient, – 150 feet – he evidently heard us as he immediately headed toward and his charges came much closer. He matched our every change of course until we went back to 300 feet."</em></blockquote>
+                <p>Below the thermocline at 300 feet, Cobia was acoustically invisible; at 150 feet, the escorts could track her every move.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Torpedo Attack #4 (July 18) — Nisshu Maru Sunk</div>
+                <p>Attacked a convoy including a large freighter Becker identified as Arizona Maru-class (9,500 tons). Post-war records revealed this was the <strong>Nisshu Maru</strong>, a troop transport carrying the <strong>26th Tank Regiment</strong> and its 28 tanks to reinforce Iwo Jima. Fired six bow tubes "down the throat" at 900 yards, scoring two hits. Swung to fire four stern tubes aft, scoring two more hits on the target's screws.</p>
+                <blockquote><em>"He had manned his bow gun and was firing wildly all over the lot."</em></blockquote>
+                <p><strong>Strategic Impact:</strong> Though most of the regiment's personnel survived the sinking, all 28 tanks went to the bottom. It would be December 1944 before 22 replacement tanks reached Iwo Jima. U.S. Marines who assaulted the island in February 1945 faced six fewer tanks than they would have—Cobia's torpedoes that July day saved American lives seven months later.</p>
+                <p><strong>The Depth Charging:</strong> The escorts headed in immediately. Cobia rigged for depth charge attack and went to 300 feet. What followed was the most intense depth charging of the patrol:</p>
+                <blockquote><em>"This CHIDORI was by far the best anti-sub ship we've encountered so far. His charges were mostly below and aft with a fairly equal distribution between the port and starboard sides. However the ship was tight and took it with only a few minor leaks which could be tightened immediately."</em></blockquote>
+                <p>The CHIDORI-class escort stuck with them for an hour and a quarter before the charges began to open out. At 0942, the last of <strong>forty-eight near charges</strong> fell. Twenty-two more were dropped but all well distant—<strong>70 depth charges total</strong>.</p>
+                <p>At 1010, Cobia came to periscope depth. All clear except the CHIDORI—but a second look showed a plane, zero angle on the bow, close and low. Depth charges started getting closer again. Back down to 250 feet.</p>
+                <p>They didn't surface until <strong>1938</strong>—over 12 hours submerged. Cobia headed back to the scene of the sinking to find wreckage, arriving at 2140 in a heavy rain squall. At 2200, she set course for Chichi Jima to pick up any chance contact on the remaining ships of the convoy.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Gun Attack #2 (July 20) — The Ramming Incident</div>
+                <p>After two torpedoes ran under a patrol vessel, Becker attacked three ships with guns:</p>
+                <ul>
+                    <li><strong>2246:</strong> First target (600-ton patrol vessel flying the Japanese Naval Ensign): First 4" shot knocked off his bridge. A burst of .50 cal mowed down several of the crew. Ablaze within 9 minutes.</li>
+                    <li><strong>2309:</strong> Second target (300-ton trawler): Direct hit from 4" gun—"blew up and sank with a terrific explosion, leaving a large cloud of smoke and steam."</li>
+                </ul>
+                <p>Becker secured the 4" gun crew and sent them below—they were close enough for effective machine gun fire, and he wanted as many men under cover as possible.</p>
+                <p><strong>The Ramming:</strong> As Cobia ranged alongside the smoke cloud, the third trawler (150 tons) emerged from the smoke headed in to ram, with a crewman firing a sub-machine gun from the bow.</p>
+                <blockquote><em>"Right full rudder all ahead flank. Both 20mm guns and 50 cal machine guns jammed at this point. DeVEY, R.F., F2c, USN, after 20mm gunner working calmly and efficiently under fire cleared his gun and poured a burst of 20 mm fire into the trawler just as he hit."</em></blockquote>
+                <p>DeVEY's burst set the fuel tanks afire. The enemy machine gunner jumped overboard. The trawler dented Cobia's superstructure; its bowsprit ripped away the flare bracket beside the bridge. As it drifted aft, its bow carried away the #1 radio antenna and life rail around the cigarette deck. By this time it was aflame fore and aft and sinking, "drifting away blazing freely and leaking burning oil from numerous shell holes."</p>
+                <p><strong>2314:</strong> Cleared area at flank speed. "The two burning targets lighting the whole area and occasionally exploding." At 0005 on July 21, Cobia entered her new patrol area. At 0235—nearly two hours later and <strong>forty miles away</strong>—a bright glow was still visible over the burning targets. At 0239, one large explosion was seen and heard in the direction of the glow: "probably patrol vessel blowing up."</p>
+                <p>DeVEY was recommended for the Bronze Star. <em>Expended: 4"—15 rounds; 20mm—600 rounds; .50 cal—400 rounds.</em></p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Torpedo Attack #6 (August 5) — During the Air Strike on the Bonins</div>
+                <p>Cobia was patrolling during a massive U.S. air strike on the Bonin Islands. At 0330, they heard American fliers chattering over the APR radio receiver: <em>"There are enough ships in the harbor for all of us."</em></p>
+                <p><strong>0445:</strong> Sighted a ship submerged and changed course to close. Target was a 500-ton patrol vessel—"two masts, a high stack, poop deck and midship deck house... gilt decorations on bow and deck-house and lines like a converted yacht." Cobia had no torpedoes forward, so turned to bring stern tubes to bear.</p>
+                <p><strong>0501:</strong> At range 2,200 yards, the target apparently saw the periscope, turned toward and increased speed.</p>
+                <p><strong>0538:</strong> At 1,300 yards, fired two torpedoes aft with 3-foot depth setting. One hit.</p>
+                <blockquote><em>"His whole stern was blown off and his bow was listing heavily. Many men seen clambering about bow."</em></blockquote>
+                <p>Becker was debating whether to surface for a gun attack to finish off the wreckage when—</p>
+                <p><strong>0540:</strong> American planes arrived. One Hell Diver and one Hellcat strafed the target, setting it afire. All hands abandoned ship.</p>
+                <blockquote><em>"We must have knocked him right out from under the noses of our Zoomies."</em></blockquote>
+                <p><strong>0541:</strong> Surfaced and closed target. Numerous Japanese floating in the water—about 20—all in what appeared to be marine uniforms.</p>
+                <p><strong>0545:</strong> After the survivors had abandoned, Cobia "boosted the fire on wreckage of bow and sunk large oil tank with 3 pans of 20mm and 50 cal in order to sink everything a man might keep dry on" — eliminating unoccupied flotation, not targeting survivors.</p>
+                <p><strong>0548:</strong> Sighted land to the west—their first sight of anything in two days.</p>
+                <p><strong>0550:</strong> Large numbers of planes passing overhead. "Listening to them chatter over the APR and watching them perform pushed morale up to a new high."</p>
+                <p><strong>0603:</strong> Picked up one prisoner—a Japanese Seabee private named Ona Tora, "but promptly dubbed Tojo by all hands."</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">🏊 Executive Officer's Swim</div>
+                <p>That evening at 2055, Cobia sighted a floating deck house from a small sunken ship. At 2100, the executive officer swam over to obtain any intelligence available. Nothing important was found.</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">🎬 Life Aboard</div>
+                <p><em>"Three record players were given a thorough workout; the DuMore ice cream mixer operated satisfactorily; the coca cola mixer lasted until the last two weeks of the patrol when the CO² supply gave out; and movies were held in the forward torpedo room at regular intervals."</em></p>
+            </div>
+            
+            <p class="patrol-conclusion">On August 6, Cobia received orders to proceed to Majuro. She arrived on August 14 after 49 days at sea—her first war patrol designated "Successful" for Combat Insignia Award.</p>
+        </section>
+
+        <!-- 2nd Patrol -->
+        <section class="patrol-section" id="patrol2">
+            <div class="patrol-header">
+                <h2 class="patrol-number">2nd War Patrol</h2>
+                <div class="patrol-area">Luzon Strait / South China Sea Transit</div>
+                <div class="patrol-meta">
+                    <span>📅 September 6 – November 5, 1944</span>
+                    <span>👤 CO: Cdr. A.L. Becker</span>
+                    <span>⏱️ 61 days</span>
+                </div>
+            </div>
+            
+            <h3>Overview</h3>
+            <p>Cobia departed Majuro on September 6, refueled at Tanapag Harbor, Saipan on September 30, and continued through Luzon Strait to Fremantle. She patrolled the Singapore–Hong Kong track—a major Japanese shipping lane—but despite heavy patrolling, no attacks were made on worthwhile targets. The patrol was marked by aircraft harassment and tense transits.</p>
+            
+            <h3>Results</h3>
+            <table class="stats-table">
+                <tr><th>Category</th><th>Result</th></tr>
+                <tr><td>Ships Sunk</td><td>0</td></tr>
+                <tr><td>Prisoners Taken</td><td>2 (Japanese Army personnel)</td></tr>
+            </table>
+            
+            <h3>Significant Events</h3>
+            
+            <div class="attack-card">
+                <div class="attack-title">Hospital Ship and Bombing (September 20)</div>
+                <p><strong>0310:</strong> Sighted a light bearing 020°T. Picked up pip on SJ radar at 35,000 yards and commenced tracking. <em>"Closed until I could definitely make him out as a properly marked hospital ship heading toward Balintang Channel. Let him open range so as not to be sighted at sunrise."</em></p>
+                <p>Later that morning off Balintang Channel, a floatplane "came out of clouds, distance 4 miles" and bombed Cobia accurately. "Found numerous bomb fragments scattered around the deck."</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Bombing (October 1)</div>
+                <p>At 2352, a plane dropped bombs—"his first bomb close when we were passing 100 feet and shook us up considerably; cork, paint and a few bolts flew around and several light bulbs were broken."</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">The Chase (October 10)</div>
+                <p>At 0338, sighted a convoy south of Bashi Channel: a Sinko Maru-type transport escorted by two landing ships and a TERUTSUKI-class destroyer. Cobia pulled standard speed for an hour and a half, taking periscope looks every ten minutes, but couldn't close to less than 7,700 yards.</p>
+                <p>By 1352, the range had opened to 10,500 yards—the convoy was apparently heading for Basco. Becker surfaced to attempt an end-around, but three Nell bombers appeared from Formosa heading toward the convoy. Cobia was forced down repeatedly by aircraft—Nells, a Pete floatplane—throughout the afternoon. At 1905, she surfaced and headed for Cape Bojeador, hoping to cut off the ship as it headed south. The convoy escaped.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Air Raids on Luzon (October 16)</div>
+                <p><strong>2235:</strong> <em>"Bright glow on horizon in direction of Luzon. Apparently our bombers are doing a through job."</em></p>
+                <p>Cobia was witnessing the opening phase of the U.S. reconquest of the Philippines—air strikes by Admiral Halsey's Task Force 38 in preparation for the amphibious landings at Leyte four days later on October 20.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Survivors and Prisoner Recovery (October 22)</div>
+                <p><strong>1109:</strong> <em>"Sighted life boat which proved to be full of Jap survivors including women when I closed it."</em> Cobia passed it by.</p>
+                <p><strong>1139:</strong> "Sighted two Japs on a raft. Closed and picked them up, an army sergeant and a corporal." The prisoners identified themselves as Sato Hakaru and Terada Naoishi, survivors of the Arabia Maru (sunk by USS BLUEGILL).</p>
+                <p>Arabia Maru was a passenger ship, not just a freighter—she had designated passenger accommodations including sections for women. With the American reconquest of the Philippines days away, Japan was evacuating civilians, military dependents, and non-essential personnel. The lifeboat with women that Cobia passed likely contained these evacuees; the two army soldiers on a separate raft were taken for intelligence value.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Sibutu Passage Transit (October 24)</div>
+                <p><strong>2000:</strong> APR showed radar at 140 megacycles, strong and steady on them. Cobia made a complete circle trying to get a bearing—the radar was on the northern end of Sibutu Island.</p>
+                <p><strong>2041:</strong> Passed Bongau Island, entered Sibutu Passage. The Japanese radar secured.</p>
+                <p><strong>2045:</strong> Sighted a small boat "about the size of a PT boat" at 10,000 yards, heading toward them. <em>"Turned away at full speed. Apparently he didn't sight us as he passed us and went north through Sibutu passage."</em></p>
+                <p><strong>2132:</strong> A second patrol boat appeared at 9,000 yards. Headed away again and evaded.</p>
+                <p><strong>2140:</strong> Well clear of patrol boats, completed transit of Sibutu Passage.</p>
+                <p>Becker's assessment: <em>"It is believed that the first patrol boat contacted in Sibutu Passage was directed toward us by the shore radar which was on us and loud in the APR. His course and speed would have intercepted us had we not changed course to evade him."</em></p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Lifeguard Duty — Tarakan Air Strike (October 25–26)</div>
+                <p><strong>October 25, 1911:</strong> Surfaced and headed for point assigned during the Tarakan air strike. Tarakan was a Japanese-held oil port in Borneo—a strategic target for Allied bombers operating from Australia and New Guinea.</p>
+                <p><strong>October 26, 0940:</strong> Surfaced near the assigned lifeguard point and patrolled the vicinity, ready to rescue downed aircrews.</p>
+                <p><strong>1230:</strong> Received message that the strike was postponed. Headed to patrol Pandjang Island instead.</p>
+                <p><strong>October 28, 1922:</strong> Received message to proceed to Fremantle. Turned south.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Lombok Strait Transit (October 30)</div>
+                <p><strong>1942:</strong> Surfaced. Headed through Lombok Strait at full speed.</p>
+                <p><strong>2150:</strong> Radar contact on a patrol vessel at 6,000 yards. Headed slightly away and put him abaft the beam at flank speed while the TDC tracked him at 10 knots. A few minutes later, made out a long, low-lying ship—apparently a submarine—on the opposite side of the channel.</p>
+                <blockquote><em>"The patrol boat seemed not so much trying to close us as trying to force us toward the waiting sub. He fired many red and green flares and bursts of explosive ammunition from some rapid fire weapon."</em></blockquote>
+                <p>Rather than turning away, Becker kept the patrol boat abaft the beam and headed straight for the strait. Shore batteries from the southwest tip of Lombok opened fire, using flares from the patrol boat to direct their aim. The closest splash was about 5,000 yards short—the Japanese were firing blind, covering the middle of the channel with area fire. After about 25 rounds, firing ceased.</p>
+                <p>Cobia cleared Lombok Strait and continued south to Fremantle.</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">🔱 Equator Crossing (October 29)</div>
+                <p>"King Neptune and party came on board" during submerged operations.</p>
+            </div>
+            
+            <p class="patrol-conclusion">Cobia arrived at Fremantle, Australia on November 5, 1944 after 61 days at sea.</p>
+            
+            <div class="vignette">
+                <div class="vignette-title">📋 A Pointed Endorsement</div>
+                <p>Rear Admiral R.W. Christie's endorsement was politely but unmistakably critical: <em>"COBIA had four contacts that included worthwhile targets, but was not able to close any of them for attack... The award of the Submarine Combat Insignia is not authorized for this patrol."</em></p>
+                <p>His closing line carried a sting: <em>"It is hoped that future patrols in SOWESPAC will provide opportunities to again demonstrate the fighting spirit exhibited on prior patrols."</em> — a backhanded acknowledgment that Cobia's first patrol had been aggressive, and this one had not.</p>
+            </div>
+        </section>
+
+        <!-- 3rd Patrol -->
+        <section class="patrol-section" id="patrol3">
+            <div class="patrol-header">
+                <h2 class="patrol-number">3rd War Patrol</h2>
+                <div class="patrol-area">South China Sea / Balabac Strait</div>
+                <div class="patrol-meta">
+                    <span>📅 November 30, 1944 – January 24, 1945</span>
+                    <span>👤 CO: Cdr. A.L. Becker</span>
+                    <span>⏱️ 56 days</span>
+                </div>
+            </div>
+            
+            <h3>Overview</h3>
+            <p>Cobia departed Fremantle on November 30, refueled at Exmouth Gulf on December 3, and headed for an extensive reconnaissance patrol through the South China Sea, with coordinated pack operations alongside USS BESUGO and USS HARDHEAD.</p>
+            
+            <h3>Results</h3>
+            <table class="stats-table">
+                <tr><th>Category</th><th>Result</th></tr>
+                <tr><td>Ships Sunk</td><td class="sunk">1 — 700 tons (coastal minelayer)</td></tr>
+                <tr><td>Prisoners Taken</td><td>2 (Korean survivors)</td></tr>
+            </table>
+            
+            <h3>Significant Events</h3>
+            
+            <div class="attack-card">
+                <div class="attack-title">Dangerous Ground Reconnaissance (January 7–8)</div>
+                <p><strong>2107 (Jan 7):</strong> Received message to make search of reefs and shoals in Dangerous Ground—the treacherous, poorly-charted area of the South China Sea notorious for uncharted reefs and shallow water. Headed away from Balabac at full speed.</p>
+                <p><strong>January 8:</strong> Conducted radar searches of Commodore Reef, Investigator Shoal, Cornwallis South Reef, Alison Reef, and Rifleman Bank. All clear—no enemy activity found.</p>
+                <p><strong>1725:</strong> Reported results of search.</p>
+                <p><strong>2142:</strong> Received orders to head for Area D-2 to join BESUGO and HARDHEAD.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Battery Chlorination (December 8) — Near Catastrophe</div>
+                <p>While proceeding to station, both batteries were watered with water containing salt—the product of a malfunctioning distiller. While running on the surface, there was no indication of trouble. But about two hours after watering, Cobia dove at 1500, and the crew <em>"immediately noticed a smell of chlorine in the boat."</em></p>
+                <p>The concentration was not severe enough to cause discomfort, but a silver nitrate test confirmed the worst: chloride ions present in the electrolyte of both batteries. They stayed down about two more hours, rigging pumps to remove the contaminated electrolyte. By pumping the level down to -16 (two points below average height before watering), they removed most of the salt—a six-hour job.</p>
+                <p>As soon as pumping was completed, the batteries were put on charge. Within two hours, there was no more indication of chlorine in the battery exhaust. The charge was continued and equalized for two hours. Voltage was normal with no indications of weak individual cells, though the gravity was lowered about 9 points due to the removed electrolyte. For the rest of the patrol, equalizing gravity ran about 10 points lower than before the incident.</p>
+                <p><strong>Root cause:</strong> Two failures—first, personnel produced unacceptable battery water at the stills and blew it to battery water tanks instead of fresh water tanks. Second, the electricians mates failed to run sufficient water through the system before watering to test the new water—"the readings they got were on old water in the de-ionizers."</p>
+                <p>However, crew members who joined Cobia on subsequent patrols recalled that the batteries were noticeably weaker afterward. This aligns with the metallurgical reality: once chloride ions enter lead-acid battery electrolyte, they cause permanent pitting corrosion on the plates and accelerated sulfation—damage that no amount of flushing or equalizing can fully reverse. Those batteries carried the scars of the December 8 incident for the rest of their service life.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Torpedo Attack (January 14) — Minelayer Sunk</div>
+                <p>Sank a 700-ton coastal minelayer with a single torpedo hit from five fired.</p>
+                <blockquote><em>"First hit... a huge cloud of smoke arose and he was knocked in half... Target sank bow first with his screws still turning over in the air."</em></blockquote>
+                <p>Surfaced to photograph the sinking, but a Zero attacked—"He dropped his bomb as we arrived at 100 feet."</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Same Raft, Different Day (January 9 & 15)</div>
+                <p><strong>January 9:</strong> Sighted two men on a raft. Passed them.</p>
+                <p><strong>January 15:</strong> Remarkably, sighted the <em>same raft</em>—now 92 miles southwest of where they'd first seen it. The patrol report noted the drift: "a set of 226°, drift .94 knots."</p>
+                <p>This time Cobia picked them up. They turned out to be Korean survivors—likely conscripted laborers from a sunken Japanese ship. The raft was subsequently used for target practice.</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">🏥 Medical Challenges</div>
+                <p>Three cases of mumps (requiring 13 days isolation), one appendicitis case (treated with ice packs and diet), and one pilonidal cyst (lanced aboard).</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">🎖️ Redemption</div>
+                <p>Rear Admiral James Fife's endorsement stood in sharp contrast to Patrol 2's rebuke. He praised the January 14 attack as conducted from "an excellent position," noted the good judgment to withhold the sixth torpedo when the first hit was heard, and credited the "valuable reconnaissance duty" performed in Balabac Strait and Dangerous Ground.</p>
+                <p>Most significantly: <em>"The award of the Submarine Combat Insignia is authorized for this patrol."</em> The insignia denied after Patrol 2 was now earned. Fife congratulated the commanding officer, officers, and crew on a "successful patrol."</p>
+            </div>
+            
+            <p class="patrol-conclusion">Cobia refueled at Exmouth Gulf on January 21 and returned to Fremantle on January 24, 1945 after 56 days at sea.</p>
+        </section>
+
+        <!-- 4th Patrol -->
+        <section class="patrol-section" id="patrol4">
+            <div class="patrol-header">
+                <h2 class="patrol-number">4th War Patrol</h2>
+                <div class="patrol-area">Java Sea / Indochina Coast</div>
+                <div class="patrol-meta">
+                    <span>📅 February 18 – April 15, 1945</span>
+                    <span>👤 CO: Cdr. A.L. Becker</span>
+                    <span>⏱️ 57 days</span>
+                </div>
+            </div>
+            
+            <h3>Overview</h3>
+            <p>Cobia departed Fremantle on February 18. A tragic patrol marked by one combat death but also successful gun attacks and aviator rescues. The patrol was interrupted twice—once to return a critically injured sailor, once for radar repairs.</p>
+            
+            <h3>Results</h3>
+            <table class="stats-table">
+                <tr><th>Category</th><th>Result</th></tr>
+                <tr><td>Ships Sunk</td><td class="sunk">2 — 600 tons (sea trucks, gunfire)</td></tr>
+                <tr><td>Aviators Rescued</td><td>7 (from 13th Air Force Liberator)</td></tr>
+                <tr><td class="casualty">Combat Deaths</td><td class="casualty">1 — HUSTON, Ralph Clark Jr., S1c</td></tr>
+            </table>
+            
+            <h3>Significant Events</h3>
+            
+            <div class="attack-card">
+                <div class="attack-title">Engine Room Casualty (February 21–23)</div>
+                <p><strong>2305:</strong> <strong>DESMOND, Forrest E., MoMM1c</strong>, throttleman in the Forward Engine Room, while securing No. 1 engine inadvertently closed the outboard exhaust valve on No. 2 engine—which was still running. The engine continued running, lifting the relief valves and filling the room with exhaust gases. Desmond attempted to secure the engine but was overcome by the fumes.</p>
+                <p><strong>REMILLARD, Earl D., CMoMM</strong> entered the compartment without a smoke mask to secure ventilation. He too was overcome, but was immediately removed by <strong>KUTZLEB, Robert E., MoMM1c</strong>, who had covered his face with a wet rag before entering.</p>
+                <p>Kutzleb returned to the Control Room and, hearing Desmond was still unaccounted for, grabbed an oxygen rescue breathing apparatus and started aft, adjusting it as he went. The engaging hand wheel broke off before the canister was pierced—the apparatus furnished no protection. But Kutzleb, realizing time was precious, continued on anyway. He crawled the length of the compartment to the throttle station searching for Desmond. Not finding him, he closed the engine throttle and fought his way back out.</p>
+                <p>Desmond, meanwhile, had passed out against the after bulkhead. He was removed into the After Engine Room, where the CO and Pharmacist's Mate immediately gave him artificial respiration and put him on oxygen. The compartment was freed from smoke by utilizing suction from the after engines.</p>
+                <blockquote><em>"KUTZLEB's actions unquestionably saved the lives of both REMILLARD and DESMOND."</em></blockquote>
+                <p>Kutzleb recuperated rapidly in the open air, but Desmond was kept on oxygen all night and showed no improvement by morning.</p>
+                <p><strong>February 22:</strong> Cobia reversed course and proceeded at full speed for Exmouth Gulf and medical assistance.</p>
+                <p><strong>February 23:</strong> Tied up alongside USS COUCAL in Exmouth Gulf. Transferred Desmond, received 15,950 gallons of fuel, and departed that afternoon to resume patrol.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Gun Attack (February 26) — Two Sea Trucks Sunk</div>
+                <p>Attacked two 300-ton sea trucks in the Java Sea:</p>
+                <ul>
+                    <li><strong>First target:</strong> Sunk with 50 rounds of 4" after 15 minutes, leaving 20 survivors in the water.</li>
+                    <li><strong>Second target:</strong> The sea truck turned bow-on and kept closing. "He turned his bow to us and kept headed at us all during the engagement." At 1,300 yards—point-blank range for a surface action—Cobia was suddenly too close. Lookouts could see the enemy crew clearly; one sailor recalled looking across the water and seeing a man in a striped t-shirt holding a machine gun.</li>
+                </ul>
+                <p>The enemy gunner opened fire and raked Cobia's deck with .50 caliber bullets. <strong class="casualty">HUSTON, Ralph Clark Jr., S1c</strong>, loader on the 20mm, was mortally wounded—his arm nearly severed. <strong>BROTCHIE, Thomas Henry, FC2c</strong> was superficially wounded. A direct hit set the 20mm magazine on fire and holed the SJ radar mast.</p>
+                <blockquote><em>"Put gun crews under cover and opened range to 2,000 yards. Resumed fire with 4 inch and 50 caliber. Target sank at 1847."</em></blockquote>
+                <p><strong>1847:</strong> As the target sank, the crew secured from battle stations. "HUSTON appeared to be dying." They commenced making a patch for the holed SJ mast—without it, diving would flood the radar system.</p>
+                <p><strong>1930:</strong> "HUSTON rallied and Pharmacist's Mate decided that there was a chance of saving his life if we could get him to a hospital."</p>
+                <p><strong>1944:</strong> Reversed course and increased speed to flank.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Death of HUSTON (February 27)</div>
+                <p class="casualty"><strong>0534:</strong> Despite the race to port, Huston did not survive. "HUSTON, Ralph Clark Jr., died of wounds received in gun action."</p>
+                <p>He died just as Cobia reached the most dangerous part of her return—Lombok Strait. Six minutes later, at 0540, they sighted a small Lombok patrol boat.</p>
+                <p><strong>0546:</strong> Temporary repairs to SJ mast completed. Submerged to 125 feet and continued transit of Lombok at 2/3 speed. "Radar mast leaked badly." At various times during transit they heard pinging on 17 kcs and numerous sea noises—none close. The dive flooded the lobing motor—the antenna rotation mechanism—which had also been holed by gunfire.</p>
+                <p>That afternoon at 1800, Huston's remains were committed to the deep with full military honors. Cobia continued to Fremantle to repair the SJ radar mast and flooded lobing motor, arriving March 4. She departed from USS EURYALE on March 8, refueled at Exmouth Gulf on March 11, and resumed patrol.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Joint Convoy Attack with USS BREAM (March 14)</div>
+                <p>After repairs at Fremantle (March 4–8) and refueling at Exmouth Gulf (March 11), Cobia resumed patrol and joined USS BREAM in a coordinated attack on a Japanese convoy near Goa Island.</p>
+                <p><strong>1339:</strong> Observed hit by BREAM which "completely demolished small Maru." The convoy scattered, with two escorts and a plane going over to work on BREAM. Heard depth charges on his bearing. Two small Marus continued on.</p>
+                <p>Cobia attacked the closer of the two—a small Maru of about 400 tons with "NITTEUR MARU" painted on his bow.</p>
+                <p><strong>1433:</strong> Fired four fish forward, set at four feet. Two tracks were observed to run under—set too shallow. <em>"Lots of excitement on target. Men pointing to periscope and to fish as they passed under. One man ran forward and manned a sort of bo'sns chair under bow."</em> Target turned toward.</p>
+                <p>The torpedoes missed. Depth charges followed as escorts counterattacked, but Cobia escaped without damage.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Stalking a Patrol Craft (March 15)</div>
+                <p><strong>1132:</strong> Changed course to 015 to get on track of a reported convoy.</p>
+                <p><strong>1414:</strong> Sighted ship and turned away—but it closed rapidly. At 1418, submerged and commenced approach. Closest range 5,000 yards. Identified as PC.</p>
+                <p><strong>1607:</strong> Surfaced and commenced tracking him on course 325°T. <em>"Hoping he would lead us to suitable target."</em></p>
+                <p><strong>1626:</strong> Target reversed course to 080. Cobia followed suit, tracking from ahead on his starboard bow. Crossed ahead of him and put themselves between land and his track. Closed Cape Poting. No sign of convoy.</p>
+                <p><strong>2030:</strong> He passed abeam to port on course 080°T, speed 14. <em>"Considered him too small a target for torpedoes and too well armed for a gun attack."</em></p>
+                <p><strong>2034:</strong> Set course to leave vicinity and continue to area. The PC had led them nowhere.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Camranh Bay Chase (March 27)</div>
+                <p><strong>1048:</strong> Made contact with a B-24 who told them of a convoy running northward into Camranh Bay. Bent on all engines and headed up to intercept.</p>
+                <p><strong>1240:</strong> Forced to dive by an SD contact which closed from 11 to 4 miles and gave no IFF or VHF answer. He dropped two depth charges—not close.</p>
+                <p><strong>1301:</strong> Sighted mast of escort-type vessel and turned to close. At 1320, sighted a second similar ship.</p>
+                <p><strong>1335:</strong> Went to battle stations and commenced approach. Both vessels were headed out from the plotted position of the convoy, combing the area—apparently searching for Cobia on information from the plane. Pinging was heard on 17 kcs. Heard first of about 20 depth charges from the escorts.</p>
+                <p><strong>1400:</strong> Rigged for silent running because of excellent sound conditions and shallow water. Continued approach.</p>
+                <p><strong>1410:</strong> Sighted plane acting in conjunction with the escorts, hovering directly over them. <em>"Plane banked and headed for periscope. Considered chances of hitting alerted escort with plane cover to be bad so went to 150 feet and opened out."</em></p>
+                <p><strong>1747:</strong> Surfaced. Decided to patrol off Camranh Bay on chance convoy had gone in there. The chase had come to nothing.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Continued Patrol</div>
+                <p>The patrol continued off the Indochina coast near Cape Padaran, working with USS BLENNY and USS GUAVINA, but no further attacks developed despite numerous contacts with convoys and aircraft.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Aviator Rescue (April 8)</div>
+                <p><strong>0600:</strong> Made rendezvous with USS ROCK and received one bag of mail via rubber boat. <em>"Morale showed decided lift."</em></p>
+                <p>Later that day, a 13th Air Force B-24 Liberator ditched offshore. Cobia surfaced and began searching, coordinating by VHF radio with P-38 fighters overhead and a Catalina flying boat. The survivors were strung out across 10 miles of ocean in life rafts.</p>
+                <p>Over more than two hours, Cobia systematically picked up the crew:</p>
+                <ul>
+                    <li>1425 — Staff Sergeant H.P. Toodbury</li>
+                    <li>1438 — Technical Sergeant W. Morris</li>
+                    <li>1442 — 2nd Lieutenant G.H. Clift</li>
+                    <li>1450 — 2nd Lieutenant J.V. Vandruff</li>
+                    <li>1517 — Captain Roy Gregory</li>
+                    <li>1526 — Technical Sergeant C.F. Beresford</li>
+                    <li>1535 — 1st Lieutenant R.T. Benson</li>
+                </ul>
+                <p>The Catalina circled to the south and departed once satisfied all survivors had been recovered. All seven aviators were brought safely aboard.</p>
+                <p><strong>April 12, 2244:</strong> Received message to head for Subic Bay. Three days later, on April 15, Cobia ended her fourth patrol at Subic Bay, Philippines.</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">📋 Endorsement</div>
+                <p>Rear Admiral James Fife's endorsement approved Becker's decision to return Desmond to Exmouth for medical treatment and noted the loss of Huston was "deeply regretted"—but also observed that the range had been closed "to well inside the range of the enemy armament," and that Cobia "received hits upon two occasions" before opening to a safe range.</p>
+                <p>The Force Commander congratulated the crew on "completion of a long patrol and upon the rescue of seven aviators." The Submarine Combat Insignia was authorized. Two sea trucks sunk.</p>
+            </div>
+        </section>
+
+        <!-- 5th Patrol -->
+        <section class="patrol-section" id="patrol5">
+            <div class="patrol-header">
+                <h2 class="patrol-number">5th War Patrol</h2>
+                <div class="patrol-area">South China Sea / Gulf of Siam</div>
+                <div class="patrol-meta">
+                    <span>📅 May 11 – June 18, 1945</span>
+                    <span>👤 CO: Cdr. A.L. Becker</span>
+                    <span>⏱️ 39 days</span>
+                </div>
+            </div>
+            
+            <h3>Overview</h3>
+            <p>Cobia departed Subic Bay on May 11 for a coordinated wolf pack patrol with USS HAMMERHEAD and HMS SUPREME, with Commander Becker serving as Officer in Tactical Command (OTC). Allied communication failures—incompatible British and American cipher systems—left Supreme unable to participate in the May 14th action. Featured convoy attacks, gun actions, and a severe depth charging that tested the limits of the boat and crew.</p>
+            
+            <h3>Results</h3>
+            <table class="stats-table">
+                <tr><th>Category</th><th>Result</th></tr>
+                <tr><td>Ships Sunk (torpedo)</td><td class="sunk">2 — ~15,000 tons (tankers)</td></tr>
+                <tr><td>Ships Sunk (gunfire)</td><td class="sunk">1 — ~75 tons (Siamese junk)</td></tr>
+            </table>
+            
+            <h3>Significant Events</h3>
+            
+            <div class="attack-card">
+                <div class="attack-title">The May 14 Depth Charging — A Harrowing Ordeal</div>
+                
+                <p><strong>The Wolf Pack:</strong> For this patrol, Cobia was operating as part of a coordinated attack group with USS HAMMERHEAD (SS-364) and the British submarine HMS SUPREME. Commander Becker served as Officer in Tactical Command (OTC), leading the pack. The concept was sound: three submarines working together could find, fix, and destroy convoy traffic more effectively than any single boat.</p>
+                
+                <p><strong>Communication Failure:</strong> But Allied coordination proved nearly impossible. American and British submarines used incompatible cipher systems—different code books, different encryption machines. Becker's log notes flatly that he was <em>"unable to establish communication with SUPREME."</em> HMS Supreme's own war diary (UK National Archives, ADM 199/1873A) tells the story from the British perspective: on May 13th, Supreme received orders to <em>"form Wolf-pack under U.S.S. 'COBIA'"</em> and set course to close. But by midnight on May 14th, as the convoy action was developing, Supreme's log recorded: <em>"No orders or Communication from 'COBIA'."</em></p>
+                
+                <p>Supreme could intercept Hammerhead's contact reports and knew a battle was developing 85 miles away. She set course to intercept but was too far, the target too fast. Her captain concluded: <em>"Probably too fast for us."</em> The wolf pack that was supposed to be three submarines strong fought the May 14th battle with only two.</p>
+                
+                <p><strong>The Attack Goes Wrong:</strong> Cobia attempted to attack the freighter TOTTORI MARU escorted by HIJMS HATSUTAKA (identified at the time as YAEYAMA). A critical miscommunication occurred when a new conning tower talker heard "70 feet" mentioned for masthead height and passed the order to the Diving Officer to take the boat to 70 feet—dunking the periscope at the critical moment. Torpedoes were fired but two broached; the target combed tracks and turned away.</p>
+                
+                <p><strong>0755:</strong> Went deep to 120 feet (depth of water 145 feet), rigging for depth charge.</p>
+                <p><strong>0802:</strong> First pattern of six depth charges—astern, port, and above—fairly close.</p>
+                <p><strong>0826:</strong> Second salvo of four charges—astern, starboard, above and below—further out.</p>
+                <p><strong>0845:</strong> Came up to periscope depth. Escort was astern <em>"tearing all over the landscape."</em> Target ahead, range 4,000 yards. Commenced reload and second approach.</p>
+                
+                <p><strong>1147:</strong> Escort turned toward. Cobia kept her tail toward him, hoping for a shot. But he zigged, giving a 5° angle—and then <em>"he obviously sighted periscope as he let out a puff of black smoke, grabbed a bone in his teeth, and lined up on us."</em> Range 850 yards. Pulled the plug and headed for the safety of the thermal layer at 60 feet.</p>
+                
+                <p><strong>1150:</strong> <em>"Had leveled off at 120 feet when he passed directly overhead and tossed over everything but the Kitchen Sink."</em></p>
+                <blockquote><em>"About sixteen charges went off above, below, port, and starboard—all aft however. Really rattled all loose gear about and put us on the bottom at 148 feet. Kept going trying to get off bottom without pumping. Succeeded in scraping along and probably stirring up plenty of mud."</em></blockquote>
+                <p>A close charge <em>"caused a flash of fire and smoke from the control cubicle."</em> Stopped all motors and lay on bottom while electricians inspected for damage.</p>
+                
+                <p>The escort had been <em>"a distinct bush leaguer up to the time we led with our chin, but he had us playing his game now."</em></p>
+                <blockquote><em>"He made eight single runs using his fathometer and laying them set deep in the mud all around us. He dropped from one to three on each run and they went off from 40 to 70 seconds after he had passed over. The old ship would hop from fox hole to fox hole as each went off."</em></blockquote>
+                <p>They took water through the stern plane packing glands and through the head flood valves, which <em>"spun to full open on each charge."</em> No hull damage though. <em>"I take my hat off to the Electric Boat Company. They really built a tough hull into this ship."</em> The escort was making 15 knots on his runs, <em>"hauling out to about 3,000 yards to let the mud settle after each drop."</em></p>
+                
+                <p><strong>1320:</strong> Main control cubicle seemed in order. Decided to get underway to give him a moving target. He dropped a single charge and headed away.</p>
+                <p><strong>1351:</strong> At periscope depth—escort way off and getting further. Headed in his direction and commenced repairs.</p>
+                
+                <p><strong>Damage:</strong> All six forward torpedo tubes out of commission (bent gyro spindles), No. 7 tube out (bent gyro spindle), one Mk 18 torpedo with flooded main motor, TDC inoperative, high pressure blows to Bow Buoyancy/Negative/Safety leaking badly, 4" gun trainer's sight flooded, both periscopes flecked, control cubicle shorted, superstructure dished in.</p>
+                
+                <p><strong>1944:</strong> With TDC operating, high pressure blow valves tight, and all after tubes and two forward tubes back in commission—surfaced and went ahead full in the direction YAEYAMA had disappeared. Sent message to HAMMERHEAD requesting information. HAMMERHEAD replied with position of convoy.</p>
+                
+                <p><strong>The Wolf Pack Works—For Two:</strong> Despite this beating, Cobia's crew had repaired enough to fight. That night, Cobia and Hammerhead coordinated to attack TOTTORI MARU. While the escort chased Hammerhead—firing and dropping depth charges—Cobia worked around to attack. But Hammerhead got there first: two torpedo hits at 0159, and by 0205 the target sank. At 0343, Cobia rendezvoused with Hammerhead, exchanged compliments and spare parts via rubber boat. Hammerhead <em>"promised to save us a little beer"</em> and headed for Fremantle. The escort that had nearly killed Cobia, HIJMS HATSUTAKA, was herself sunk just two days later by USS HAWKBILL.</p>
+                
+                <p>HMS Supreme, meanwhile, never got close enough to help. The communication failure meant that Becker's tactical plan never reached her. She spent the day patrolling alone while her packmates fought the battle without her.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Survivors of TOTTORI MARU (May 15)</div>
+                <p><strong>1501:</strong> Surfaced. All tubes back in commission after the previous day's damage.</p>
+                <p><strong>1530:</strong> Sighted lifeboat full of survivors. Many men in water. Took moving pictures. Did not want prisoners this early in patrol. Destroyed all large unoccupied bits of wreckage with 40mm fire.</p>
+                <blockquote><em>"The rules of war are hard to understand. Here were about 75 healthy Jap sailors in uniform with lifeboat and lots of wreckage to hang on to. Plane out looking to send air. Chances that they would live to continue the war against us excellent. We had to let them go. Had they been in the same condition on the beach there would have been no hesitation about shooting them. Howsoever, such is the laws by which we live."</em></blockquote>
+                <p><strong>1630:</strong> Recovered life ring from TOTTORI MARU—confirming the previous day's target.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Rendezvous with HMS SUPREME (May 16)</div>
+                <p><strong>0900:</strong> Bottomed in 20 fathoms of water to continue repairs. Trouble found in governor to No. 4 engine—repaired by ship's force.</p>
+                <p><strong>2207:</strong> Sighted submarine on surface. Commenced tracking. Sent message to SUPREME informing her of contact and position and asking if it were he. It was.</p>
+                <p><strong>2344:</strong> Made rendezvous with SUPREME and agreed on operations for next few days. Supreme reported she had searched Patina Roads and found it vacant.</p>
+                <p>Two days after the depth charging, the wolf pack finally coordinated in person—too late for the main action, but ready for what came next.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Gun Attack on Siamese Junk (May 30)</div>
+                <p><strong>0649:</strong> Dove for submerged watch off Sawi Bay. Numerous large junks in sight.</p>
+                <p><strong>1759:</strong> Started to close the largest junk—the only one showing any colors. At 8,000 yards could not make them out.</p>
+                <p><strong>1857:</strong> Identified flag as Siamese and went to battle stations.</p>
+                <p><strong>1909:</strong> Battle surfaced at 2,300 yards and opened fire. But the 4" gun trainer's sight was still flooded from the May 14 depth charging—<em>"used open sight for train. Not good."</em></p>
+                <p><strong>1911:</strong> All guns hitting. Took movies.</p>
+                <p><strong>1916:</strong> Target lying on its side. Put a last 4" hole in her to vent her and opened out from land, headed for rendezvous with BERGALL.</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">🚬 Cementing Relations (June 1)</div>
+                <p>Sighted junk and closed to investigate. <em>"Turned out to be loaded with natives giving 'V for Victory' sign and smoking Camel cigarettes. Gave them another carton to cement relations and left."</em></p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Torpedo Attacks (June 8) — Two Tankers Sunk</div>
+                <p><strong>0310:</strong> Made radar contact bearing 250°T, range 17,000 yards. Commenced tracking—a heavily laden tanker, 500 feet long by binocular formula. A smaller pip appeared 500 yards on the target's port quarter (escort), and a third contact 10,000 yards on the target's port beam (second target).</p>
+                <p>The tactical situation was precarious: <em>"With the 20 fathom curve 20 miles distant precluding diving; an unidentified escort to evade; a second target to attack and a loaded tanker that would probably explode and light up the whole ocean when hit"</em>—Becker decided to attack with stern tubes at long range and pull clear of the fireworks.</p>
+                <p><strong>0410:</strong> Fired four Mk XVIII torpedoes aft, run 3,300 yards. One seen to broach after 200 yards. At 0413, one dud hit heard—timed exactly for the first torpedo. Target continued on course.</p>
+                <p><em>"It had been a long time since COBIA had heard her torpedoes explode against enemy hull. Decided to give this baby all we had and then worry about the others."</em></p>
+                <p><strong>0438:</strong> Reloaded and closed for a bow shot. Fired six Mk XIV torpedoes forward, run 2,300 yards. First and fourth torpedoes took a jog to the left before settling down on their run. Second and fifth torpedoes hit—<em>"second under bridge and fifth half way between bridge and after structure."</em></p>
+                <p><em>"Target made excellent diving time until nose stuck in the mud. Stern remained sticking out for about 20 minutes. Lots of dim lights flashing as crew abandoned ship."</em></p>
+                <p><strong>0500:</strong> First target sank. The escort reversed course and cleared the area. Loaded last three Mk XIV's forward and headed for the second target.</p>
+                <p><strong>0518:</strong> Second target in sight—another heavily laden tanker, 430 feet long. <em>"He was apparently unaware of the fate of his pal—or maybe they just weren't speaking."</em></p>
+                <p><strong>0545:</strong> Fired three Mk XIV torpedoes, run 1,300 yards. <em>"All three fish hit. The target exploded in the most spectacular flash I have ever seen. Large chunks of him landed all around. All that remained was a large column of flame from burning gasoline. Broke out the movie camera and recorded this for posterity. Let all hands take a look while we took off after our remaining friend."</em></p>
+                <p><strong>0634:</strong> Regained radar contact on the remaining target—a small coaster, ~200 feet, riding high. Tracked and worked ahead. Fired three Mk XVIII torpedoes at 0637—all ran under. Fired the last remaining torpedo at 0644—it sank at the firing point.</p>
+                <p><em>"With black night precluding use of open sights, no trainer's sight on 4" gun, unknown armament on target, and dawn 45 minutes off, reluctantly tossed this one back and bent on four engines and headed for deep water."</em></p>
+                <p><strong>June 9:</strong> The next day, exchanged recognition with USS LAMPREY, then sighted USS KRAKEN and closed to pick up mail. Headed for Fremantle.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">A Trap Avoided (June 13)</div>
+                <p>Enroute to Onslow after transiting Lombok Strait the night before.</p>
+                <p><strong>0240:</strong> Sighted series of 8 red flares similar to Very pistol flares—duration about 3 seconds each, 5 seconds between. Bearing 160°T, distance judged about 10 miles. Headed toward.</p>
+                <p><strong>0322:</strong> Had very weak carrier signal on 500 Kcs. Swung ship to get bearing—seemed to be 160°T. Fired green Very star and headed toward.</p>
+                <p><strong>0335:</strong> Fired second green star. <strong>0347:</strong> Fired third green star.</p>
+                <p>Their observer, Major Kissack, informed them that the Gibson Girl emergency transmitter would not put out such a signal. The assessment:</p>
+                <ul>
+                    <li>They had covered the immediate area from which the flares originated</li>
+                    <li>Firing eight flares one after another was <em>not</em> in accordance with air-sea rescue instructions</li>
+                    <li>They had gotten no answer to their green flares</li>
+                    <li>They had no information of any Allied survivors in the area</li>
+                    <li><em>"The Japs could easily be aware of our transit of Lombok that night and could be trying to draw us into a trap."</em></li>
+                </ul>
+                <p>Decision: Clear area and send message asking for information on any Allied survivors near the area. Intended to come back and search by daylight if any survivors were known to be down.</p>
+                <p><strong>1018:</strong> Received information that no Allied fliers were known to be down in the area. Continued to Onslow.</p>
+                <p>That same day, while running No. 1 main engine for a test, a second crankcase explosion occurred (the first had happened the night before during the Lombok transit). <strong>MATTICE, Harold A., F1c</strong> received first and second degree burns on face, hands, neck, and abdomen. Secured tests on No. 1 engine pending complete disassembly.</p>
+                <p><strong>June 15:</strong> Moored at Onslow Jetty. Received 20,513 gallons diesel oil. <em>"Treated all hands to one bottle of beer."</em> That afternoon, noting that all mooring lines on the jetty had been parted the previous weeks, they left their four mooring lines <em>"for the convenience of boats not carrying lines."</em> Underway for Fremantle.</p>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">📋 Endorsement</div>
+                <p>Rear Admiral James Fife's endorsement praised the patrol in strong terms. <em>"Of particular excellence was the series of attacks made during the early morning hours of 8 June. Determined to attack the enemy at an unexpected point, COBIA proceeded into an area ten fathoms deep and nearly two hours run inside of the twenty fathom curve."</em></p>
+                <p>He also commended the May 14 action: <em>"This same aggressive spirit was exhibited on 14 May when COBIA unsuccessfully attacked a CM YAEYAMA Class (EU), and then reloaded and commenced a second attack. After being detected she was subjected to a very severe counter attack which drove her to the bottom in 148 feet of water."</em></p>
+                <p>Fife noted with interest the unusual depth charge technique—charges set deep and dropped into the mud, exploding 40 to 70 seconds after being dropped. He added: <em>"It was a source of great satisfaction to COBIA to be informed on 19 May by HAWKBILL that she had sunk the YAEYAMA (EU) shortly after this attack upon COBIA."</em> (HAWKBILL later identified the vessel as HATSUTAKA rather than YAEYAMA.)</p>
+                <p>Combat Insignia authorized. Credits: 1 Siamese junk (100 tons, gunfire), 1 AO large (10,000 tons), 1 AO medium (5,000 tons)—total 15,100 tons sunk.</p>
+            </div>
+            
+            <p class="patrol-conclusion">Cobia arrived at Fremantle on June 18, 1945 after 39 days at sea—patrol terminated due to expenditure of torpedoes.</p>
+        </section>
+
+        <!-- 6th Patrol -->
+        <section class="patrol-section" id="patrol6">
+            <div class="patrol-header">
+                <h2 class="patrol-number">6th War Patrol</h2>
+                <div class="patrol-area">Java Coast / Formosa (Lifeguard Duty)</div>
+                <div class="patrol-meta">
+                    <span>📅 July 16 – August 22, 1945</span>
+                    <span>👤 CO: Lt. Cdr. F.N. Russell</span>
+                    <span>⏱️ 38 days</span>
+                </div>
+            </div>
+            
+            <h3>Overview</h3>
+            <p>Cobia departed Fremantle on July 16 under new commanding officer Lt. Cdr. F.N. Russell, following the relief of Commander Becker. Primarily lifeguard duty off Formosa as the war wound down. Cobia never fired a torpedo.</p>
+            
+            <h3>Results</h3>
+            <table class="stats-table">
+                <tr><th>Category</th><th>Result</th></tr>
+                <tr><td>Ships Sunk</td><td>0</td></tr>
+                <tr><td>Aviators Rescued</td><td>0 (none needed rescue during station time)</td></tr>
+            </table>
+            
+            <h3>Significant Events</h3>
+            
+            <div class="attack-card">
+                <div class="attack-title">Change of Command (July 3)</div>
+                <p>"Commander A.L. Becker was relieved of command by Lieutenant Commander F.N. Russell."</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Java Coast Transit (July 24)</div>
+                <p>Detected by shore-based radar while transiting south coast of Java. "APR Interference from two shore based radars at 154 and 155 mcs... Believe that we may have been detected." Three aircraft contacts followed, confirming detection.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Covert Landing Operation (July 27) — Redacted from Official Report</div>
+                <p>According to the <a href="https://www.history.navy.mil/research/histories/ship-histories/danfs/c/cobia.html" target="_blank" style="color: var(--sea-foam);">Dictionary of American Naval Fighting Ships</a>, Cobia landed a party on the west coast of Java on July 27, 1945. This operation does not appear in the patrol report narrative—only cryptic navigation entries hint at the mission:</p>
+                <blockquote><em>"1855 Sighted Two Brothers bearing 347°T... 2050 Picked up Northwatcher... 2204 With Northwatcher abeam to starboard 5 miles, changed course to 061°T."</em></blockquote>
+                <figure style="float: right; margin: 0 0 1em 1.5em; max-width: 200px; text-align: center;">
+                    <a href="https://www.iwm.org.uk/collections/item/object/205212642" target="_blank">
+                        <img src="https://media.iwm.org.uk/ciim5/55/610/mid_000000.jpg?action=e&cat=Photographs" alt="Lt. F.B.K. Drake during the Malayan Emergency" style="max-width: 100%; border: 1px solid #555;">
+                    </a>
+                    <figcaption style="font-size: 0.8em; color: #aaa; margin-top: 0.3em;">Lt. F.B.K. Drake, postwar<br><a href="https://www.iwm.org.uk/corporate/privacy-copyright" target="_blank" style="color: #888;">Image: IWM (DM 146)</a></figcaption>
+                </figure>
+                <p>The landing party consisted of <strong>four Javanese Muslim commandos</strong> and their handler, Australian intelligence officer <strong>Lieutenant (SP) Francis Bernard Kington Drake, R.A.N.V.R.</strong> Drake was a member of <strong>Secret Intelligence Australia (SIA)</strong>—Section "B" of the Allied Intelligence Bureau, a British unit that reported directly to MI6 in London. SIA worked closely with Netherlands Forces Intelligence and specialized in covert operations in the Dutch East Indies. Drake's name—echoing history's famous naval raider—was apparently genuine rather than a cover identity. He was later recommended for the <strong>Member of the Order of the British Empire (MBE)</strong>.</p>
+                <p>The four commandos were enlisted men of the <strong>Royal Dutch Army</strong>, Javanese natives of the Muslim faith—likely drawn from SIA's network of Indonesian operatives. Their mission: establish radio communications to report on Japanese defenses, weather, and conditions ahead of a planned Allied invasion of Java by Australian and Dutch forces.</p>
+                <p>Crewman Herbert "Doc" Starmer later recalled a touching detail: several times each day, the four men would hand the chief of the watch a note—written by Drake—asking for the direction to Mecca. The chief would read the gyro compass and point generally north and west. <em>"The trouble was that after we were paralleling the Java coast and zigzagging... Mecca could be just about any direction on the compass at any given moment."</em> Nevertheless, the crew had great respect for these men, knowing the danger they faced if discovered by the Japanese. They remained ashore to conduct operations behind enemy lines; their fate is unknown.</p>
+                <p><strong>Extraction of Lt. Drake (August 2–3):</strong> After the landing, Drake was extracted through a chain of submarines:</p>
+                <ul>
+                    <li><strong>August 2, 0500:</strong> Cobia transferred "personnel" and ammunition to <strong>USS BOARFISH</strong></li>
+                    <li><strong>August 3, 0600:</strong> USS COD's log records: <em>"Received Lieutenant F.B.K. DRAKE, R.A.N.V.R. as passenger, and 40 rounds of 40mm ammunition from BOARFISH."</em></li>
+                </ul>
+                <p>The patrol report was reclassified as <strong>SECRET</strong> on October 8, 1945—unusual for an otherwise uneventful patrol. This covert operation is the reason.</p>
+                <p class="source-link">Sources: <a href="https://www.history.navy.mil/research/histories/ship-histories/danfs/c/cobia.html" target="_blank">DANFS</a>; USS COD patrol log; <a href="https://www.awm.gov.au/collection/R1573758" target="_blank">Australian War Memorial</a>; <a href="https://mail.ozatwar.com/sigint/sia.htm" target="_blank">Australia @ War (SIA)</a>; Herbert "Doc" Starmer, <em>War Patrols of the USS Cobia SS245</em></p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Subic Bay (August 5–6)</div>
+                <p><strong>August 5, 1005:</strong> Moored starboard side to USS HOWARD W. GILMORE at Subic Bay, Philippines.</p>
+                <p><strong>August 6:</strong> Tender adjusted the hydraulic plant which had been unsatisfactory for a week. Received fuel and provisions—<em>"Also a good liberty and beer by courtesy of Captain Scott."</em></p>
+                <p>That same day, 1,500 miles to the north, the B-29 <em>Enola Gay</em> dropped the atomic bomb on Hiroshima.</p>
+                <p><strong>1742:</strong> Underway to patrol southwest of Formosa and perform lifeguard duties.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">The War Winding Down (August 10)</div>
+                <p>One day after the atomic bomb was dropped on Nagasaki, Cobia <em>"Received some dope from our zoomie friends saying that little offensive air activity was scheduled for the next two weeks."</em></p>
+                <p>The air forces were standing down. Japan would surrender five days later.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Lifeguard Duty (August 12-14)</div>
+                <p>Stationed for air strikes on Takao (Taiwan). Maintained VHF communication with air cover. "Air cover reports all planes accounted for and that he is heading home."</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">War's End (August 14–15)</div>
+                <p><strong>August 14:</strong> <em>"Japan has accepted the terms offered her (unofficially)."</em></p>
+                <p>That night, off Formosa, the war's end was visible: <em>"Takao is lighted up like a Christmas tree. About six searchlights are sweeping the sky."</em></p>
+                <p>After years of blackout, the lights were coming back on.</p>
+            </div>
+            
+            <div class="attack-card">
+                <div class="attack-title">Victory Convoy (August 16–22)</div>
+                <p>After Japan's surrender, Cobia received orders to join other submarines heading for Saipan. On <strong>August 16</strong>, she rendezvoused with <strong>USS RAY</strong> and <strong>USS CROAKER</strong>, proceeding east at 17 knots. On <strong>August 18</strong>, <strong>USS JACK</strong> joined up at 1000, followed by <strong>USS ICEFISH</strong> at 1500.</p>
+                <p>Five submarines—Cobia, Ray, Croaker, Jack, and Icefish—sailed together across the Pacific. On <strong>August 22, 1945</strong>, they arrived at Saipan, ending the war as they had fought it: together.</p>
+                <blockquote><em>"Enroute Saipan as before."</em> — the final entries, repeated for three days as the boats made their passage home.</blockquote>
+            </div>
+            
+            <div class="vignette">
+                <div class="vignette-title">📋 Endorsement</div>
+                <p>The Force Commander's endorsement noted the patrol was devoted to lifeguard duties with <em>"no opportunities afforded to rescue any air force personnel or to inflict damage upon the enemy."</em></p>
+                <p><strong>Award of Submarine Combat Insignia for this patrol is not authorized.</strong></p>
+                <p>The endorsement welcomed Cobia and her crew to the Central Pacific—the war was over.</p>
+            </div>
+        </section>
+
+        <!-- Summary Statistics -->
+        <section class="summary-stats">
+            <h2>Statistical Summary — All Six Patrols</h2>
+            <table class="stats-table">
+                <tr>
+                    <th>Patrol</th>
+                    <th>Duration</th>
+                    <th>Days in Area</th>
+                    <th>Ships Sunk</th>
+                    <th>Personnel Lost</th>
+                </tr>
+                <tr>
+                    <td>1st</td>
+                    <td>49 days</td>
+                    <td>29</td>
+                    <td class="sunk">8 (24,250 tons)</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>2nd</td>
+                    <td>61 days</td>
+                    <td>30</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>3rd</td>
+                    <td>56 days</td>
+                    <td>44</td>
+                    <td class="sunk">1 (700 tons)</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>4th</td>
+                    <td>57 days</td>
+                    <td>25</td>
+                    <td class="sunk">2 (600 tons, guns)</td>
+                    <td class="casualty">1 (KIA)</td>
+                </tr>
+                <tr>
+                    <td>5th</td>
+                    <td>39 days</td>
+                    <td>27</td>
+                    <td class="sunk">3 (~15,100 tons)</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>6th</td>
+                    <td>38 days</td>
+                    <td>8</td>
+                    <td>0</td>
+                    <td>0</td>
+                </tr>
+            </table>
+            
+            <h3 style="margin-top: 1.5rem;">Commanding Officers</h3>
+            <ul>
+                <li><strong>Patrols 1–5:</strong> Commander A.L. Becker, USN</li>
+                <li><strong>Patrol 6:</strong> Lt. Commander F.N. Russell, USN</li>
+            </ul>
+            
+            <h3 style="margin-top: 1.5rem;">Submarine Combat Patrol Insignia</h3>
+            <div style="text-align: center; margin: 1.5rem 0;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Submarine_Combat_Patrol_Insignia.png" 
+                     alt="Submarine Combat Patrol Insignia" 
+                     style="max-width: 400px; width: 100%;">
+                <p style="font-size: 0.9em; color: #aaa; margin-top: 0.5em;">
+                    Cobia earned the Submarine Combat Insignia on <strong>4 of her 6 patrols</strong>.<br>
+                    A crew member who served all six patrols would wear this insignia with <strong>3 gold stars</strong>.<br>
+                    <span style="font-size: 0.85em;">(Patrol 2 denied by Rear Admiral Christie; Patrol 6 not authorized—no combat.)</span>
+                </p>
+                <p style="font-size: 0.75em; color: #666;">
+                    Image: U.S. Navy, Public Domain via <a href="https://commons.wikimedia.org/wiki/File:Submarine_Combat_Patrol_Insignia.png" target="_blank" style="color: #888;">Wikimedia Commons</a>
+                </p>
+            </div>
+        </section>
+    </div>
+    
+    <footer>
+        USS Cobia (SS-245) • Gato-class submarine • Commissioned March 1944<br>
+        <a href="/">Back to Search</a> • <a href="/about">About This Archive</a>
+    </footer>
+</body>
+</html>
+
+

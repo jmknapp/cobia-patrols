@@ -347,6 +347,10 @@
                 <span class="stat-label">🤖 AI Scrapers</span>
             </div>
             <div class="stat-card">
+                <span class="stat-value">{{ stats.fake_search_hits | default(0) }}</span>
+                <span class="stat-label">🛡️ Fake Search Spam</span>
+            </div>
+            <div class="stat-card">
                 <span class="stat-value">{{ stats.filtered_hits | default(0) }}</span>
                 <span class="stat-label">Filtered (Local)</span>
             </div>

@@ -204,6 +204,12 @@ def about():
     return render_template('about.html')
 
 
+@app.route('/patrolsummaries')
+def patrol_summaries():
+    """Serve the patrol summaries page."""
+    return render_template('patrol_summaries.html')
+
+
 @app.route('/analytics')
 def analytics():
     """Serve the analytics page (hidden - not linked from main site)."""

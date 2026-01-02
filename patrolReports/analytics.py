@@ -67,11 +67,59 @@ AI_BOT_PATTERNS = [
 ]
 
 REGULAR_BOT_PATTERNS = [
-    'bot', 'crawler', 'spider', 'slurp', 'googlebot', 'bingbot',
+    'bot', 'crawler', 'spider', 'slurp', 'googlebot', 'googleother', 'bingbot',
     'yandex', 'baidu', 'duckduckbot', 'facebookexternalhit',
     'twitterbot', 'linkedinbot', 'semrush', 'ahrefsbot', 'mj12bot',
     'dotbot', 'petalbot', 'applebot', 'seznambot',
 ]
+
+# Search engine domains used to detect fake referrer spam
+SEARCH_ENGINE_DOMAINS = [
+    'google.com', 'google.co.uk', 'google.de', 'google.fr', 'google.es',
+    'google.it', 'google.ca', 'google.com.au', 'google.co.jp',
+    'bing.com', 'yahoo.com', 'duckduckgo.com', 'yandex.com',
+]
+
+def is_fake_search_referrer_hit(path, status, referer):
+    """
+    Detect fake search engine referrer attacks.
+    
+    Pattern: Attackers probe for PHP webshells using fake search engine referrers
+    to try to evade detection. Real search engine referrals go to real pages
+    that return 200, not random .php files that 404.
+    """
+    if not referer or referer == '-':
+        return False
+    
+    # Check if referer claims to be from a search engine
+    referer_lower = referer.lower()
+    is_search_referer = any(se in referer_lower for se in SEARCH_ENGINE_DOMAINS)
+    
+    if not is_search_referer:
+        return False
+    
+    # Real search traffic goes to real pages. Webshell probes:
+    # - Request random .php files that don't exist (404)
+    # - Request paths with suspicious names
+    
+    # If it's a 404 with a search referer, very suspicious
+    if status == '404':
+        return True
+    
+    # Suspicious PHP file patterns that real visitors wouldn't find via search
+    suspicious_paths = [
+        '.php',  # Any PHP file on a non-PHP site is suspicious
+        '/admin', '/upload', '/shell', '/wp-', '/wordpress',
+        '/.well-known/', '/cgi-bin/', '/config',
+    ]
+    path_lower = path.lower()
+    if any(susp in path_lower for susp in suspicious_paths):
+        # But allow legitimate paths
+        if path in ['/', '/search', '/view', '/analytics'] or path.startswith('/static/'):
+            return False
+        return True
+    
+    return False
 
 def is_ai_bot(user_agent):
     """Check if user agent is an AI scraper/trainer."""
@@ -201,6 +249,7 @@ def get_analytics(log_path=None, days=30):
     total_hits = 0
     filtered_hits = 0
     bot_hits = 0
+    fake_search_hits = 0  # Track fake search referrer attacks
     ai_bot_hits = Counter()  # Track AI bots specifically
     unique_ips = set()
     ip_hits = Counter()  # Track hits per IP
@@ -263,6 +312,11 @@ def get_analytics(log_path=None, days=30):
                                     ai_bot_hits[pattern] += 1
                                     break
                         continue  # Skip bots from main stats
+                    
+                    # Check for fake search engine referrer attacks (webshell probes)
+                    if is_fake_search_referrer_hit(path, status, referer):
+                        fake_search_hits += 1
+                        continue  # Skip these from main stats
                     
                     # Track unique visitors
                     unique_ips.add(ip)
@@ -368,6 +422,7 @@ def get_analytics(log_path=None, days=30):
         'total_hits': total_hits,
         'filtered_hits': filtered_hits,
         'bot_hits': bot_hits,
+        'fake_search_hits': fake_search_hits,
         'ai_bot_hits': dict(ai_bot_hits.most_common(10)),
         'unique_visitors': len(unique_ips),
         'page_views': dict(page_views.most_common(20)),
