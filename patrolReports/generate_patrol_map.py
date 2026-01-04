@@ -971,31 +971,196 @@ def create_map(positions):
     
     ScaleControl().add_to(m)
     
-    # Add click handler to show coordinates popup
+    # Add click handler to show coordinates popup with ocean depth
     class ClickCoordinates(MacroElement):
-        _template = Template("""
+        _template = Template(r"""
             {% macro script(this, kwargs) %}
                 var clickPopup = null;
-                {{this._parent.get_name()}}.on('click', function(e) {
+                
+                // Fetch precise ocean depth from NOAA bathymetry service
+                async function getPreciseDepth(lat, lon) {
+                    try {
+                        // Use NOAA's bathymetry web service
+                        // This provides global ocean depth data from ETOPO2022
+                        const response = await fetch(
+                            `https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_global_mosaic/ImageServer/identify?` +
+                            `geometry=${lon},${lat}&geometryType=esriGeometryPoint&` +
+                            `returnGeometry=false&returnCatalogItems=false&f=json`,
+                            { 
+                                method: 'GET',
+                                headers: { 'Accept': 'application/json' }
+                            }
+                        );
+                        
+                        if (!response.ok) {
+                            console.log('Bathymetry API returned error:', response.status);
+                            return null;
+                        }
+                        
+                        const data = await response.json();
+                        
+                        // NOAA returns elevation in meters (negative = depth)
+                        if (data.value !== undefined && data.value !== null) {
+                            const elevation = parseFloat(data.value);
+                            
+                            // Negative values are ocean depths
+                            if (elevation < 0) {
+                                return Math.abs(Math.round(elevation));
+                            }
+                        }
+                        
+                        console.log('API response did not contain depth data');
+                        return null;
+                    } catch (error) {
+                        console.log('Bathymetry API error:', error.message);
+                        return null;
+                    }
+                }
+                
+                // Estimate ocean depth with higher precision for specific areas
+                function estimateDepth(lat, lon) {
+                    // Cobia's operating areas: Bonin Islands, South China Sea, Java Sea, Gulf of Siam
+                    
+                    // Bonin Islands area (Patrol 1)
+                    if (lat >= 24 && lat <= 30 && lon >= 139 && lon <= 145) {
+                        return '1500-4000 m';
+                    }
+                    
+                    // Dangerous Ground - North (Spratly)
+                    if (lat >= 10.5 && lat <= 12 && lon >= 113.5 && lon <= 117) {
+                        return '15-80 m';
+                    }
+                    
+                    // Dangerous Ground - South (deeper)
+                    if (lat >= 7 && lat < 10.5 && lon >= 113 && lon <= 117) {
+                        return '30-150 m';
+                    }
+                    
+                    // Java Sea (shallow)
+                    if (lat >= -8 && lat <= -3 && lon >= 105 && lon <= 120) {
+                        return '40-70 m';
+                    }
+                    
+                    // Gulf of Siam (shallow)
+                    if (lat >= 6 && lat <= 14 && lon >= 99 && lon <= 106) {
+                        return '45-80 m';
+                    }
+                    
+                    // Lombok Strait
+                    if (lat >= -9 && lat <= -8 && lon >= 115 && lon <= 116) {
+                        return '250-300 m';
+                    }
+                    
+                    // Central South China Sea basin - deep center
+                    if (lat >= 12 && lat <= 16 && lon >= 113.5 && lon <= 116.5) {
+                        return '3200-3850 m';
+                    }
+                    
+                    // Central SCS - moderate depth
+                    if (lat >= 10 && lat <= 18 && lon >= 112 && lon <= 118) {
+                        return '2400-3200 m';
+                    }
+                    
+                    // Luzon Strait
+                    if (lat >= 19 && lat <= 22 && lon >= 119 && lon <= 122) {
+                        return '1250-2850 m';
+                    }
+                    
+                    // Philippine shelf
+                    if (lon >= 118 && lon < 122 && lat <= 15 && lat >= 5) {
+                        return '120-650 m';
+                    }
+                    
+                    // Karimata Strait
+                    if (lat >= -3 && lat <= 2 && lon >= 107 && lon <= 110) {
+                        return '30-50 m';
+                    }
+                    
+                    // Default: moderate depth
+                    return '1850-2750 m';
+                }
+                
+                // Convert meters to feet for display
+                function formatDepth(depthStr, isPrecise) {
+                    var numbers = depthStr.match(/\d+/g);
+                    if (!numbers) return depthStr;
+                    
+                    var metersToFeet = 3.28084;
+                    
+                    if (isPrecise && numbers.length === 1) {
+                        var meters = parseInt(numbers[0]);
+                        var feet = Math.round(meters * metersToFeet);
+                        return feet.toLocaleString() + ' ft (' + meters.toLocaleString() + ' m)';
+                    } else if (numbers.length === 2) {
+                        var minMeters = parseInt(numbers[0]);
+                        var maxMeters = parseInt(numbers[1]);
+                        var minFeet = Math.round(minMeters * metersToFeet);
+                        var maxFeet = Math.round(maxMeters * metersToFeet);
+                        return minFeet.toLocaleString() + '-' + maxFeet.toLocaleString() + ' ft (' + 
+                               minMeters + '-' + maxMeters + ' m)';
+                    } else {
+                        var meters = parseInt(numbers[0]);
+                        var feet = Math.round(meters * metersToFeet);
+                        return feet.toLocaleString() + ' ft (' + meters + ' m)';
+                    }
+                }
+                
+                // Get depth category and color
+                function getDepthInfo(depthStr) {
+                    var depths = depthStr.match(/\\d+/g);
+                    if (!depths) return { color: '#666', category: 'unknown' };
+                    
+                    var avgDepth = depths.length > 1 ? 
+                        (parseInt(depths[0]) + parseInt(depths[1])) / 2 : 
+                        parseInt(depths[0]);
+                    
+                    // Categories based on submarine operations
+                    if (avgDepth < 200) {
+                        return { 
+                            color: '#d4a373', 
+                            category: 'Shallow (less than test depth - hazardous)'
+                        };
+                    } else if (avgDepth < 1000) {
+                        return { 
+                            color: '#3498db', 
+                            category: 'Continental shelf (limited diving room)'
+                        };
+                    } else if (avgDepth < 3000) {
+                        return { 
+                            color: '#2c3e50', 
+                            category: 'Deep basin (good operating depth)'
+                        };
+                    } else {
+                        return { 
+                            color: '#1a1a2e', 
+                            category: 'Very deep (excellent concealment)'
+                        };
+                    }
+                }
+                
+                {{this._parent.get_name()}}.on('click', async function(e) {
                     var lat = e.latlng.lat;
                     var lng = e.latlng.lng;
                     
                     // Format as degrees and decimal minutes
                     var latHemi = lat >= 0 ? 'N' : 'S';
                     var lngHemi = lng >= 0 ? 'E' : 'W';
-                    lat = Math.abs(lat);
-                    lng = Math.abs(lng);
-                    var latDeg = Math.floor(lat);
-                    var latMin = ((lat - latDeg) * 60).toFixed(1);
-                    var lngDeg = Math.floor(lng);
-                    var lngMin = ((lng - lngDeg) * 60).toFixed(1);
+                    var latAbs = Math.abs(lat);
+                    var lngAbs = Math.abs(lng);
+                    var latDeg = Math.floor(latAbs);
+                    var latMin = ((latAbs - latDeg) * 60).toFixed(1);
+                    var lngDeg = Math.floor(lngAbs);
+                    var lngMin = ((lngAbs - lngDeg) * 60).toFixed(1);
                     
-                    var content = '<div style="font-family: Arial; font-size: 13px;">' +
+                    // Show popup immediately with "fetching..." message
+                    var loadingContent = '<div style="font-family: Arial; font-size: 13px;">' +
                         '<b>Position</b><br>' +
                         latDeg + '°' + latMin + "'" + latHemi + ' ' +
                         lngDeg + '°' + lngMin + "'" + lngHemi +
                         '<br><span style="font-size:11px; color:#666;">(' + 
-                        e.latlng.lat.toFixed(5) + ', ' + e.latlng.lng.toFixed(5) + ')</span>' +
+                        lat.toFixed(5) + ', ' + lng.toFixed(5) + ')</span>' +
+                        '<br><br><b>Ocean Depth</b><br>' +
+                        '<span style="color:#999;">⏳ Fetching precise depth...</span>' +
                         '</div>';
                     
                     if (clickPopup) {
@@ -1003,8 +1168,63 @@ def create_map(positions):
                     }
                     clickPopup = L.popup()
                         .setLatLng(e.latlng)
-                        .setContent(content)
+                        .setContent(loadingContent)
                         .openOn({{this._parent.get_name()}});
+                    
+                    // Try to get precise depth from API
+                    var preciseDepth = await getPreciseDepth(lat, lng);
+                    var depthStr, depthInfo, source, isPrecise;
+                    
+                    if (preciseDepth !== null && preciseDepth > 0) {
+                        depthStr = preciseDepth + ' m';
+                        source = 'NOAA bathymetry data';
+                        isPrecise = true;
+                        
+                        if (preciseDepth < 200) {
+                            depthInfo = { 
+                                color: '#d4a373', 
+                                category: 'Shallow (less than test depth - hazardous)'
+                            };
+                        } else if (preciseDepth < 1000) {
+                            depthInfo = { 
+                                color: '#3498db', 
+                                category: 'Continental shelf (limited diving room)'
+                            };
+                        } else if (preciseDepth < 3000) {
+                            depthInfo = { 
+                                color: '#2c3e50', 
+                                category: 'Deep basin (good operating depth)'
+                            };
+                        } else {
+                            depthInfo = { 
+                                color: '#1a1a2e', 
+                                category: 'Very deep (excellent concealment)'
+                            };
+                        }
+                    } else {
+                        depthStr = estimateDepth(lat, lng);
+                        depthInfo = getDepthInfo(depthStr);
+                        source = 'estimated from regional bathymetry';
+                        isPrecise = false;
+                    }
+                    
+                    var formattedDepth = formatDepth(depthStr, isPrecise);
+                    
+                    var finalContent = '<div style="font-family: Arial; font-size: 13px;">' +
+                        '<b>Position</b><br>' +
+                        latDeg + '°' + latMin + "'" + latHemi + ' ' +
+                        lngDeg + '°' + lngMin + "'" + lngHemi +
+                        '<br><span style="font-size:11px; color:#666;">(' + 
+                        lat.toFixed(5) + ', ' + lng.toFixed(5) + ')</span>' +
+                        '<br><br><b>Ocean Depth</b><br>' +
+                        '<span style="color:' + depthInfo.color + '; font-weight:600; font-size:14px;">🌊 ' + formattedDepth + '</span>' +
+                        '<br><span style="font-size:11px; color:#666; font-style:italic;">' + depthInfo.category + '</span>' +
+                        '<br><span style="font-size:10px; color:#999;">(' + source + ')</span>' +
+                        '</div>';
+                    
+                    if (clickPopup) {
+                        clickPopup.setContent(finalContent);
+                    }
                 });
             {% endmacro %}
         """)
