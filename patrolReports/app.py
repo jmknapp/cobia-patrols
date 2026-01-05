@@ -210,12 +210,6 @@ def patrol_summaries():
     return render_template('patrol_summaries.html')
 
 
-@app.route('/map')
-def patrol_map():
-    """Serve the interactive patrol tracks map (hidden - not linked from main site)."""
-    return send_from_directory(app.static_folder, 'patrol_tracks.html')
-
-
 @app.route('/analytics')
 def analytics():
     """Serve the analytics page (hidden - not linked from main site)."""
