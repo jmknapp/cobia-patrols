@@ -543,6 +543,16 @@
         const pdfSelect = document.getElementById('pdfSelect');
         const viewBtn = document.getElementById('viewBtn');
         
+        // Patrol date ranges
+        const patrolDates = {
+            1: 'Jun 26 – Aug 14, 1944',
+            2: 'Sep 6 – Nov 5, 1944',
+            3: 'Nov 29, 1944 – Jan 24, 1945',
+            4: 'Feb 18 – Apr 15, 1945',
+            5: 'May 11 – Jun 18, 1945',
+            6: 'Jul 16 – Aug 22, 1945'
+        };
+        
         // Load PDF list on page load
         async function loadPdfList() {
             try {
@@ -555,9 +565,11 @@
                         // Check if it's a patrol report
                         const match = pdf.match(/(\d+)(?:st|nd|rd|th)_Patrol/);
                         if (match) {
-                            const num = match[1];
-                            const ordinal = getOrdinal(parseInt(num));
-                            return `<option value="${pdf}">${ordinal} Patrol Report</option>`;
+                            const num = parseInt(match[1]);
+                            const ordinal = getOrdinal(num);
+                            const dates = patrolDates[num] || '';
+                            const label = dates ? `${ordinal} Patrol Report (${dates})` : `${ordinal} Patrol Report`;
+                            return `<option value="${pdf}">${label}</option>`;
                         }
                         // For other documents, create a readable name
                         let label = pdf.replace('.pdf', '').replace(/_/g, ' ');
