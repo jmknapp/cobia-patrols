@@ -62,21 +62,6 @@ EOF
     echo "WARNING: Edit $APP_DIR/.env with your database credentials!"
 fi
 
-# Create gunicorn config
-echo "Creating gunicorn configuration..."
-cat > "$APP_DIR/gunicorn.conf.py" << 'EOF'
-import multiprocessing
-
-bind = "127.0.0.1:5012"
-workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = "sync"
-timeout = 120
-keepalive = 5
-errorlog = "/var/log/cobiapatrols/error.log"
-accesslog = "/var/log/cobiapatrols/access.log"
-loglevel = "info"
-EOF
-
 # Create log directory
 mkdir -p /var/log/$APP_NAME
 chown -R $USER:$GROUP /var/log/$APP_NAME
